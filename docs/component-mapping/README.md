@@ -1,11 +1,117 @@
-# Component mapping
+# 组件映射规范
 
-Prototype elements are mapped to:
+## 1. 目的
 
-1. Vben capability or layout;
-2. Ant Design Vue component;
-3. MOM shared component;
-4. domain-specific component;
-5. accessibility and responsive behavior.
+组件映射将原型中的每个关键区域映射到现有 UI 能力、MOM 共享组件或页面私有组件，防止原型与实现脱节。
 
-Batch genealogy is isolated behind `@mom/traceability-graph`.
+## 2. 映射层次
+
+每个原型元素按以下顺序评估：
+
+1. Vben 布局或工程能力。
+2. Ant Design Vue 基础组件。
+3. MOM 页面状态组件。
+4. MOM 共享领域组件。
+5. 应用或页面私有组件。
+6. 独立图形能力，例如批次谱系图。
+
+## 3. 标准映射表
+
+| 原型区域 | 用户任务 | 候选组件 | 最终选择 | 所属包/应用 | 输入 View Model | 输出事件 | 权限 | 状态 | 可访问性 | 响应式 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 示例：工单状态 | 识别工单进度 | Tag/Steps/Timeline | 工单状态时间线 | `@mom/domain-components` | `WorkOrderStatusVM` | `stepSelected` | 查看工单 | 加载/空/失败 | 文本+图标 | 详情页适配 |
+
+## 4. 选择原则
+
+### 4.1 优先复用基础组件
+
+表格、表单、对话框、通知、结果页等优先使用 Ant Design Vue，不重复制造基础 UI 库。
+
+### 4.2 领域语义稳定后再共享
+
+组件进入 `@mom/domain-components` 前必须：
+
+- 跨页面或跨应用稳定复用。
+- 输入可通过 View Model 表达。
+- 不直接依赖页面 Store。
+- 不直接调用 API。
+- 状态和错误可通过 Props 表达。
+
+### 4.3 页面私有不是失败
+
+只在一个页面使用、业务变化快或依赖页面编排的组件应保留在应用内。
+
+## 5. 状态组件映射
+
+每个页面必须映射：
+
+- Loading。
+- Empty。
+- Forbidden。
+- Failure。
+- Conflict。
+- Rate Limit。
+- Processing。
+- Recovery。
+
+不得只映射正常数据组件。
+
+## 6. 表格映射
+
+记录：
+
+- 列定义来源。
+- 服务端分页和排序。
+- 固定列。
+- 行操作权限。
+- 批量操作范围。
+- 空和失败状态。
+- 最小宽度和横向滚动。
+
+## 7. 表单映射
+
+记录：
+
+- 字段组件。
+- 单位与精度。
+- 本地和服务端校验。
+- 依赖字段。
+- 草稿行为。
+- 提交中和冲突状态。
+- 未保存离开提示。
+
+## 8. 批次谱系图
+
+批次谱系统一隔离在 `@mom/traceability-graph`。
+
+组件映射应说明：
+
+- 输入节点和边模型。
+- 布局策略。
+- 节点和边样式。
+- 选择和详情事件。
+- 图形与列表切换。
+- 大图聚合、分页或层级限制。
+- 部分结果、加载失败和恢复。
+
+图组件不负责计算权威影响范围。
+
+## 9. Vben 来源记录
+
+使用 Vben 能力时记录：
+
+- 上游 Tag。
+- 原始文件或能力位置。
+- 复用方式：依赖、参考或源码迁移。
+- MOM 修改。
+- License/NOTICE 要求。
+- 后续升级策略。
+
+## 10. 验收
+
+- 原型关键区域均有映射。
+- 没有重复制造基础组件。
+- 共享组件职责清晰。
+- 组件输入不是数据库 Entity。
+- 权限、状态和错误有映射。
+- 可访问性和响应式行为明确。

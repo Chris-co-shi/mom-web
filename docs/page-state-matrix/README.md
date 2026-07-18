@@ -1,12 +1,103 @@
-# Page state matrix
+# 页面状态矩阵规范
 
-Each page records:
+## 1. 目的
 
-| State | Trigger | Visible feedback | Allowed actions | Recovery |
+页面状态矩阵用于证明页面不仅设计了“正常有数据”状态，还覆盖权限、失败、冲突、异步和恢复过程。
+
+## 2. 存放方式
+
+```text
+docs/page-state-matrix/<vertical-slice>/
+├── 页面清单.md
+├── 管理端状态矩阵.md
+├── 供应商门户状态矩阵.md
+└── 客户门户状态矩阵.md
+```
+
+## 3. 标准字段
+
+| 字段 | 说明 |
+|---|---|
+| 页面/区域 | 页面、对话框、抽屉或关键组件 |
+| 状态 | 当前 UI 状态 |
+| 触发条件 | API、权限、用户操作或业务状态 |
+| 可见反馈 | 用户看到的内容 |
+| 可执行动作 | 当前允许的操作 |
+| 禁止动作 | 必须被阻止的操作 |
+| 恢复方式 | 重试、刷新、返回、重新登录或人工处理 |
+| API/错误码 | 对应接口和错误 |
+| 权限 | 页面或操作权限 |
+| 原型 | 对应图片或标注 |
+| 测试 | 对应测试场景 |
+
+## 4. 通用页面状态
+
+| 状态 | 触发 | 可见反馈 | 允许动作 | 恢复 |
 |---|---|---|---|---|
-| loading | query pending | skeleton/spinner | cancel where possible | timeout |
-| empty | no records | empty explanation | create/refresh | refresh |
-| forbidden | permission denied | permission result | back | request access |
-| failed | request failed | traceable error | retry | support correlation ID |
-| submitting | command pending | disabled duplicate action | none | timeout/retry |
-| completed | command accepted | business number | continue | view details |
+| `initial` | 页面初始化 | 页面框架 | 无或返回 | 自动加载 |
+| `loading` | 查询中 | Skeleton/加载提示 | 可取消时提供取消 | 超时转失败 |
+| `success` | 查询成功 | 正常内容 | 按权限操作 | 刷新 |
+| `empty` | 查询成功但无记录 | 空状态原因 | 创建、调整筛选或返回 | 刷新 |
+| `forbidden` | 403 或权限不足 | 无权限说明 | 返回、安全导航 | 申请权限 |
+| `failed` | 请求失败 | 用户可理解的错误和参考编号 | 安全重试 | 联系支持 |
+| `rate-limited` | 429 | 请求频繁和等待时间 | 稍后重试 | 到期恢复 |
+| `session-expired` | 会话失效 | 需要重新登录 | 登录 | 恢复目标路由 |
+
+## 5. 命令状态
+
+| 状态 | 说明 | 用户反馈 |
+|---|---|---|
+| `validating` | 本地或服务端校验 | 标记字段问题 |
+| `submitting` | 请求已发出 | 禁止重复点击 |
+| `accepted` | 服务端已接受异步任务 | 展示任务编号和处理中 |
+| `succeeded` | 操作成功 | 展示业务编号和下一步 |
+| `validation-failed` | 输入错误 | 映射字段错误 |
+| `conflict` | 版本或状态冲突 | 展示当前状态，要求刷新确认 |
+| `unknown-result` | 超时或连接中断 | 不重复提交，查询最终结果 |
+| `failed` | 服务端明确失败 | 展示原因和允许动作 |
+
+## 6. 业务状态
+
+页面还应覆盖业务对象状态，例如：
+
+- 草稿、已提交、执行中、已完成、已取消。
+- 待检、检验中、已放行、已拒绝、隔离。
+- 已预占、部分预占、预占失败。
+- 已派发、阻塞、恢复中、人工接管。
+
+业务状态必须来自后端契约，不能只存在于原型说明。
+
+## 7. 组合状态
+
+复杂页面可能同时存在：
+
+```text
+页面查询成功
++ 用户无操作权限
++ 业务对象执行中
++ 某个子任务失败
+```
+
+状态矩阵需要描述关键组合，而不是假设每次只有一个状态。
+
+## 8. 对话框和抽屉
+
+命令对话框必须覆盖：
+
+- 打开前数据加载。
+- 初始表单。
+- 校验失败。
+- 提交中。
+- 成功。
+- 状态冲突。
+- 结果未知。
+- 关闭和未保存提示。
+
+## 9. 验收清单
+
+- 页面没有只设计成功状态。
+- 403 与空数据可区分。
+- 重复提交和未知结果有专门状态。
+- 异步任务有处理中和恢复状态。
+- 每个状态都能对应原型和测试。
+- 状态与后端错误码、权限和状态机一致。

@@ -16,3 +16,7 @@ catalog:
 strictPeerDependencies: false
 autoInstallPeers: true
 dedupePeerDependents: true
+
+allowBuilds:
+  core-js: true
+  esbuild: true

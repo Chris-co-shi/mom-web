@@ -1,0 +1,30 @@
+{
+  "name": "mom-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Industrial MOM web applications and design artifacts",
+  "license": "MIT",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": "^22.18.0 || ^24.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @mom/mom-admin dev",
+    "dev:admin": "pnpm --filter @mom/mom-admin dev",
+    "dev:supplier": "pnpm --filter @mom/supplier-portal dev",
+    "dev:customer": "pnpm --filter @mom/customer-portal dev",
+    "build": "pnpm -r --if-present run build",
+    "check:type": "pnpm -r --if-present run typecheck",
+    "validate": "node scripts/validate.mjs",
+    "check": "pnpm run validate && pnpm run check:type"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "typescript": "^6.0.3",
+    "vite": "8.0.10",
+    "vue-tsc": "^3.3.5"
+  }
+}

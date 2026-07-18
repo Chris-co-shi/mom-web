@@ -1,16 +1,132 @@
-# VS-01 prototype backlog
+# VS-01：原料到成品 Web 原型计划
 
-Required desktop prototypes:
+## 1. 目标
 
-1. supplier delivery list and detail;
-2. incoming inspection worksheet;
-3. PDA-linked receiving monitor;
-4. production order execution board;
-5. material issue and consumption confirmation;
-6. finished-goods inspection and release;
-7. WCS putaway monitor;
-8. shipment execution;
-9. forward and reverse batch genealogy;
-10. simulated recall impact analysis.
+为“供应商送货 → 来料检验 → 收货入库 → 生产执行 → 成品放行 → WCS 入库 → 客户发运 → 批次追溯与召回”建立完整桌面端原型资产。
 
-Images will be produced during the corresponding design slice and committed with API and state mappings.
+## 2. 目录规划
+
+```text
+VS-01-material-to-finished-goods/
+├── README.md
+├── mom-admin/
+│   ├── 入厂与检验/
+│   ├── 生产执行/
+│   ├── 放行与仓储/
+│   └── 追溯与召回/
+├── supplier-portal/
+│   └── 送货与质量协同/
+└── customer-portal/
+    └── 订单发运与客诉/
+```
+
+## 3. 必需原型
+
+### 3.1 供应商门户
+
+1. 送货单列表。
+2. 创建/编辑送货单。
+3. 送货单详情和状态时间线。
+4. 来料检验结果。
+5. 不合格协同。
+
+### 3.2 MOM 管理端：入厂
+
+1. 到货工作台。
+2. 送货单详情。
+3. 来料检验任务列表。
+4. 来料检验工作表。
+5. PDA 收货联动监控。
+6. 原料批次和入库结果。
+
+### 3.3 MOM 管理端：生产
+
+1. 生产工单列表。
+2. 工单详情和版本快照。
+3. 物料预占、领料和消耗确认。
+4. PCS 生产执行看板。
+5. 命令超时、阻塞和恢复。
+6. 半成品与成品批次。
+
+### 3.4 MOM 管理端：质量与仓储
+
+1. 成品检验任务。
+2. 成品检验与放行详情。
+3. WCS 自动入库监控。
+4. WCS 阻塞、恢复和人工接管。
+5. 成品库存和库位。
+6. 发运执行。
+
+### 3.5 MOM 管理端：追溯
+
+1. 追溯查询入口。
+2. 成品反向谱系。
+3. 原料正向影响分析。
+4. 图形和列表双视图。
+5. 节点、边和业务详情。
+6. 模拟召回影响分析。
+
+### 3.6 客户门户
+
+1. 订单列表和详情。
+2. 发运列表和详情。
+3. COA 文件列表与下载状态。
+4. 客诉创建。
+5. 客诉进度和批次影响。
+
+## 4. 每组图片
+
+每个页面族至少提交：
+
+```text
+desktop-overview.png
+desktop-detail.png
+dialogs.png
+states.png
+```
+
+复杂页面可以进一步拆成：
+
+```text
+loading.png
+empty.png
+forbidden.png
+failed.png
+conflict.png
+processing.png
+recovery.png
+```
+
+## 5. 状态重点
+
+VS-01 必须重点表现：
+
+- 未放行原料不可用。
+- 库存在库、预占、锁定、隔离和可用分解。
+- 工单版本快照不可变。
+- PCS 命令处理中、超时和恢复。
+- 成品待检、待放行和已放行。
+- WCS 任务阻塞、恢复和人工接管。
+- 请求重复提交和状态冲突。
+- 追溯部分结果、大图加载和查询失败。
+
+## 6. 关联文档
+
+- [VS-01 页面设计计划](../../../plans/VS-01-页面设计计划.md)
+- [用户流程规范](../../../user-flows/README.md)
+- [页面状态矩阵](../../../page-state-matrix/README.md)
+- [组件映射](../../../component-mapping/README.md)
+- [API 与权限映射](../../../api-mapping/README.md)
+
+## 7. 当前状态
+
+当前为原型 Backlog 和交付规范，尚未生成正式页面图片。生成原型时必须按页面族分批提交，并同步提交状态、组件和 API 映射。
+
+## 8. 完成定义
+
+- 所有必需页面族有原型。
+- 原型包含主要异常与恢复状态。
+- 页面状态与后端契约一致。
+- 原型链接到需求、流程、组件和 API。
+- 业务、产品和架构评审通过。
+- 实现后记录差异。

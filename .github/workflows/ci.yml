@@ -27,25 +27,14 @@ jobs:
           node-version: 24
 
       - name: Install dependencies
-        id: install
-        continue-on-error: true
-        shell: bash
-        run: pnpm install --no-frozen-lockfile --reporter=append-only > pnpm-install.log 2>&1
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Upload install diagnostics
-        if: always()
+      - name: Upload generated lockfile
         uses: actions/upload-artifact@v4
         with:
-          name: pnpm-install-log
-          path: pnpm-install.log
+          name: generated-pnpm-lock
+          path: pnpm-lock.yaml
           if-no-files-found: error
-
-      - name: Fail when installation failed
-        if: steps.install.outcome == 'failure'
-        shell: bash
-        run: |
-          tail -n 80 pnpm-install.log
-          exit 1
 
       - name: Validate repository boundaries
         run: pnpm validate

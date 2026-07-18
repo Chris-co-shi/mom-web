@@ -27,10 +27,25 @@ jobs:
           node-version: 24
 
       - name: Install dependencies
+        id: install
+        continue-on-error: true
+        shell: bash
+        run: pnpm install --no-frozen-lockfile --reporter=append-only > pnpm-install.log 2>&1
+
+      - name: Upload install diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-install-log
+          path: pnpm-install.log
+          if-no-files-found: error
+
+      - name: Fail when installation failed
+        if: steps.install.outcome == 'failure'
         shell: bash
         run: |
-          set -o pipefail
-          pnpm install --no-frozen-lockfile --reporter=append-only 2>&1 | tail -n 80
+          tail -n 80 pnpm-install.log
+          exit 1
 
       - name: Validate repository boundaries
         run: pnpm validate

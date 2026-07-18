@@ -1,0 +1,39 @@
+name: Web CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Validate repository boundaries
+        run: pnpm validate
+
+      - name: Type check
+        run: pnpm check:type
+
+      - name: Build applications
+        run: pnpm build

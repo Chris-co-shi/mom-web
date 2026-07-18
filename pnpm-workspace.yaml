@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+
+catalog:
+  '@vitejs/plugin-vue': ^6.0.7
+  ant-design-vue: ^4.2.6
+  axios: ^1.18.0
+  pinia: ^3.0.4
+  typescript: ^6.0.3
+  vite: 8.0.10
+  vue: ^3.5.38
+  vue-tsc: ^3.3.5
+
+strictPeerDependencies: false
+autoInstallPeers: true
+dedupePeerDependents: true

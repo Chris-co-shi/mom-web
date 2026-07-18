@@ -1,0 +1,5 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "vue.server.hybridMode": true,
+  "editor.formatOnSave": true
+}

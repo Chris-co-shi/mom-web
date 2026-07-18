@@ -27,7 +27,10 @@ jobs:
           node-version: 24
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --no-frozen-lockfile --reporter=append-only 2>&1 | tail -n 80
 
       - name: Validate repository boundaries
         run: pnpm validate

@@ -21,6 +21,7 @@ ADR 用于记录影响多个应用、共享包、页面交付或长期维护的�
 | [ADR-005](ADR-005-API模型与ViewModel隔离.md) | API 模型与 View Model 隔离 | Accepted | 类型与组件边界 |
 | [ADR-006](ADR-006-共享组件准入边界.md) | 共享组件准入边界 | Accepted | 设计系统与共享包 |
 | [ADR-007](ADR-007-批次谱系图独立边界.md) | 批次谱系图独立边界 | Accepted | 追溯可视化 |
+| [ADR-008](ADR-008-P1.5-Web认证运行时.md) | P1.5 Web 认证运行时 | Accepted | PKCE、内存 Token、Single Flight、三应用 Client |
 
 ## 创建规则
 
@@ -35,7 +36,7 @@ ADR 用于记录影响多个应用、共享包、页面交付或长期维护的�
 
 - 更换前端框架、构建工具或包管理器。
 - 拆分或合并应用/仓库。
-- 改变 OAuth、Token 或 Gateway 访问方式。
+- 改变 OAuth、Token、Session、Gateway 或浏览器存储方式。
 - 引入新的状态管理或 API 数据框架。
 - 选择批次谱系图库或服务端布局。
 - 建立运行时配置、微前端或独立组件发布。

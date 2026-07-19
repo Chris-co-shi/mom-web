@@ -1,30 +1,49 @@
 # Phase 01：Web 技术骨架计划
 
-## 1. 阶段目标
+## 1. 阶段状态
 
-建立可以支撑后续垂直切片的三应用 Monorepo、统一访问边界、设计交付流程和质量门禁。
+- 状态：**Foundation Complete / Auth Pending**
+- 后续安全阶段：[P1.5 Web 认证与授权实施计划](P1.5-Web认证授权实施计划.md)
 
-本阶段不批量实现 MES/WMS/QMS 业务页面。
+> Web Phase 01 已完成三应用 Monorepo、可构建应用骨架、设计交付规范和共享包初始边界，但未完成正式 OAuth/OIDC Auth Runtime。
 
-## 2. 输入
+## 2. 阶段目标
 
-- 三应用可运行骨架。
-- 共享包初始边界。
-- Node 24、pnpm 11、Vue 3、Vite 8、TypeScript 6 技术基线。
-- MOM Gateway 与 IAM 授权模型。
-- MOM Platform V1 需求、架构和 VS-01 范围。
+建立支撑后续垂直切片的三应用 Monorepo、统一访问边界、设计交付流程和质量门禁。
 
-## 3. Slice 01：Monorepo 与工程门禁
+本阶段不批量实现 MES/WMS/QMS 业务页面，也不把计划中的 OAuth、Token 或权限能力描述为已完成。
 
-### 任务
+## 3. 已完成基础
 
-- 固化三应用和共享包依赖方向。
-- 保持冻结锁文件安装。
-- 校验 Node、pnpm 和 Workspace Catalog。
-- 增加循环依赖和非法应用依赖检查。
-- 统一 TypeScript、Vite、Lint/Format 基础规则。
+- `mom-admin`、`supplier-portal`、`customer-portal` 三应用骨架。
+- 独立构建、端口和基础运行配置。
+- `@mom/api-client`、`@mom/access` 等共享包初始边界。
+- Gateway-only 原则。
+- 用户流程、页面状态、原型、组件和 API 映射规范。
+- Node、pnpm、Vue、Vite、TypeScript 工程门禁。
 
-### 验收
+## 4. 尚未完成
+
+以下能力统一进入 P1.5：
+
+- `@mom/auth`。
+- Authorization Code + PKCE S256 + OIDC。
+- `mom-admin-web`、`mom-supplier-web`、`mom-customer-web` 三个正式 Public Client 配置。
+- Access/Refresh Token 内存生命周期。
+- Callback、`state`、`nonce`、`code_verifier` 和地址栏清理。
+- 页面刷新后的顶层 PKCE 恢复。
+- Single Flight Refresh 与每请求最多一次自动重试。
+- `/api/iam/me` 权限上下文。
+- Client/user_type 入口隔离。
+- MOM Admin 权限管理页面。
+- Supplier/Customer Portal 认证授权闭环。
+- Web 安全 E2E。
+
+## 5. 原 Phase 01 Slice 解释
+
+### Slice 01：Monorepo 与工程门禁
+
+已完成基础结构和校验脚本。持续使用：
 
 ```bash
 pnpm install --frozen-lockfile
@@ -33,129 +52,59 @@ pnpm check:type
 pnpm build
 ```
 
-全部通过。
+### Slice 02：应用 Shell 与路由边界
 
-## 4. Slice 02：应用 Shell 与路由边界
+已具备三应用独立骨架。正式认证路由守卫、Client/user_type 校验和权限路由在 P1.5 S08 实现。
 
-### 任务
+### Slice 03：OAuth2.1/OIDC Access
 
-- 三应用独立布局和品牌配置。
-- 路由懒加载。
-- 404、无权限和路由错误页面。
-- 应用级错误边界。
-- 工厂、用户和应用上下文展示位置。
+原计划未完成，不属于 Web Phase 01 已交付能力。由 P1.5 S08 替代并细化为：
 
-### 验收
+- 三个固定 Public Client。
+- PKCE S256 + OIDC。
+- Token 只存在内存。
+- `sessionStorage` 仅保存一次性事务。
+- 顶层 PKCE 页面刷新恢复。
+- Single Flight Refresh。
+- `/api/iam/me`。
 
-- 三应用可独立访问。
-- 无效路由不白屏。
-- 路由异常可恢复到安全页面。
+### Slice 04：Gateway API Client
 
-## 5. Slice 03：OAuth2.1/OIDC Access
+已有基础包边界，P1.5 S08 继续补齐 Bearer Token、Single Flight、401/403/404/409/429/5xx 和当前 Factory 契约。
 
-### 任务
+### Slice 05：Access 与数据范围
 
-- Authorization Code + PKCE。
-- 登录回调。
-- Access Token 生命周期。
-- Refresh Token 或会话刷新契约。
-- 退出。
-- Token 过期和重新认证。
-- OAuth Client 按应用隔离。
+已有前端体验控制方向，P1.5 S08 继续补齐 `/api/iam/me`、Permission、Factory 和 Party 只读上下文。
 
-### 验收
+前端 Access 不执行最终授权，`X-Factory-Id` 不是授权证明，Party 不允许自由切换。
 
-- 三应用使用独立 Client 配置。
-- 登录后恢复目标路由。
-- 过期会话不产生无限刷新循环。
-- 退出后清理本地会话并完成服务端登出契约。
+### Slice 06：设计系统与领域组件
 
-## 6. Slice 04：Gateway API Client
+作为 Web 基础能力继续演进，不属于 P1.5 S00 的实现范围。
 
-### 任务
+### Slice 07：设计交付与测试基础
 
-- 统一 Base URL。
-- 请求和响应拦截。
-- correlation ID 传播。
-- 统一业务错误模型。
-- 401、403、409、429、5xx 处理。
-- 请求超时和取消。
-- 幂等键接口。
-- 文件下载与错误解析。
+用户流程、原型、状态矩阵、组件映射和 API 映射继续作为业务页面实现门禁。
 
-### 验收
+## 6. 修正后的完成定义
 
-- 浏览器不出现内部服务地址。
-- 错误提示包含可排障参考 ID。
-- 429 能显示重试建议。
-- 命令超时后支持查询最终结果。
+Web Phase 01 完成表示：
 
-## 7. Slice 05：Access 与数据范围
+- 三应用可以独立构建和运行。
+- Monorepo 与共享包初始边界存在。
+- Gateway-only、前端非最终授权和设计交付原则明确。
+- 工程校验脚本可用。
 
-### 任务
+Web Phase 01 不表示 OAuth、Token、Refresh、`/api/iam/me` 或权限管理页面已实现。
 
-- 权限码类型和判断 API。
-- 路由元数据。
-- 菜单过滤。
-- 按钮和操作控制。
-- 工厂和组织上下文。
-- 无权限状态组件。
+## 7. P1.5 后续
 
-### 验收
-
-- 前端权限来自 IAM/服务端契约。
-- 路由、菜单和按钮使用统一 Access 层。
-- 不在页面中散落硬编码角色名。
-
-## 8. Slice 06：设计系统与领域组件
-
-### 任务
-
-- 色彩、状态、间距、字体和布局 Token。
-- 工业状态展示规则。
-- 通用页面状态组件。
-- 工作项、批次、库存、工单、检验和设备状态组件边界。
-- 谱系图输入模型。
-
-### 验收
-
-- 状态不只依赖颜色。
-- 领域组件接收 View Model。
-- 应用私有逻辑不进入共享包。
-
-## 9. Slice 07：设计交付与测试基础
-
-### 任务
-
-- 用户流程模板。
-- 原型目录和命名。
-- 页面状态矩阵模板。
-- 组件映射模板。
-- API/权限映射模板。
-- 组件测试、E2E 和视觉回归方案。
-
-### 验收
-
-- VS-01 至少完成一个页面族的完整设计材料。
-- CI 能执行既有校验，并预留测试门禁。
-
-## 10. 阶段完成定义
-
-- 三应用可构建、可独立发布。
-- OAuth、Gateway、Access 的边界明确并具备最小实现。
-- 统一错误和关联 ID 契约可用。
-- 设计系统和页面状态规则可执行。
-- VS-01 页面计划、流程、状态和映射材料完成。
-- 未引入整套 Vben 演示业务。
-- 所有差异和上游来源可追踪。
-
-## 11. 风险
-
-| 风险 | 缓解 |
+| Slice | Web 工作 |
 |---|---|
-| 直接复制 Vben 导致边界失控 | 按 Slice 引入，记录来源和修改 |
-| 权限逻辑散落页面 | 统一 `@mom/access` |
-| API 错误处理不一致 | 统一 `@mom/api-client` |
-| 共享包变成万能包 | 依赖门禁与稳定复用标准 |
-| 原型滞后于代码 | 原型和映射作为进入实现门禁 |
-| 谱系图性能不可控 | 先定义输入模型、分页和聚合边界 |
+| S00 | 设计对齐与状态纠偏 |
+| S08 | `@mom/auth`、`@mom/access`、`@mom/api-client` 和三应用 Auth Runtime |
+| S09 | MOM Admin 权限管理页面 |
+| S10 | Supplier Portal 与 Customer Portal |
+| S12 | Web 安全 E2E 与跨仓库封板 |
+
+完整实施范围见 [P1.5 Web 认证与授权实施计划](P1.5-Web认证授权实施计划.md)。

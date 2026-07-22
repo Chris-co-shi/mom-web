@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createApiClient, MomApiError } from './index.ts';
+import { createApiClient, MomApiError } from './index.js';
 
 test('concurrent 401 responses create one refresh and retry once', async () => {
   let accessToken = 'expired';

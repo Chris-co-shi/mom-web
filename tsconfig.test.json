@@ -19,6 +19,8 @@
     "packages/iam-admin/src/index.ts",
     "packages/iam-admin/src/index.test.ts",
     "packages/portal-access/src/index.ts",
-    "packages/portal-access/src/index.test.ts"
+    "packages/portal-access/src/index.test.ts",
+    "packages/access/src/index.ts",
+    "packages/security-e2e/src/index.test.ts"
   ]
 }

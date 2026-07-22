@@ -15,6 +15,8 @@ const requiredPaths = [
   'packages/portal-access/package.json',
   'packages/portal-access/src/index.ts',
   'packages/portal-access/src/index.test.ts',
+  'packages/security-e2e/package.json',
+  'packages/security-e2e/src/index.test.ts',
   'packages/access/package.json',
   'packages/design-tokens/package.json',
   'packages/domain-components/package.json',
@@ -40,6 +42,20 @@ const authSource = await readFile('packages/auth/src/index.ts', 'utf8');
 for (const forbidden of ['localStorage', 'indexedDB', 'document.cookie']) {
   if (authSource.includes(forbidden)) {
     throw new Error(`@mom/auth must not persist application tokens via ${forbidden}`);
+  }
+}
+
+const persistedTokenPattern = /(?:localStorage|sessionStorage)\.setItem\([^\n]*(?:access|refresh|id)[_-]?token/iu;
+for (const path of [
+  'apps/mom-admin/src/runtime.ts',
+  'apps/supplier-portal/src/runtime.ts',
+  'apps/customer-portal/src/runtime.ts',
+  'packages/access/src/index.ts',
+  'packages/api-client/src/index.ts',
+]) {
+  const source = await readFile(path, 'utf8');
+  if (persistedTokenPattern.test(source)) {
+    throw new Error(`${path} must not persist Access, Refresh or ID Token`);
   }
 }
 if (!authSource.includes('sessionStorage') || !authSource.includes('codeVerifier')) {
@@ -104,4 +120,4 @@ for (const path of ['apps/supplier-portal/src/App.vue', 'apps/customer-portal/sr
   }
 }
 
-console.log(`Validated ${requiredPaths.length} required project boundaries and S08～S10 security invariants.`);
+console.log(`Validated ${requiredPaths.length} required project boundaries and S08～S12 security invariants.`);

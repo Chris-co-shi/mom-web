@@ -195,7 +195,7 @@ pnpm check
 | P1.5 S08 | Web Auth Runtime | ✅ Completed / Merged |
 | P1.5 S09 | MOM Admin 权限管理页面 | ✅ Completed in phase branch |
 | P1.5 S10 | Supplier/Customer Portal | ✅ Completed in phase branch |
-| P1.5 S12 | Web 安全 E2E 与封板 | ⏳ 计划中 |
+| P1.5 S12 | Web 安全 E2E 与封板 | ✅ 阶段分支完成 |
 
 ## 🧠 前端原则
 

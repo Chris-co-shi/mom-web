@@ -1,0 +1,12 @@
+{
+  "name": "@mom/security-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p ../../tsconfig.test.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

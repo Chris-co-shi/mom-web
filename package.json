@@ -18,7 +18,7 @@
     "build": "pnpm -r --if-present run build",
     "check:type": "pnpm -r --if-present run typecheck",
     "validate": "node scripts/validate.mjs && node scripts/validate-s08-ports.mjs",
-    "test:auth": "rm -rf .tmp/auth-test && tsc -p tsconfig.test.json && node --test .tmp/auth-test/auth/src/index.test.js .tmp/auth-test/api-client/src/index.test.js",
+    "test:auth": "rm -rf .tmp/auth-test && tsc -p tsconfig.test.json && node --test .tmp/auth-test/auth/src/index.test.js .tmp/auth-test/api-client/src/index.test.js .tmp/auth-test/iam-admin/src/index.test.js",
     "test": "pnpm run test:auth",
     "check": "pnpm run validate && pnpm run check:type && pnpm run test"
   },

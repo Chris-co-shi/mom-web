@@ -10,6 +10,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@mom/iam-admin": "workspace:*",
     "@mom/design-tokens": "workspace:*",
     "@mom/shared": "workspace:*",
     "ant-design-vue": "catalog:",

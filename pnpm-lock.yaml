@@ -81,6 +81,9 @@ importers:
       '@mom/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@mom/iam-admin':
+        specifier: workspace:*
+        version: link:../../packages/iam-admin
       '@mom/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -154,6 +157,12 @@ importers:
         version: 6.0.3
 
   packages/domain-components:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/iam-admin:
     devDependencies:
       typescript:
         specifier: 'catalog:'

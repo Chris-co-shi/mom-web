@@ -9,6 +9,9 @@ const requiredPaths = [
   'packages/auth/tsconfig.json',
   'packages/api-client/package.json',
   'packages/api-client/src/index.test.ts',
+  'packages/iam-admin/package.json',
+  'packages/iam-admin/src/index.ts',
+  'packages/iam-admin/src/index.test.ts',
   'packages/access/package.json',
   'packages/design-tokens/package.json',
   'packages/domain-components/package.json',
@@ -52,4 +55,31 @@ for (const [path, clientId, userType] of appContracts) {
   }
 }
 
-console.log(`Validated ${requiredPaths.length} required project boundaries and S08 auth invariants.`);
+const iamAdminSource = await readFile('packages/iam-admin/src/index.ts', 'utf8');
+for (const contract of [
+  '/users/${id(userId)}/authorizations',
+  '/roles/${id(roleId)}/permissions',
+  'userVersion',
+  'roleVersion',
+  "value.code === 'stale_version'",
+]) {
+  if (!iamAdminSource.includes(contract)) {
+    throw new Error(`@mom/iam-admin must preserve the S07 hardened contract: ${contract}`);
+  }
+}
+
+const adminView = await readFile('apps/mom-admin/src/App.vue', 'utf8');
+for (const permission of [
+  'iam:user:read',
+  'iam:role:read',
+  'iam:permission:read',
+  'iam:session:read',
+  'iam:audit:read',
+  'iam:client:read',
+]) {
+  if (!adminView.includes(permission)) {
+    throw new Error(`MOM Admin must gate the S09 section with ${permission}`);
+  }
+}
+
+console.log(`Validated ${requiredPaths.length} required project boundaries and S08/S09 security invariants.`);

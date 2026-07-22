@@ -12,6 +12,12 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@mom/auth": ["packages/auth/src/index.ts"],
+      "@mom/access": ["packages/access/src/index.ts"],
+      "@mom/api-client": ["packages/api-client/src/index.ts"]
+    }
   }
 }

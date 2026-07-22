@@ -7,20 +7,248 @@ export interface RequestContext {
 export interface ApiClientOptions {
   baseUrl: string;
   getContext?: () => RequestContext;
+  refreshAccessToken?: () => Promise<string>;
+  onAuthenticationRequired?: (error: unknown) => void | Promise<void>;
+  fetcher?: typeof fetch;
+  timeoutMs?: number;
 }
 
-export function createApiClient(options: ApiClientOptions) {
-  return async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
+  body?: BodyInit | Record<string, unknown> | unknown[] | null;
+  idempotencyKey?: string;
+  timeoutMs?: number;
+  retryAuthentication?: boolean;
+}
+
+export interface ApiErrorPayload {
+  code?: string;
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
+export class MomApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code: string,
+    readonly correlationId?: string,
+    readonly retryAfterSeconds?: number,
+    readonly payload?: ApiErrorPayload,
+  ) {
+    super(message);
+    this.name = 'MomApiError';
+  }
+}
+
+export class MomNetworkError extends Error {
+  constructor(
+    message: string,
+    readonly correlationId: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = 'MomNetworkError';
+  }
+}
+
+export interface ApiClient {
+  request<T>(path: string, options?: ApiRequestOptions): Promise<T>;
+  get<T>(path: string, options?: ApiRequestOptions): Promise<T>;
+  post<T>(path: string, body?: ApiRequestOptions['body'], options?: ApiRequestOptions): Promise<T>;
+  put<T>(path: string, body?: ApiRequestOptions['body'], options?: ApiRequestOptions): Promise<T>;
+  delete<T>(path: string, options?: ApiRequestOptions): Promise<T>;
+  download(path: string, options?: ApiRequestOptions): Promise<Blob>;
+}
+
+export function createApiClient(options: ApiClientOptions): ApiClient {
+  const fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
+  const baseUrl = options.baseUrl.replace(/\/+$/u, '');
+  let refreshFlight: Promise<string> | undefined;
+
+  async function refreshOnce(): Promise<string> {
+    if (!options.refreshAccessToken) {
+      throw new MomApiError('Authentication refresh is unavailable', 401, 'authentication_required');
+    }
+    refreshFlight ??= options.refreshAccessToken().finally(() => {
+      refreshFlight = undefined;
+    });
+    return refreshFlight;
+  }
+
+  async function request<T>(path: string, requestOptions: ApiRequestOptions = {}): Promise<T> {
+    return execute<T>(path, requestOptions, false);
+  }
+
+  async function execute<T>(
+    path: string,
+    requestOptions: ApiRequestOptions,
+    authenticationRetried: boolean,
+  ): Promise<T> {
     const context = options.getContext?.() ?? {};
-    const headers = new Headers(init.headers);
-    headers.set('Accept', 'application/json');
-    headers.set('X-Correlation-Id', context.correlationId ?? crypto.randomUUID());
+    const correlationId = context.correlationId?.trim() || crypto.randomUUID();
+    const headers = new Headers(requestOptions.headers);
+    headers.set('Accept', headers.get('Accept') ?? 'application/json');
+    headers.set('X-Correlation-Id', correlationId);
     if (context.accessToken) headers.set('Authorization', `Bearer ${context.accessToken}`);
     if (context.factoryId) headers.set('X-Factory-Id', context.factoryId);
-    if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (requestOptions.idempotencyKey) headers.set('Idempotency-Key', requestOptions.idempotencyKey);
 
-    const response = await fetch(`${options.baseUrl}${path}`, { ...init, headers });
-    if (!response.ok) throw new Error(`MOM API request failed: ${response.status}`);
-    return response.json() as Promise<T>;
+    let body = requestOptions.body;
+    if (body !== undefined && body !== null && isJsonBody(body)) {
+      if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+      body = JSON.stringify(body);
+    }
+
+    const timeoutMs = requestOptions.timeoutMs ?? options.timeoutMs ?? 15_000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort('timeout'), timeoutMs);
+    const externalSignal = requestOptions.signal;
+    const abortFromExternal = () => controller.abort(externalSignal?.reason);
+    externalSignal?.addEventListener('abort', abortFromExternal, { once: true });
+
+    let response: Response;
+    try {
+      response = await fetcher(joinUrl(baseUrl, path), {
+        ...requestOptions,
+        body: body as BodyInit | null | undefined,
+        headers,
+        signal: controller.signal,
+        credentials: 'omit',
+      });
+    }
+    catch (error) {
+      const message = controller.signal.aborted
+        ? 'MOM API request timed out'
+        : 'MOM API network request failed';
+      throw new MomNetworkError(message, correlationId, { cause: error });
+    }
+    finally {
+      clearTimeout(timer);
+      externalSignal?.removeEventListener('abort', abortFromExternal);
+    }
+
+    if (response.status === 401
+      && !authenticationRetried
+      && requestOptions.retryAuthentication !== false) {
+      try {
+        await refreshOnce();
+      }
+      catch (error) {
+        await options.onAuthenticationRequired?.(error);
+        throw error;
+      }
+      return execute<T>(path, requestOptions, true);
+    }
+
+    if (!response.ok) {
+      const error = await toApiError(response, correlationId);
+      if (response.status === 401) await options.onAuthenticationRequired?.(error);
+      throw error;
+    }
+    return readSuccess<T>(response);
+  }
+
+  return {
+    request,
+    get: (path, requestOptions = {}) => request(path, { ...requestOptions, method: 'GET' }),
+    post: (path, body, requestOptions = {}) => request(path, { ...requestOptions, method: 'POST', body }),
+    put: (path, body, requestOptions = {}) => request(path, { ...requestOptions, method: 'PUT', body }),
+    delete: (path, requestOptions = {}) => request(path, { ...requestOptions, method: 'DELETE' }),
+    download: async (path, requestOptions = {}) => {
+      const context = options.getContext?.() ?? {};
+      const correlationId = context.correlationId?.trim() || crypto.randomUUID();
+      const headers = new Headers(requestOptions.headers);
+      headers.set('Accept', '*/*');
+      headers.set('X-Correlation-Id', correlationId);
+      if (context.accessToken) headers.set('Authorization', `Bearer ${context.accessToken}`);
+      if (context.factoryId) headers.set('X-Factory-Id', context.factoryId);
+      const {
+        body: _body,
+        idempotencyKey: _idempotencyKey,
+        timeoutMs: _timeoutMs,
+        retryAuthentication: _retryAuthentication,
+        ...downloadInit
+      } = requestOptions;
+      const response = await fetcher(joinUrl(baseUrl, path), {
+        ...downloadInit,
+        method: requestOptions.method ?? 'GET',
+        headers,
+        credentials: 'omit',
+      });
+      if (!response.ok) throw await toApiError(response, correlationId);
+      return response.blob();
+    },
   };
+}
+
+async function readSuccess<T>(response: Response): Promise<T> {
+  if (response.status === 204) return undefined as T;
+  const contentType = response.headers.get('Content-Type')?.toLowerCase() ?? '';
+  if (contentType.includes('application/json') || contentType.includes('+json')) {
+    return response.json() as Promise<T>;
+  }
+  return response.text() as Promise<T>;
+}
+
+async function toApiError(response: Response, fallbackCorrelationId: string): Promise<MomApiError> {
+  const contentType = response.headers.get('Content-Type')?.toLowerCase() ?? '';
+  let payload: ApiErrorPayload | undefined;
+  if (contentType.includes('application/json') || contentType.includes('+json')) {
+    try {
+      payload = await response.json() as ApiErrorPayload;
+    }
+    catch {
+      payload = undefined;
+    }
+  }
+  const correlationId = response.headers.get('X-Correlation-Id') ?? fallbackCorrelationId;
+  const code = stringValue(payload?.code) ?? stringValue(payload?.error) ?? `http_${response.status}`;
+  const message = stringValue(payload?.message) ?? defaultMessage(response.status);
+  return new MomApiError(
+    message,
+    response.status,
+    code,
+    correlationId,
+    parseRetryAfter(response.headers.get('Retry-After')),
+    payload,
+  );
+}
+
+function defaultMessage(status: number): string {
+  if (status === 401) return 'Authentication is required or the session was revoked';
+  if (status === 403) return 'The current user is not allowed to perform this operation';
+  if (status === 404) return 'The requested resource is unavailable';
+  if (status === 409) return 'The resource changed or the command result is uncertain';
+  if (status === 429) return 'Too many requests';
+  if (status >= 500) return 'MOM service is temporarily unavailable';
+  return `MOM API request failed with HTTP ${status}`;
+}
+
+function joinUrl(baseUrl: string, path: string): string {
+  if (/^https?:\/\//u.test(path)) throw new TypeError('ApiClient only accepts Gateway-relative paths');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl}${normalizedPath}`;
+}
+
+function isJsonBody(value: unknown): value is Record<string, unknown> | unknown[] {
+  if (Array.isArray(value)) return true;
+  if (!value || typeof value !== 'object') return false;
+  return !(value instanceof Blob)
+    && !(value instanceof FormData)
+    && !(value instanceof URLSearchParams)
+    && !(value instanceof ArrayBuffer)
+    && !ArrayBuffer.isView(value);
+}
+
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds;
+  const at = Date.parse(value);
+  return Number.isNaN(at) ? undefined : Math.max(0, Math.ceil((at - Date.now()) / 1000));
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { login, logout, runtimeState, selectFactory } from './runtime';
+
 const gatewayUrl = import.meta.env.VITE_MOM_GATEWAY_URL ?? '/api';
 const statistics = [
   { label: '待处理到货', value: 12 },
@@ -17,9 +19,29 @@ const workQueue = [
   <a-layout class="app-shell">
     <a-layout-header class="app-header">
       <div><strong>工业 MOM 运营工作台</strong><span class="app-subtitle">Industrial MOM · V1</span></div>
-      <a-tag color="blue">Gateway: {{ gatewayUrl }}</a-tag>
+      <a-space>
+        <a-tag color="blue">Gateway: {{ gatewayUrl }}</a-tag>
+        <template v-if="runtimeState.user">
+          <a-tag color="green">{{ runtimeState.user.displayName }}</a-tag>
+          <a-select
+            v-if="runtimeState.user.factoryIds.length > 1"
+            :value="runtimeState.user.currentFactoryId ?? undefined"
+            placeholder="选择当前工厂"
+            style="width: 180px"
+            @change="selectFactory"
+          >
+            <a-select-option v-for="factoryId in runtimeState.user.factoryIds" :key="factoryId" :value="factoryId">{{ factoryId }}</a-select-option>
+          </a-select>
+          <a-button @click="logout">退出</a-button>
+        </template>
+      </a-space>
     </a-layout-header>
-    <a-layout>
+    <a-layout-content v-if="runtimeState.phase === 'error'" class="app-content">
+      <a-alert type="error" show-icon :message="runtimeState.error" description="认证状态未持久化，请重新进入 IAM 登录流程。">
+        <template #action><a-button danger @click="login">重新登录</a-button></template>
+      </a-alert>
+    </a-layout-content>
+    <a-layout v-else>
       <a-layout-sider width="232" theme="light" class="app-sider">
         <a-menu mode="inline" :selected-keys="['overview']">
           <a-menu-item key="overview">运营总览</a-menu-item>
@@ -34,7 +56,7 @@ const workQueue = [
             <a-typography-title :level="2">工业 MOM 运营工作台</a-typography-title>
             <a-typography-paragraph type="secondary">统一承载生产、库存、质量、设备协同与批次追溯。</a-typography-paragraph>
           </div>
-          <a-alert type="info" show-icon message="当前为基础骨架与可运行原型壳，业务页面将在 VS-01 原型评审后逐步实现。" />
+          <a-alert type="info" show-icon message="S08 Web Auth Runtime 已接入；前端权限只改善体验，服务端继续执行最终授权。" />
           <a-row :gutter="[16, 16]">
             <a-col v-for="item in statistics" :key="item.label" :xs="24" :sm="12" :xl="6">
               <a-card><a-statistic :title="item.label" :value="item.value" /></a-card>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { login, logout, runtimeState, selectFactory } from './runtime';
+
 const gatewayUrl = import.meta.env.VITE_MOM_GATEWAY_URL ?? '/api';
 const statistics = [
   { label: '今日送货', value: 3 },
@@ -17,15 +19,28 @@ const workQueue = [
   <a-layout class="app-shell">
     <a-layout-header class="app-header">
       <div><strong>供应商协同门户</strong><span class="app-subtitle">Industrial MOM · V1</span></div>
-      <a-tag color="blue">Gateway: {{ gatewayUrl }}</a-tag>
+      <a-space>
+        <a-tag color="blue">Gateway: {{ gatewayUrl }}</a-tag>
+        <template v-if="runtimeState.user">
+          <a-tag color="green">{{ runtimeState.user.displayName }}</a-tag>
+          <a-tag color="purple">Supplier: {{ runtimeState.user.partyId }}</a-tag>
+          <a-select v-if="runtimeState.user.factoryIds.length > 1" :value="runtimeState.user.currentFactoryId ?? undefined" placeholder="选择当前工厂" style="width: 180px" @change="selectFactory">
+            <a-select-option v-for="factoryId in runtimeState.user.factoryIds" :key="factoryId" :value="factoryId">{{ factoryId }}</a-select-option>
+          </a-select>
+          <a-button @click="logout">退出</a-button>
+        </template>
+      </a-space>
     </a-layout-header>
     <a-layout-content class="app-content">
-      <a-space direction="vertical" :size="20" style="width: 100%">
+      <a-alert v-if="runtimeState.phase === 'error'" type="error" show-icon :message="runtimeState.error">
+        <template #action><a-button danger @click="login">重新登录</a-button></template>
+      </a-alert>
+      <a-space v-else direction="vertical" :size="20" style="width: 100%">
         <div>
           <a-typography-title :level="2">供应商协同门户</a-typography-title>
           <a-typography-paragraph type="secondary">提交送货计划、跟踪来料检验、处理退货与质量协同。</a-typography-paragraph>
         </div>
-        <a-alert type="info" show-icon message="当前为独立部署的门户骨架，正式页面将在 VS-01 原型评审后实现。" />
+        <a-alert type="info" show-icon message="当前主体由 IAM 固定绑定，门户不提供 Supplier 身份切换。" />
         <a-row :gutter="[16, 16]">
           <a-col v-for="item in statistics" :key="item.label" :xs="24" :sm="12" :xl="6">
             <a-card><a-statistic :title="item.label" :value="item.value" /></a-card>

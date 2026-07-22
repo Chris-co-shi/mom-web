@@ -16,9 +16,10 @@
     "dev:supplier": "pnpm --filter @mom/supplier-portal dev",
     "dev:customer": "pnpm --filter @mom/customer-portal dev",
     "build": "pnpm -r --if-present run build",
-    "check:type": "pnpm -r --if-present run typecheck && tsc -p packages/auth/tsconfig.json --noEmit",
-    "test": "node --experimental-transform-types --test packages/auth/src/index.test.ts packages/api-client/src/index.test.ts",
-    "validate": "node scripts/validate.mjs",
+    "check:type": "pnpm -r --if-present run typecheck",
+    "validate": "node scripts/validate.mjs && node scripts/validate-s08-ports.mjs",
+    "test:auth": "rm -rf .tmp/auth-test && tsc -p packages/auth/tsconfig.test.json && node --test packages/auth/test/auth-runtime.test.mjs",
+    "test": "pnpm run test:auth",
     "check": "pnpm run validate && pnpm run check:type && pnpm run test"
   },
   "devDependencies": {

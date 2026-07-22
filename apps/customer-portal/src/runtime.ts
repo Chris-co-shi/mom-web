@@ -2,6 +2,7 @@ import type { UserAccessContext, UserType, WebClientId } from '@mom/access';
 import { createAccessRuntime } from '@mom/access';
 import { createApiClient } from '@mom/api-client';
 import { createAuthRuntime } from '@mom/auth';
+import { assertPortalBoundary, customerPortal, describePortalError, type PortalErrorView } from '@mom/portal-access';
 import { reactive } from 'vue';
 
 const clientId: WebClientId = 'mom-customer-web';
@@ -12,7 +13,7 @@ const iamBrowserBase = new URL(import.meta.env.VITE_MOM_IAM_BASE_URL ?? '/iam', 
 const gatewayBase = (import.meta.env.VITE_MOM_GATEWAY_URL ?? '').replace(/\/+$/u, '');
 
 export const runtimeState = reactive<{
-  phase: 'starting' | 'ready' | 'error'; user?: Readonly<UserAccessContext>; error?: string;
+  phase: 'starting' | 'ready' | 'error'; user?: Readonly<UserAccessContext>; error?: PortalErrorView;
 }>({ phase: 'starting' });
 
 export const auth = createAuthRuntime({
@@ -42,7 +43,10 @@ export const access = createAccessRuntime({
   }),
 });
 accessRuntime = access;
-access.subscribe((context) => { runtimeState.user = context; });
+access.subscribe((context) => {
+  if (context) assertPortalBoundary(context, customerPortal);
+  runtimeState.user = context;
+});
 
 export async function bootstrapRuntime(): Promise<boolean> {
   runtimeState.phase = 'starting'; runtimeState.error = undefined;
@@ -58,9 +62,14 @@ export async function bootstrapRuntime(): Promise<boolean> {
   }
   catch (error) {
     runtimeState.phase = 'error';
-    runtimeState.error = error instanceof Error ? error.message : '认证初始化失败';
+    runtimeState.error = describePortalError(error);
     return true;
   }
+}
+export async function refreshAccess(): Promise<void> {
+  runtimeState.phase = 'starting'; runtimeState.error = undefined;
+  try { await access.initialize(); runtimeState.phase = 'ready'; }
+  catch (error) { runtimeState.phase = 'error'; runtimeState.error = describePortalError(error); }
 }
 export async function login(): Promise<void> {
   runtimeState.error = undefined; auth.clear(); access.clear(); await auth.beginLogin(currentRelativeUrl());

@@ -12,6 +12,9 @@ const requiredPaths = [
   'packages/iam-admin/package.json',
   'packages/iam-admin/src/index.ts',
   'packages/iam-admin/src/index.test.ts',
+  'packages/portal-access/package.json',
+  'packages/portal-access/src/index.ts',
+  'packages/portal-access/src/index.test.ts',
   'packages/access/package.json',
   'packages/design-tokens/package.json',
   'packages/domain-components/package.json',
@@ -82,4 +85,23 @@ for (const permission of [
   }
 }
 
-console.log(`Validated ${requiredPaths.length} required project boundaries and S08/S09 security invariants.`);
+const portalAccessSource = await readFile('packages/portal-access/src/index.ts', 'utf8');
+for (const boundary of [
+  "clientId: 'mom-supplier-web'",
+  "clientId: 'mom-customer-web'",
+  "partyType: 'SUPPLIER'",
+  "partyType: 'CUSTOMER'",
+  'awaiting_backend_contract',
+]) {
+  if (!portalAccessSource.includes(boundary)) {
+    throw new Error(`@mom/portal-access must preserve the S10 boundary: ${boundary}`);
+  }
+}
+for (const path of ['apps/supplier-portal/src/App.vue', 'apps/customer-portal/src/App.vue']) {
+  const source = await readFile(path, 'utf8');
+  if (!source.includes('待后端契约') || source.includes('partyId" placeholder')) {
+    throw new Error(`${path} must keep Party fixed and must not fabricate a business API`);
+  }
+}
+
+console.log(`Validated ${requiredPaths.length} required project boundaries and S08～S10 security invariants.`);

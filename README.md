@@ -192,9 +192,9 @@ pnpm check
 |---|---|---|
 | Web Phase 01 | Monorepo、三应用骨架、设计交付规范和共享包初始边界 | ✅ 基础完成 |
 | P1.5 S00 | Web 认证授权设计对齐 | 🚧 PR Review |
-| P1.5 S08 | Web Auth Runtime | ⏳ 计划中 |
-| P1.5 S09 | MOM Admin 权限管理页面 | ⏳ 计划中 |
-| P1.5 S10 | Supplier/Customer Portal | ⏳ 计划中 |
+| P1.5 S08 | Web Auth Runtime | ✅ Completed / Merged |
+| P1.5 S09 | MOM Admin 权限管理页面 | ✅ Completed in phase branch |
+| P1.5 S10 | Supplier/Customer Portal | 🚧 In Progress |
 | P1.5 S12 | Web 安全 E2E 与封板 | ⏳ 计划中 |
 
 ## 🧠 前端原则

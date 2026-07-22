@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     resolve: { alias },
     server: {
+      port: 5556,
       proxy: {
         '/api': {
           target: env.MOM_GATEWAY_PROXY_TARGET ?? 'http://127.0.0.1:20000',

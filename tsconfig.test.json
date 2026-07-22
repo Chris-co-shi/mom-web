@@ -15,6 +15,10 @@
     "packages/auth/src/index.ts",
     "packages/auth/src/index.test.ts",
     "packages/api-client/src/index.ts",
-    "packages/api-client/src/index.test.ts"
+    "packages/api-client/src/index.test.ts",
+    "packages/iam-admin/src/index.ts",
+    "packages/iam-admin/src/index.test.ts",
+    "packages/portal-access/src/index.ts",
+    "packages/portal-access/src/index.test.ts"
   ]
 }

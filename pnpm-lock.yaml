@@ -53,6 +53,9 @@ importers:
 
   apps/customer-portal:
     dependencies:
+      '@mom/portal-access':
+        specifier: workspace:*
+        version: link:../../packages/portal-access
       ant-design-vue:
         specifier: 'catalog:'
         version: 4.2.6(vue@3.5.40(typescript@6.0.3))
@@ -81,6 +84,9 @@ importers:
       '@mom/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@mom/iam-admin':
+        specifier: workspace:*
+        version: link:../../packages/iam-admin
       '@mom/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -112,6 +118,9 @@ importers:
 
   apps/supplier-portal:
     dependencies:
+      '@mom/portal-access':
+        specifier: workspace:*
+        version: link:../../packages/portal-access
       ant-design-vue:
         specifier: 'catalog:'
         version: 4.2.6(vue@3.5.40(typescript@6.0.3))
@@ -154,6 +163,18 @@ importers:
         version: 6.0.3
 
   packages/domain-components:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/iam-admin:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/portal-access:
     devDependencies:
       typescript:
         specifier: 'catalog:'

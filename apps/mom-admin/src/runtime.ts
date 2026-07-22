@@ -2,6 +2,7 @@ import type { UserAccessContext, UserType, WebClientId } from '@mom/access';
 import { createAccessRuntime } from '@mom/access';
 import { createApiClient } from '@mom/api-client';
 import { createAuthRuntime } from '@mom/auth';
+import { createIamAdminClient } from '@mom/iam-admin';
 import { reactive } from 'vue';
 
 const clientId: WebClientId = 'mom-admin-web';
@@ -44,6 +45,7 @@ export const api = createApiClient({
     await auth.beginLogin(currentRelativeUrl());
   },
 });
+export const iamAdmin = createIamAdminClient(api);
 
 export const access = createAccessRuntime({
   expectedClientId: clientId,

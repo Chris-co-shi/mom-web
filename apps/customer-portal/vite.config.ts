@@ -6,6 +6,7 @@ const alias = {
   '@mom/auth': fileURLToPath(new URL('../../packages/auth/src/index.ts', import.meta.url)),
   '@mom/access': fileURLToPath(new URL('../../packages/access/src/index.ts', import.meta.url)),
   '@mom/api-client': fileURLToPath(new URL('../../packages/api-client/src/index.ts', import.meta.url)),
+  '@mom/portal-access': fileURLToPath(new URL('../../packages/portal-access/src/index.ts', import.meta.url)),
 };
 
 export default defineConfig(({ mode }) => {

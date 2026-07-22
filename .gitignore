@@ -3,6 +3,7 @@ dist/
 coverage/
 .vite/
 .turbo/
+.tmp/
 *.local
 .env
 .env.*

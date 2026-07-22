@@ -9,6 +9,12 @@ const requiredPaths = [
   'packages/auth/tsconfig.json',
   'packages/api-client/package.json',
   'packages/api-client/src/index.test.ts',
+  'packages/iam-admin/package.json',
+  'packages/iam-admin/src/index.ts',
+  'packages/iam-admin/src/index.test.ts',
+  'packages/portal-access/package.json',
+  'packages/portal-access/src/index.ts',
+  'packages/portal-access/src/index.test.ts',
   'packages/access/package.json',
   'packages/design-tokens/package.json',
   'packages/domain-components/package.json',
@@ -52,4 +58,50 @@ for (const [path, clientId, userType] of appContracts) {
   }
 }
 
-console.log(`Validated ${requiredPaths.length} required project boundaries and S08 auth invariants.`);
+const iamAdminSource = await readFile('packages/iam-admin/src/index.ts', 'utf8');
+for (const contract of [
+  '/users/${id(userId)}/authorizations',
+  '/roles/${id(roleId)}/permissions',
+  'userVersion',
+  'roleVersion',
+  "value.code === 'stale_version'",
+]) {
+  if (!iamAdminSource.includes(contract)) {
+    throw new Error(`@mom/iam-admin must preserve the S07 hardened contract: ${contract}`);
+  }
+}
+
+const adminView = await readFile('apps/mom-admin/src/App.vue', 'utf8');
+for (const permission of [
+  'iam:user:read',
+  'iam:role:read',
+  'iam:permission:read',
+  'iam:session:read',
+  'iam:audit:read',
+  'iam:client:read',
+]) {
+  if (!adminView.includes(permission)) {
+    throw new Error(`MOM Admin must gate the S09 section with ${permission}`);
+  }
+}
+
+const portalAccessSource = await readFile('packages/portal-access/src/index.ts', 'utf8');
+for (const boundary of [
+  "clientId: 'mom-supplier-web'",
+  "clientId: 'mom-customer-web'",
+  "partyType: 'SUPPLIER'",
+  "partyType: 'CUSTOMER'",
+  'awaiting_backend_contract',
+]) {
+  if (!portalAccessSource.includes(boundary)) {
+    throw new Error(`@mom/portal-access must preserve the S10 boundary: ${boundary}`);
+  }
+}
+for (const path of ['apps/supplier-portal/src/App.vue', 'apps/customer-portal/src/App.vue']) {
+  const source = await readFile(path, 'utf8');
+  if (!source.includes('待后端契约') || source.includes('partyId" placeholder')) {
+    throw new Error(`${path} must keep Party fixed and must not fabricate a business API`);
+  }
+}
+
+console.log(`Validated ${requiredPaths.length} required project boundaries and S08～S10 security invariants.`);

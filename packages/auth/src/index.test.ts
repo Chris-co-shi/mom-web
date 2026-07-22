@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createAuthRuntime } from './index.ts';
+import { createAuthRuntime } from './index.js';
 
 class MemoryStorage {
   values = new Map<string, string>();

@@ -6,6 +6,7 @@ on:
     branches:
       - main
 
+# P1.5 stage work is accepted only from the exact PR head SHA.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

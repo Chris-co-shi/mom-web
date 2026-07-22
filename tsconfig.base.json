@@ -13,11 +13,10 @@
     "skipLibCheck": true,
     "noEmit": true,
     "types": ["vite/client", "node"],
-    "baseUrl": ".",
     "paths": {
-      "@mom/auth": ["packages/auth/src/index.ts"],
-      "@mom/access": ["packages/access/src/index.ts"],
-      "@mom/api-client": ["packages/api-client/src/index.ts"]
+      "@mom/auth": ["./packages/auth/src/index.ts"],
+      "@mom/access": ["./packages/access/src/index.ts"],
+      "@mom/api-client": ["./packages/api-client/src/index.ts"]
     }
   }
 }

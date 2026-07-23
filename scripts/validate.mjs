@@ -107,7 +107,12 @@ for (const boundary of [
   "clientId: 'mom-customer-web'",
   "partyType: 'SUPPLIER'",
   "partyType: 'CUSTOMER'",
-  'awaiting_backend_contract',
+  "availability: 'planned'",
+  'requiredPermission:',
+  'allowedClientId:',
+  'allowedUserType:',
+  'allowedPartyType:',
+  'route:',
 ]) {
   if (!portalAccessSource.includes(boundary)) {
     throw new Error(`@mom/portal-access must preserve the S10 boundary: ${boundary}`);
@@ -115,9 +120,18 @@ for (const boundary of [
 }
 for (const path of ['apps/supplier-portal/src/App.vue', 'apps/customer-portal/src/App.vue']) {
   const source = await readFile(path, 'utf8');
-  if (!source.includes('待后端契约') || source.includes('partyId" placeholder')) {
-    throw new Error(`${path} must keep Party fixed and must not fabricate a business API`);
+  if (source.includes('partyId" placeholder') || source.includes('<a-button disabled block>')) {
+    throw new Error(`${path} must keep Party fixed and must not expose placeholder operations`);
   }
+}
+
+const apiClientSource = await readFile('packages/api-client/src/index.ts', 'utf8');
+if (!apiClientSource.includes("headers.set('Idempotency-Key'")
+  || apiClientSource.includes("headers.set('X-Idempotency-Key'")) {
+  throw new Error('@mom/api-client must use only the Idempotency-Key contract');
+}
+if (!apiClientSource.includes('ApiClient only accepts Gateway-relative paths')) {
+  throw new Error('@mom/api-client must reject direct business-service URLs');
 }
 
 console.log(`Validated ${requiredPaths.length} required project boundaries and S08～S12 security invariants.`);

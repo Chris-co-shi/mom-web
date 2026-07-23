@@ -13,7 +13,7 @@
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-42B883?logo=vue.js&logoColor=white">
   <img alt="Vite" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white">
-  <img alt="Status" src="https://img.shields.io/badge/Status-P1.5%20Web%20Baseline-2563EB">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Phase%2002%20Ready-2563EB">
 </p>
 
 [文档中心](docs/README.md) · [P1.5 Web 运行时](docs/architecture/P1.5-Web认证授权运行时基线.md) · [P1.5 Web 计划](docs/plans/P1.5-Web认证授权实施计划.md) · [前端总体架构](docs/architecture/前端总体架构.md) · [ADR](docs/adr/README.md)
@@ -23,7 +23,7 @@
 ---
 
 > [!IMPORTANT]
-> 当前仓库已具备三应用 Monorepo、可构建应用骨架和初始共享包边界，但正式 OAuth/OIDC 登录、`@mom/auth`、内存 Token、Single Flight Refresh、`/api/iam/me` 和三门户安全闭环尚未实现。当前阶段为 **P1.5：认证与授权闭环，S00 Web 设计对齐**。
+> P1.5 Web Auth Runtime、MOM Admin、Supplier/Customer Portal 与安全 E2E 已完成并合并。当前状态为 **P1.5 Completed / Merged**，下一阶段是 Phase 02 供应商送货与到货协同。
 
 ## 🌟 项目定位
 
@@ -103,8 +103,8 @@ flowchart LR
 
 | 包 | 职责 | 当前状态 |
 |---|---|---|
-| `@mom/auth` | PKCE、Callback、内存 Token、Single Flight Refresh、退出和恢复 | P1.5 S08 实现，S00 仅设计 |
-| `@mom/api-client` | Gateway HTTP、Bearer Token、Correlation ID、`X-Factory-Id`、错误与幂等 | 已有边界，S08 完善 |
+| `@mom/auth` | PKCE、Callback、内存 Token、Single Flight Refresh、退出和恢复 | P1.5 Completed |
+| `@mom/api-client` | Gateway HTTP、Bearer Token、Correlation ID、`X-Factory-Id`、错误与幂等 | P1.5 Completed |
 | `@mom/access` | `/api/iam/me`、路由、菜单、按钮和当前 Factory 体验控制 | 已有边界，S08 完善 |
 | `@mom/design-tokens` | 色彩、间距、字体和工业状态 Token | 基础骨架 |
 | `@mom/domain-components` | 批次、库存、工单、检验、设备状态等领域组件 | 基础骨架 |
@@ -147,7 +147,7 @@ mom-web/
 └── package.json
 ```
 
-> `packages/auth` 尚未创建；P1.5 S00 不实现 TypeScript 代码。
+> `packages/auth`、`packages/access`、`packages/api-client`、`packages/iam-admin`、`packages/portal-access` 与 `packages/security-e2e` 均已实现并通过 CI。
 
 ## 🚀 快速开始
 
@@ -191,11 +191,12 @@ pnpm check
 | 阶段 | 目标 | 状态 |
 |---|---|---|
 | Web Phase 01 | Monorepo、三应用骨架、设计交付规范和共享包初始边界 | ✅ 基础完成 |
-| P1.5 S00 | Web 认证授权设计对齐 | 🚧 PR Review |
+| P1.5 S00 | Web 认证授权设计对齐 | ✅ Completed / Merged |
 | P1.5 S08 | Web Auth Runtime | ✅ Completed / Merged |
-| P1.5 S09 | MOM Admin 权限管理页面 | ✅ Completed in phase branch |
-| P1.5 S10 | Supplier/Customer Portal | ✅ Completed in phase branch |
-| P1.5 S12 | Web 安全 E2E 与封板 | ✅ 阶段分支完成 |
+| P1.5 S09 | MOM Admin 权限管理页面 | ✅ Completed / Merged |
+| P1.5 S10 | Supplier/Customer Portal | ✅ Completed / Merged |
+| P1.5 S12 | Web 安全 E2E 与封板 | ✅ Completed / Merged |
+| Phase 02 | 供应商送货与到货协同 | ⏳ Pending / Ready after preflight cleanup |
 
 ## 🧠 前端原则
 

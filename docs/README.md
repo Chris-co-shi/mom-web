@@ -2,7 +2,7 @@
 
 本目录是 `mom-web` 的需求、计划、前端架构、认证运行时、交互设计、原型、页面状态、API 映射和架构决策权威入口。
 
-> 文档变更使用与具体 Work/Slice 对应的任务分支。本次 P1.5 S00 使用 `feat/p15-s00-design-baseline`；历史 `agent/complete-chinese-docs` 仅作为既有文档整理分支。
+> P1.5 S00、S08～S10、S12 已完成并合并。当前清理继续使用既有 `phase/p1.5-auth-authorization`；Phase 02 从清理后的最新 `main` 开始。
 
 ## 文档使用原则
 
@@ -18,8 +18,9 @@
 
 ## 当前阶段
 
-- Web Phase 01：三应用技术骨架已具备，正式 OAuth Auth Runtime 尚未实现。
-- P1.5 S00：Web 认证授权设计已对齐，实施安排在 S08～S10。
+- Web Phase 01：三应用技术骨架已完成。
+- P1.5：**Completed / Merged**，Web Auth Runtime、MOM Admin、Supplier/Customer Portal 与安全 E2E 全部完成。
+- Phase 02：**Pending / Ready after preflight cleanup**，下一业务目标为供应商送货与到货协同。
 
 ## P1.5 认证与授权
 

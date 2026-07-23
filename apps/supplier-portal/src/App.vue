@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { plannedPortalEntries } from '@mom/portal-access';
+import { portalFeatures } from '@mom/portal-access';
 
 import { login, logout, refreshAccess, runtimeState, selectFactory } from './runtime';
 
 const gatewayUrl = import.meta.env.VITE_MOM_GATEWAY_URL ?? '/api';
-const entries = plannedPortalEntries('supplier');
+const entries = portalFeatures('supplier');
 </script>
 
 <template>
   <a-layout class="app-shell">
     <a-layout-header class="app-header">
-      <div><strong>供应商协同门户</strong><span class="app-subtitle">P1.5 · S10</span></div>
+      <div><strong>供应商协同门户</strong><span class="app-subtitle">Phase 02 Ready</span></div>
       <a-space>
         <a-tag color="blue">Gateway: {{ gatewayUrl }}</a-tag>
         <template v-if="runtimeState.user">
@@ -32,7 +32,7 @@ const entries = plannedPortalEntries('supplier');
       <div v-else-if="runtimeState.user" class="portal-page">
         <div class="hero"><div><a-tag color="purple">SUPPLIER PORTAL</a-tag><h1>供应商协同门户</h1><p>当前主体由 IAM 固定绑定；页面不提供 Supplier ID 输入、选择或切换。</p></div><a-button @click="refreshAccess">刷新授权上下文</a-button></div>
 
-        <a-alert type="info" show-icon message="S10 只建立安全门户与业务入口边界；后端业务 API 和 Permission 尚未冻结的模块不会伪造请求。" />
+        <a-alert type="info" show-icon message="业务能力由 Feature Registry 管理；未启用项不会发起请求或显示可操作入口。" />
 
         <a-card title="身份与数据范围" class="boundary-card">
           <a-descriptions bordered :column="2">
@@ -44,8 +44,8 @@ const entries = plannedPortalEntries('supplier');
           <div class="factory-control"><div><strong>Factory Scope</strong><p>只能从 `/api/iam/me` 返回的范围选择；刷新后失效的偏好会被清除。</p></div><a-select v-if="runtimeState.user.factoryIds.length" :value="runtimeState.user.currentFactoryId ?? undefined" placeholder="选择当前工厂" style="width: 240px" @change="selectFactory"><a-select-option v-for="factoryId in runtimeState.user.factoryIds" :key="factoryId" :value="factoryId">{{ factoryId }}</a-select-option></a-select><a-tag v-else color="orange">无 Factory Scope</a-tag></div>
         </a-card>
 
-        <div><h2>业务入口</h2><p class="section-copy">以下入口等待后端正式 API 与 Permission 契约；在此之前保持不可操作。</p></div>
-        <a-row :gutter="[16, 16]"><a-col v-for="entry in entries" :key="entry.key" :xs="24" :lg="8"><a-card class="entry-card"><a-tag color="default">待后端契约</a-tag><h3>{{ entry.title }}</h3><p>{{ entry.description }}</p><a-button disabled block>暂不可用</a-button></a-card></a-col></a-row>
+        <div><h2>业务能力</h2><p class="section-copy">当前仅展示规划能力；切换为 enabled 后仍必须同时满足固定 Client、user_type、Party 和 Permission。</p></div>
+        <a-row :gutter="[16, 16]"><a-col v-for="entry in entries" :key="entry.key" :xs="24" :lg="8"><a-card class="entry-card"><a-tag color="default">规划中</a-tag><h3>{{ entry.title }}</h3><p>{{ entry.description }}</p></a-card></a-col></a-row>
 
         <a-card title="当前 Permission（只读）"><a-space wrap><a-tag v-for="permission in runtimeState.user.permissions" :key="permission" color="blue">{{ permission }}</a-tag><a-empty v-if="runtimeState.user.permissions.length === 0" description="当前没有业务 Permission" /></a-space></a-card>
 

@@ -47,27 +47,50 @@ export function assertPortalBoundary(context: PortalAccessContext, definition: P
   }
 }
 
-export interface PortalEntry {
+export interface PortalFeature {
   key: string;
+  route: string;
+  requiredPermission: string;
+  allowedClientId: PortalDefinition['clientId'];
+  allowedUserType: PortalDefinition['userType'];
+  allowedPartyType: PortalDefinition['partyType'];
+  availability: 'planned' | 'enabled';
   title: string;
   description: string;
-  status: 'awaiting_backend_contract';
 }
 
-export function plannedPortalEntries(kind: PortalKind): PortalEntry[] {
+export function portalFeatures(kind: PortalKind): PortalFeature[] {
   const supplier = [
-    ['delivery', '送货协同', '送货计划、预约与到货状态'],
-    ['inspection', '来料质量', '来料检验、退货与质量协同'],
-    ['documents', '业务单据', '仅查看当前 Supplier 的业务单据'],
-  ];
+    ['delivery', '/deliveries', 'wms:delivery:read', '送货协同', '送货计划、预约与到货状态'],
+    ['inspection', '/incoming-inspections', 'qms:incoming-inspection:read', '来料质量', '来料检验、退货与质量协同'],
+    ['documents', '/documents', 'integration:document:read', '业务单据', '仅查看当前 Supplier 的业务单据'],
+  ] as const;
   const customer = [
-    ['orders', '订单协同', '订单、交期与生产进度'],
-    ['shipping', '发运跟踪', '发运计划与物流状态'],
-    ['quality', '质量反馈', '仅查看当前 Customer 的质量反馈'],
-  ];
-  return (kind === 'supplier' ? supplier : customer).map(([key, title, description]) => ({
-    key: key!, title: title!, description: description!, status: 'awaiting_backend_contract',
+    ['orders', '/orders', 'mes:customer-order:read', '订单协同', '订单、交期与生产进度'],
+    ['shipping', '/shipments', 'wms:shipment:read', '发运跟踪', '发运计划与物流状态'],
+    ['quality', '/quality-feedback', 'qms:quality-feedback:read', '质量反馈', '仅查看当前 Customer 的质量反馈'],
+  ] as const;
+  const definition = kind === 'supplier' ? supplierPortal : customerPortal;
+  return (kind === 'supplier' ? supplier : customer).map(([
+    key, route, requiredPermission, title, description,
+  ]) => ({
+    key, route, requiredPermission, title, description,
+    allowedClientId: definition.clientId,
+    allowedUserType: definition.userType,
+    allowedPartyType: definition.partyType,
+    availability: 'planned',
   }));
+}
+
+export function isPortalFeatureAvailable(
+  feature: PortalFeature,
+  context: PortalAccessContext,
+): boolean {
+  return feature.availability === 'enabled'
+    && feature.allowedClientId === context.clientId
+    && feature.allowedUserType === context.userType
+    && feature.allowedPartyType === context.partyType
+    && context.permissions.includes(feature.requiredPermission);
 }
 
 export interface PortalErrorView {

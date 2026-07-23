@@ -106,10 +106,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     const externalSignal = requestOptions.signal;
     const abortFromExternal = () => controller.abort(externalSignal?.reason);
     externalSignal?.addEventListener('abort', abortFromExternal, { once: true });
+    const requestUrl = joinUrl(baseUrl, path);
 
     let response: Response;
     try {
-      response = await fetcher(joinUrl(baseUrl, path), {
+      response = await fetcher(requestUrl, {
         ...requestOptions,
         body: body as BodyInit | null | undefined,
         headers,

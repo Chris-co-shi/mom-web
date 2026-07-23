@@ -62,3 +62,22 @@ test('a retried request cannot enter an infinite 401 loop', async () => {
   assert.equal(refreshCalls, 1);
   assert.equal(requests, 2);
 });
+
+test('uses only the frozen Gateway request headers and rejects absolute service URLs', async () => {
+  let captured: Headers | undefined;
+  const client = createApiClient({
+    baseUrl: 'https://gateway.example.test',
+    getContext: () => ({ accessToken: 'token', correlationId: 'corr-1', factoryId: 'factory-1' }),
+    fetcher: async (_input, init) => {
+      captured = new Headers(init?.headers);
+      return Response.json({ ok: true });
+    },
+  });
+  await client.post('/api/wms/receipts', {}, { idempotencyKey: 'idem-1' });
+  assert.equal(captured?.get('Authorization'), 'Bearer token');
+  assert.equal(captured?.get('X-Correlation-Id'), 'corr-1');
+  assert.equal(captured?.get('X-Factory-Id'), 'factory-1');
+  assert.equal(captured?.get('Idempotency-Key'), 'idem-1');
+  assert.equal(captured?.has('X-Idempotency-Key'), false);
+  await assert.rejects(client.get('http://business-service/api/wms/receipts'), /Gateway-relative/u);
+});

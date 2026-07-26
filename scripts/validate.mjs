@@ -2,11 +2,16 @@ import { access, readFile } from 'node:fs/promises';
 
 const requiredPaths = [
   'apps/mom-admin/package.json',
+  'apps/mom-admin/src/AuthGate.vue',
   'apps/supplier-portal/package.json',
+  'apps/supplier-portal/src/AuthGate.vue',
   'apps/customer-portal/package.json',
+  'apps/customer-portal/src/AuthGate.vue',
   'packages/auth/src/index.ts',
   'packages/auth/src/index.test.ts',
   'packages/auth/tsconfig.json',
+  'packages/first-party-auth/src/index.ts',
+  'packages/first-party-auth/src/index.test.ts',
   'packages/api-client/package.json',
   'packages/api-client/src/index.test.ts',
   'packages/iam-admin/package.json',
@@ -38,10 +43,35 @@ if (!rootPackage.engines?.node?.includes('22.18.0')) {
   throw new Error('Node engine must preserve the Vben 5.7 baseline');
 }
 
+// 标准 OAuth/OIDC 运行时保留为兼容能力，仍只能持久化一次性 PKCE 事务。
 const authSource = await readFile('packages/auth/src/index.ts', 'utf8');
 for (const forbidden of ['localStorage', 'indexedDB', 'document.cookie']) {
   if (authSource.includes(forbidden)) {
     throw new Error(`@mom/auth must not persist application tokens via ${forbidden}`);
+  }
+}
+if (!authSource.includes('sessionStorage') || !authSource.includes('codeVerifier')) {
+  throw new Error('@mom/auth must preserve only the one-time PKCE transaction in sessionStorage');
+}
+
+// 当前无 BFF 的第一方 MOM Web 登录明确使用当前标签页 sessionStorage；禁止扩大到跨标签或 Cookie。
+const firstPartyAuthSource = await readFile('packages/first-party-auth/src/index.ts', 'utf8');
+for (const forbidden of ['localStorage', 'indexedDB', 'document.cookie']) {
+  if (firstPartyAuthSource.includes(forbidden)) {
+    throw new Error(`@mom/first-party-auth must not use ${forbidden}`);
+  }
+}
+for (const contract of [
+  'globalThis.sessionStorage',
+  'mom.auth.session.${config.clientId}',
+  '/api/iam/auth/login',
+  '/api/iam/auth/password/change-required',
+  '/api/iam/auth/refresh',
+  '/api/iam/auth/logout',
+  'refreshFlight',
+]) {
+  if (!firstPartyAuthSource.includes(contract)) {
+    throw new Error(`@mom/first-party-auth must preserve the first-party contract: ${contract}`);
   }
 }
 
@@ -55,11 +85,8 @@ for (const path of [
 ]) {
   const source = await readFile(path, 'utf8');
   if (persistedTokenPattern.test(source)) {
-    throw new Error(`${path} must not persist Access, Refresh or ID Token`);
+    throw new Error(`${path} must delegate token storage to the audited auth runtime`);
   }
-}
-if (!authSource.includes('sessionStorage') || !authSource.includes('codeVerifier')) {
-  throw new Error('@mom/auth must preserve only the one-time PKCE transaction in sessionStorage');
 }
 
 const appContracts = [
@@ -71,6 +98,9 @@ for (const [path, clientId, userType] of appContracts) {
   const source = await readFile(path, 'utf8');
   if (!source.includes(clientId) || !source.includes(userType)) {
     throw new Error(`${path} must preserve the frozen Client/user_type matrix`);
+  }
+  if (!source.includes('createFirstPartyAuthRuntime')) {
+    throw new Error(`${path} must use the MOM first-party authentication runtime`);
   }
 }
 
@@ -134,4 +164,4 @@ if (!apiClientSource.includes('ApiClient only accepts Gateway-relative paths')) 
   throw new Error('@mom/api-client must reject direct business-service URLs');
 }
 
-console.log(`Validated ${requiredPaths.length} required project boundaries and S08～S12 security invariants.`);
+console.log(`Validated ${requiredPaths.length} required project boundaries and P1.5 security invariants.`);

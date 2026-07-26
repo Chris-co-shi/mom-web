@@ -15,6 +15,7 @@
     "types": ["vite/client", "node"],
     "paths": {
       "@mom/auth": ["./packages/auth/src/index.ts"],
+      "@mom/first-party-auth": ["./packages/first-party-auth/src/index.ts"],
       "@mom/access": ["./packages/access/src/index.ts"],
       "@mom/api-client": ["./packages/api-client/src/index.ts"],
       "@mom/iam-admin": ["./packages/iam-admin/src/index.ts"],

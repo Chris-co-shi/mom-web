@@ -4,6 +4,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 const alias = {
   '@mom/auth': fileURLToPath(new URL('../../packages/auth/src/index.ts', import.meta.url)),
+  '@mom/first-party-auth': fileURLToPath(new URL('../../packages/first-party-auth/src/index.ts', import.meta.url)),
   '@mom/access': fileURLToPath(new URL('../../packages/access/src/index.ts', import.meta.url)),
   '@mom/api-client': fileURLToPath(new URL('../../packages/api-client/src/index.ts', import.meta.url)),
   '@mom/iam-admin': fileURLToPath(new URL('../../packages/iam-admin/src/index.ts', import.meta.url)),
@@ -20,11 +21,6 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.MOM_GATEWAY_PROXY_TARGET ?? 'http://127.0.0.1:20000',
           changeOrigin: true,
-        },
-        '/iam': {
-          target: env.MOM_IAM_PROXY_TARGET ?? 'http://127.0.0.1:20100',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/iam/u, ''),
         },
       },
     },

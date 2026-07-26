@@ -135,6 +135,6 @@ export function selectFactory(factoryId: string): void {
   runtimeState.user = access.snapshot();
 }
 
-private function messageOf(error: unknown): string {
+function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : '认证请求失败';
 }

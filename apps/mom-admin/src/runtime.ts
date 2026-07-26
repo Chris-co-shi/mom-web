@@ -72,11 +72,16 @@ export async function bootstrapRuntime(): Promise<boolean> {
   return true;
 }
 
-export async function login(username: string, password: string): Promise<void> {
+export async function login(username?: string, password?: string): Promise<void> {
   runtimeState.error = undefined;
-  runtimeState.phase = 'starting';
   auth.clear();
   access.clear();
+  runtimeState.user = undefined;
+  if (!username || !password) {
+    runtimeState.phase = 'anonymous';
+    return;
+  }
+  runtimeState.phase = 'starting';
   try {
     await auth.login({ username, password });
     await access.initialize();

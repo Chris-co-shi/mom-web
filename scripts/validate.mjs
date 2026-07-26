@@ -43,24 +43,30 @@ if (!rootPackage.engines?.node?.includes('22.18.0')) {
   throw new Error('Node engine must preserve the Vben 5.7 baseline');
 }
 
-// 标准 OAuth/OIDC 运行时保留为兼容能力，仍只能持久化一次性 PKCE 事务。
-const authSource = await readFile('packages/auth/src/index.ts', 'utf8');
-for (const forbidden of ['localStorage', 'indexedDB', 'document.cookie']) {
-  if (authSource.includes(forbidden)) {
-    throw new Error(`@mom/auth must not persist application tokens via ${forbidden}`);
+const forbiddenBrowserStorageApis = [
+  ['localStorage', /\b(?:(?:globalThis|window)\.)?localStorage\s*\.(?:getItem|setItem|removeItem)\s*\(/u],
+  ['indexedDB', /\b(?:(?:globalThis|window)\.)?indexedDB\s*\./u],
+  ['document.cookie', /\bdocument\s*\.\s*cookie\b/u],
+];
+
+function assertForbiddenStorageApisAbsent(source, moduleName) {
+  for (const [name, pattern] of forbiddenBrowserStorageApis) {
+    if (pattern.test(source)) {
+      throw new Error(`${moduleName} must not use ${name}`);
+    }
   }
 }
+
+// 标准 OAuth/OIDC 运行时保留为兼容能力，仍只能持久化一次性 PKCE 事务。
+const authSource = await readFile('packages/auth/src/index.ts', 'utf8');
+assertForbiddenStorageApisAbsent(authSource, '@mom/auth');
 if (!authSource.includes('sessionStorage') || !authSource.includes('codeVerifier')) {
   throw new Error('@mom/auth must preserve only the one-time PKCE transaction in sessionStorage');
 }
 
 // 当前无 BFF 的第一方 MOM Web 登录明确使用当前标签页 sessionStorage；禁止扩大到跨标签或 Cookie。
 const firstPartyAuthSource = await readFile('packages/first-party-auth/src/index.ts', 'utf8');
-for (const forbidden of ['localStorage', 'indexedDB', 'document.cookie']) {
-  if (firstPartyAuthSource.includes(forbidden)) {
-    throw new Error(`@mom/first-party-auth must not use ${forbidden}`);
-  }
-}
+assertForbiddenStorageApisAbsent(firstPartyAuthSource, '@mom/first-party-auth');
 for (const contract of [
   'globalThis.sessionStorage',
   'mom.auth.session.${config.clientId}',

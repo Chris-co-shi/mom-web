@@ -250,46 +250,7 @@ button, input, select, textarea { font: inherit; }
   font-weight: 500;
 }
 
-.management-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.page-heading {
-  display: flex;
-  min-height: 58px;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.page-heading h1 {
-  margin: 0 0 6px;
-  color: var(--mom-color-text);
-  font-size: 24px;
-  line-height: 1.25;
-}
-
-.page-heading p {
-  margin: 0;
-  color: var(--mom-color-text-secondary);
-  font-size: 14px;
-}
-
-body { margin: 0; min-width: 1080px; min-height: 100vh; }
 body:has(.auth-page), body:has(.auth-loading) { min-width: 320px; }
-.app-shell { min-height: 100vh; }
-.app-header { display: flex; align-items: center; justify-content: space-between; color: #fff; }
-.app-subtitle { margin-left: 14px; color: rgb(255 255 255 / 70%); font-size: 12px; }
-.app-sider { border-right: 1px solid #f0f0f0; }
-.app-content { min-width: 0; padding: 24px; }
-.sider-caption { padding: 24px 24px 10px; color: #8c8c8c; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
-.sider-note { margin: 20px; padding: 12px; border-radius: 8px; color: #667085; background: #f6f8fb; font-size: 12px; line-height: 1.6; }
-.management-page { display: flex; flex-direction: column; gap: 16px; }
-.page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
-.page-heading h1 { margin: 0 0 6px; color: #17233d; font-size: 26px; }
-.page-heading p { margin: 0; color: #667085; }
 .page-alert { margin-bottom: 16px; }
 
 .ant-card {

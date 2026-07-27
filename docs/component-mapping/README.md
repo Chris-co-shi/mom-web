@@ -19,6 +19,7 @@
 
 | 原型区域 | 用户任务 | 候选组件 | 最终选择 | 所属包/应用 | 输入 View Model | 输出事件 | 权限 | 状态 | 可访问性 | 响应式 |
 |---|---|---|---|---|---|---|---|---|---|---|
+| 页面标题与操作区 | 识别页面任务并执行主要操作 | Vben `Page` | MOM `Page` 适配 | `@mom/common-ui` | title/description | extra Slot | 由调用页控制 | 正常 | 语义化 heading | 窄屏操作区换行 |
 | 示例：工单状态 | 识别工单进度 | Tag/Steps/Timeline | 工单状态时间线 | `@mom/domain-components` | `WorkOrderStatusVM` | `stepSelected` | 查看工单 | 加载/空/失败 | 文本+图标 | 详情页适配 |
 
 ## 4. 选择原则
@@ -26,6 +27,8 @@
 ### 4.1 优先复用基础组件
 
 表格、表单、对话框、通知、结果页等优先使用 Ant Design Vue，不重复制造基础 UI 库。
+
+顶栏、侧栏、菜单、面包屑、多页签、主题偏好和国际化属于 Vben 基础能力，不进入 `@mom/common-ui`。`@mom/common-ui` 只承载已经通过组件准入规则的页面级组合。
 
 ### 4.2 领域语义稳定后再共享
 

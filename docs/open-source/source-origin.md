@@ -12,7 +12,8 @@
 
 | 组件 | 上游 | 基线/版本来源 | License | 使用方式 | 是否复制源码 | 备注 |
 |---|---|---|---|---|---|---|
-| Vue Vben Admin | `vbenjs/vue-vben-admin` | 参考 `v5.7.0` | MIT | 架构、布局、路由、权限和工程机制参考 | 当前骨架否 | 后续源码迁移需逐文件登记 |
+| Vue Vben Admin | `vbenjs/vue-vben-admin` | `v5.7.0` / `63a38dce49ba109f61607994e21ba921d8e970e9` | MIT | 架构、布局、路由、权限和工程机制参考 | 否 | `BasicLayout`、Tabbar、Menu、Breadcrumb、Preferences、Locales 不在 MOM 重复封装 |
+| Vben `Page` | `vbenjs/vue-vben-admin` | `v5.7.0` / `packages/effects/common-ui/src/components/page/{page.vue,types.ts}` | MIT | 参考重写 | 是 | 目标 `packages/common-ui/src/Page.vue`；移除 Vben 内部 Tailwind、自动高度与 Footer 依赖，保留 title/description/extra/content Slots，改用 MOM Token 与 BEM CSS；升级时对照上游 `PageProps` 和 Slots |
 | Vue | `vuejs/core` | 锁文件 | MIT | 正式运行时依赖 | 否 | Vue 3 |
 | Vite | `vitejs/vite` | `package.json` / 锁文件 | MIT | 构建工具 | 否 | 当前根版本 `8.0.10` |
 | TypeScript | `microsoft/TypeScript` | `package.json` / 锁文件 | Apache-2.0 | 类型系统 | 否 | 当前根版本 `6.0.3` |

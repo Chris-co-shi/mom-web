@@ -77,6 +77,7 @@ flowchart LR
         API[@mom/api-client]
         Access[@mom/access]
         Tokens[@mom/design-tokens]
+        CommonUI[@mom/common-ui]
         Domain[@mom/domain-components]
         Graph[@mom/traceability-graph]
     end
@@ -107,6 +108,7 @@ flowchart LR
 | `@mom/api-client` | Gateway HTTP、Bearer Token、Correlation ID、`X-Factory-Id`、错误与幂等 | P1.5 Completed |
 | `@mom/access` | `/api/iam/me`、路由、菜单、按钮和当前 Factory 体验控制 | 已有边界，S08 完善 |
 | `@mom/design-tokens` | 色彩、间距、字体和工业状态 Token | 基础骨架 |
+| `@mom/common-ui` | Vben 对齐的页面级公共组合，不重复封装布局、菜单、页签或 Ant Design Vue 基础组件 | Page 已落地 |
 | `@mom/domain-components` | 批次、库存、工单、检验、设备状态等领域组件 | 基础骨架 |
 | `@mom/shared` | 通用类型、格式化、校验与无业务工具 | 基础骨架 |
 | `@mom/traceability-graph` | 批次谱系可视化边界 | 基础骨架 |
@@ -136,6 +138,7 @@ mom-web/
 ├── packages/
 │   ├── access/
 │   ├── api-client/
+│   ├── common-ui/
 │   ├── design-tokens/
 │   ├── domain-components/
 │   ├── shared/

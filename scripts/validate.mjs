@@ -23,6 +23,8 @@ const requiredPaths = [
   'packages/security-e2e/package.json',
   'packages/security-e2e/src/index.test.ts',
   'packages/access/package.json',
+  'packages/common-ui/package.json',
+  'packages/common-ui/src/Page.vue',
   'packages/design-tokens/package.json',
   'packages/domain-components/package.json',
   'packages/shared/package.json',
@@ -124,6 +126,12 @@ for (const contract of [
 }
 
 const adminView = await readFile('apps/mom-admin/src/App.vue', 'utf8');
+if (!adminView.includes("import { Page } from '@mom/common-ui'")) {
+  throw new Error('MOM Admin pages must use @mom/common-ui Page instead of private page heading markup');
+}
+if (adminView.includes('class="page-heading"') || adminView.includes('class="management-page"')) {
+  throw new Error('MOM Admin must not reintroduce private page heading/container components');
+}
 for (const permission of [
   'iam:user:read',
   'iam:role:read',

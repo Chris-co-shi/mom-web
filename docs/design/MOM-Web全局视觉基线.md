@@ -66,7 +66,15 @@ MOM Web 面向制造业中高密度业务页面。视觉语言应现代、稳定
 - 全局设计令牌和 CSS 变量。
 - MOM Admin 顶栏、侧栏、页签层、主内容滚动区。
 - 响应式内容间距、透明标题区、容器边框与克制悬浮效果。
+- `@mom/common-ui/Page` 公共页面容器，对齐 Vben 5.7.0 `Page` 的标题、说明、操作区与内容 Slots。
+- MOM Admin 六个 IAM 管理页面统一消费公共 `Page`；Card、Table、Form、Modal 继续直接使用 Ant Design Vue。
 - 用户管理页作为首个视觉示范页。
+
+公共化边界：
+
+- 不创建 MOM `AppShell`、`Sidebar`、`Tabbar`、`Breadcrumb`、`Preferences` 或 `LocaleSwitcher`。
+- 上述能力由 Vben `BasicLayout`、Preferences 与 Locales 承担；当前 MOM Admin 手写壳层是尚未完成 Vben 布局接入前的应用私有过渡代码。
+- Vben Workspace 包没有独立发布到 npm，源码迁移必须逐项登记，禁止复制完整演示应用。
 
 本次不包含：
 

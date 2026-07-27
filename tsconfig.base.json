@@ -18,6 +18,7 @@
       "@mom/first-party-auth": ["./packages/first-party-auth/src/index.ts"],
       "@mom/access": ["./packages/access/src/index.ts"],
       "@mom/api-client": ["./packages/api-client/src/index.ts"],
+      "@mom/common-ui": ["./packages/common-ui/src/index.ts"],
       "@mom/iam-admin": ["./packages/iam-admin/src/index.ts"],
       "@mom/portal-access": ["./packages/portal-access/src/index.ts"]
     }

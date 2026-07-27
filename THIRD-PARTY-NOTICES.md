@@ -9,8 +9,15 @@
 - 上游：`vbenjs/vue-vben-admin`
 - 参考基线：`v5.7.0`
 - License：MIT
-- 当前使用方式：架构、布局、路由、权限和工程能力参考
+- 当前使用方式：架构、布局、路由、权限和工程能力参考；`Page` 组件按 MOM 包边界参考重写
 - 当前骨架状态：未复制完整上游演示项目
+
+`packages/common-ui/src/Page.vue` 来源边界：
+
+- 上游 Tag/Commit：`v5.7.0` / `63a38dce49ba109f61607994e21ba921d8e970e9`
+- 上游路径：`packages/effects/common-ui/src/components/page/page.vue`、`types.ts`
+- MOM 修改：移除 Vben 内部 Tailwind、自动高度和 Footer 依赖；保留页面标题、说明、操作区和内容 Slots；使用 MOM Design Token 与 BEM 样式
+- License：MIT
 
 任何 Vben 源码迁移必须在 [开源来源登记](docs/open-source/source-origin.md) 中记录：
 

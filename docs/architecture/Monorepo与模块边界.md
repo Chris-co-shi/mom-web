@@ -11,6 +11,7 @@ apps
 packages
 ├── access
 ├── api-client
+├── common-ui
 ├── design-tokens
 ├── domain-components
 ├── shared
@@ -89,6 +90,14 @@ app A → app B
 - 字体、间距和布局。
 - 表格、表单和密度约定。
 - 工业状态视觉语义。
+
+### `@mom/common-ui`
+
+- 对齐 Vben 公共页面组件的稳定 Props 与 Slots。
+- 页面标题、说明、操作区和内容编排。
+- 不重复实现 Vben `BasicLayout`、Menu、Tabbar、Breadcrumb、Preferences 或 Locales。
+- 不包装 Ant Design Vue 的 Card、Table、Form、Modal 等基础组件。
+- 不访问 API，不依赖应用路由或 Store。
 
 ### `@mom/domain-components`
 

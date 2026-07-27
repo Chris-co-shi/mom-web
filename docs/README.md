@@ -57,7 +57,7 @@
 
 ## 设计交付
 
-- [用户流程规范](user-flows/README.md)
+- [MOM Web 全局视觉基线](design/MOM-Web全局视觉基线.md)\n- [用户流程规范](user-flows/README.md)
 - [Web 原型交付规范](prototypes/README.md)
 - [页面状态矩阵规范](page-state-matrix/README.md)
 - [组件映射规范](component-mapping/README.md)

@@ -24,6 +24,7 @@ type Section = 'users' | 'roles' | 'permissions' | 'sessions' | 'audit' | 'clien
 
 const gatewayUrl = import.meta.env.VITE_MOM_GATEWAY_URL ?? '/api';
 const section = ref<Section>('users');
+const sidebarCollapsed = ref(false);
 const busy = ref(false);
 const notice = ref<AdminErrorView>();
 
@@ -65,6 +66,7 @@ const sectionDefinitions: { key: Section; label: string; permission: PermissionC
   { key: 'clients', label: 'OAuth Client', permission: 'iam:client:read' },
 ];
 const visibleSections = computed(() => sectionDefinitions.filter((item) => can(item.permission)));
+const currentSectionLabel = computed(() => sectionDefinitions.find((item) => item.key === section.value)?.label ?? '工作台');
 const compatibleRoles = computed(() => roles.value.filter((role) => role.status === 'ENABLED' && role.applicableUserType === selectedUser.value?.userType));
 const activePermissions = computed(() => permissions.value.filter((permission) => permission.status === 'ENABLED'));
 const isCurrentUser = computed(() => selectedUser.value?.id === runtimeState.user?.userId);
@@ -385,17 +387,25 @@ onMounted(() => {
 <template>
   <a-layout class="app-shell">
     <a-layout-header class="app-header">
-      <div><strong>MOM 安全管理中心</strong><span class="app-subtitle">P1.5 · S09</span></div>
-      <a-space>
-        <a-tag color="blue">Gateway: {{ gatewayUrl }}</a-tag>
+      <div class="app-brand">
+        <strong>MOM</strong>
+        <span>制造运营管理平台</span>
+      </div>
+      <div class="app-header-actions">
+        <span class="environment-badge">Gateway · {{ gatewayUrl }}</span>
+        <button class="language-trigger" type="button" aria-label="当前语言：简体中文">
+          <span aria-hidden="true">◎</span>
+          <span>简体中文</span>
+          <span aria-hidden="true">⌄</span>
+        </button>
         <template v-if="runtimeState.user">
-          <a-tag color="green">{{ runtimeState.user.displayName }}</a-tag>
-          <a-select v-if="runtimeState.user.factoryIds.length > 1" :value="runtimeState.user.currentFactoryId ?? undefined" placeholder="选择当前工厂" style="width: 180px" @change="selectFactory">
+          <a-select v-if="runtimeState.user.factoryIds.length > 1" :value="runtimeState.user.currentFactoryId ?? undefined" placeholder="选择当前工厂" class="factory-selector" @change="selectFactory">
             <a-select-option v-for="factoryId in runtimeState.user.factoryIds" :key="factoryId" :value="factoryId">{{ factoryId }}</a-select-option>
           </a-select>
-          <a-button @click="logout">退出</a-button>
+          <span class="user-avatar">{{ runtimeState.user.displayName.slice(0, 1).toUpperCase() }}</span>
+          <a-button type="text" @click="logout">退出</a-button>
         </template>
-      </a-space>
+      </div>
     </a-layout-header>
 
     <a-layout-content v-if="runtimeState.phase === 'error'" class="app-content">
@@ -404,16 +414,40 @@ onMounted(() => {
       </a-alert>
     </a-layout-content>
 
-    <a-layout v-else>
-      <a-layout-sider width="232" theme="light" class="app-sider">
-        <div class="sider-caption">IAM 管理</div>
+    <a-layout v-else class="app-workspace">
+      <a-layout-sider
+        v-model:collapsed="sidebarCollapsed"
+        :width="240"
+        :collapsed-width="64"
+        theme="light"
+        collapsible
+        class="app-sider"
+      >
+        <div class="sider-caption">{{ sidebarCollapsed ? 'IAM' : '系统管理' }}</div>
         <a-menu mode="inline" :selected-keys="[section]" @click="({ key }: { key: string }) => { section = key as Section; }">
-          <a-menu-item v-for="item in visibleSections" :key="item.key">{{ item.label }}</a-menu-item>
+          <a-menu-item v-for="item in visibleSections" :key="item.key">
+            <span class="menu-marker" aria-hidden="true"></span>
+            <span>{{ item.label }}</span>
+          </a-menu-item>
         </a-menu>
-        <div class="sider-note">菜单由 Permission 控制；服务端继续执行最终授权。</div>
+        <div v-if="!sidebarCollapsed" class="sider-note">菜单只改善操作体验，服务端继续执行最终授权。</div>
       </a-layout-sider>
 
-      <a-layout-content class="app-content">
+      <a-layout class="workspace-main">
+        <nav class="workspace-tabs" aria-label="已打开页面">
+          <button type="button" class="workspace-tab">工作台</button>
+          <button type="button" class="workspace-tab is-active">
+            <span>{{ currentSectionLabel }}</span>
+            <span class="tab-close" aria-hidden="true">×</span>
+          </button>
+        </nav>
+
+        <a-layout-content class="app-content">
+          <div class="page-context" aria-label="面包屑">
+            <span>系统管理</span>
+            <span aria-hidden="true">/</span>
+            <strong>{{ currentSectionLabel }}</strong>
+          </div>
         <a-alert v-if="notice" class="page-alert" show-icon :type="notice.kind === 'stale' ? 'warning' : 'error'" :message="notice.title">
           <template #description>
             {{ notice.message }}<span v-if="notice.correlationId"> Correlation ID：{{ notice.correlationId }}</span>
@@ -421,7 +455,7 @@ onMounted(() => {
         </a-alert>
 
         <section v-if="section === 'users'" class="management-page">
-          <div class="page-heading"><div><h1>用户与授权</h1><p>用户资料与授权聚合使用同一个 iam_user version。</p></div><a-button v-if="can('iam:user:create')" type="primary" @click="createUserOpen = true">创建用户</a-button></div>
+          <div class="page-heading"><div><h1>用户管理</h1><p>管理组织成员、账号状态与访问范围；授权聚合继续使用同一个 iam_user version。</p></div><a-button v-if="can('iam:user:create')" type="primary" @click="createUserOpen = true">新增用户</a-button></div>
           <a-card size="small" class="filter-card"><a-space wrap>
             <a-select v-model:value="userFilters.userType" allow-clear placeholder="用户类型" style="width: 150px"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select>
             <a-select v-model:value="userFilters.status" allow-clear placeholder="状态" style="width: 130px"><a-select-option value="ENABLED">ENABLED</a-select-option><a-select-option value="DISABLED">DISABLED</a-select-option></a-select>
@@ -490,7 +524,8 @@ onMounted(() => {
         <section v-else-if="section === 'clients'" class="management-page"><div class="page-heading"><div><h1>OAuth Client</h1><p>禁用 Client 会联动撤销相关 Session。</p></div></div><a-card size="small" class="filter-card"><a-input v-model:value="clientReason" placeholder="Client 状态变更原因" /></a-card><a-card><a-table :data-source="clients" row-key="clientId" size="small" :pagination="false"><a-table-column title="Client"><template #default="{ record }"><strong>{{ record.clientName }}</strong><div class="muted">{{ record.clientId }}</div></template></a-table-column><a-table-column title="应用" data-index="applicationCode" /><a-table-column title="用户类型" data-index="allowedUserType" /><a-table-column title="Channel" data-index="channel" /><a-table-column title="状态"><template #default="{ record }"><a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status" /></template></a-table-column><a-table-column title="Version" data-index="version" /><a-table-column title=""><template #default="{ record }"><a-button v-if="can(record.status === 'ENABLED' ? 'iam:client:disable' : 'iam:client:enable')" danger @click="changeClientStatus(record)">{{ record.status === 'ENABLED' ? '禁用' : '启用' }}</a-button></template></a-table-column></a-table></a-card></section>
 
         <a-empty v-else-if="visibleSections.length === 0" description="当前账号没有 IAM 管理读取权限" />
-      </a-layout-content>
+        </a-layout-content>
+      </a-layout>
     </a-layout>
 
     <a-modal v-model:open="createUserOpen" title="创建用户" :confirm-loading="busy" @ok="createUser"><a-form layout="vertical"><a-form-item label="用户名"><a-input v-model:value="createUserForm.username" /></a-form-item><a-form-item label="展示名"><a-input v-model:value="createUserForm.displayName" /></a-form-item><a-form-item label="用户类型"><a-select v-model:value="createUserForm.userType"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select></a-form-item><a-form-item label="初始密码"><a-input-password v-model:value="createUserForm.initialPassword" /></a-form-item><template v-if="createUserForm.userType !== 'INTERNAL'"><a-form-item label="Party 类型"><a-select v-model:value="createUserForm.partyType"><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select></a-form-item><a-form-item label="Party ID"><a-input v-model:value="createUserForm.partyId" /></a-form-item></template></a-form></a-modal>

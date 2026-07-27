@@ -16,7 +16,7 @@
   <img alt="Status" src="https://img.shields.io/badge/Status-Phase%2002%20Ready-2563EB">
 </p>
 
-[文档中心](docs/README.md) · [P1.5 Web 运行时](docs/architecture/P1.5-Web认证授权运行时基线.md) · [P1.5 Web 计划](docs/plans/P1.5-Web认证授权实施计划.md) · [前端总体架构](docs/architecture/前端总体架构.md) · [ADR](docs/adr/README.md)
+[文档中心](docs/README.md) · [全局视觉基线](docs/design/MOM-Web全局视觉基线.md) · [P1.5 Web 运行时](docs/architecture/P1.5-Web认证授权运行时基线.md) · [P1.5 Web 计划](docs/plans/P1.5-Web认证授权实施计划.md) · [前端总体架构](docs/architecture/前端总体架构.md) · [ADR](docs/adr/README.md)
 
 </div>
 
@@ -180,7 +180,7 @@ pnpm check
 | 总览 | [文档中心](docs/README.md) | 全部文档导航和维护规则 |
 | 安全 | [P1.5 Web Runtime](docs/architecture/P1.5-Web认证授权运行时基线.md) | PKCE、Token、Refresh、`/api/iam/me` 和三应用边界 |
 | 计划 | [P1.5 Web 计划](docs/plans/P1.5-Web认证授权实施计划.md) | S08～S10 和 S12 实施范围 |
-| 架构 | [前端总体架构](docs/architecture/前端总体架构.md) | 三应用与共享包协作方式 |
+| 设计 | [MOM Web 全局视觉基线](docs/design/MOM-Web全局视觉基线.md) | 全局布局、颜色、样式、动效及国际化边界 |\n| 架构 | [前端总体架构](docs/architecture/前端总体架构.md) | 三应用与共享包协作方式 |
 | 架构 | [三应用职责边界](docs/architecture/三应用职责边界.md) | Client、user_type、Party 和应用边界 |
 | 架构 | [权限与数据权限](docs/architecture/权限与数据权限.md) | Permission、Factory、Party 与前端体验控制 |
 | 架构 | [API 访问与错误处理](docs/architecture/API访问与错误处理.md) | Single Flight 和 HTTP 错误语义 |

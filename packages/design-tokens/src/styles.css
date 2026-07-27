@@ -1,0 +1,27 @@
+:root {
+  --mom-color-primary: #4f46e5;
+  --mom-color-primary-hover: #4338ca;
+  --mom-color-primary-active: #3730a3;
+  --mom-color-primary-soft: #eef2ff;
+  --mom-color-page: #f6f5f3;
+  --mom-color-surface: #fffefc;
+  --mom-color-navigation: #eef0f8;
+  --mom-color-text: #1f2937;
+  --mom-color-text-secondary: #667085;
+  --mom-color-border: #e5e7eb;
+  --mom-color-border-strong: #d7dbe3;
+  --mom-color-success: #2f855a;
+  --mom-color-warning: #b7791f;
+  --mom-color-error: #c2414f;
+  --mom-radius-card: 12px;
+  --mom-radius-control: 8px;
+  --mom-header-height: 56px;
+  --mom-tab-height: 40px;
+  --mom-sider-width: 240px;
+  --mom-sider-collapsed-width: 64px;
+  --mom-space-unit: 4px;
+  --mom-motion-fast: 140ms;
+  --mom-motion-standard: 180ms;
+  --mom-motion-slow: 220ms;
+  --mom-motion-easing: cubic-bezier(0.2, 0, 0, 1);
+}

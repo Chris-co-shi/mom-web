@@ -1,0 +1,180 @@
+{
+  "appName": "MOM Manufacturing Operations",
+  "auth": {
+    "pageTitle": "Clearer, more reliable manufacturing operations",
+    "pageDescription": "Manage identities, permissions, sessions, and security audit in one place",
+    "loginTitle": "Sign in to MOM Admin",
+    "loginDescription": "Continue with your internal account",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "submit": "Sign in",
+    "submitting": "Signing in",
+    "changeTitle": "Change your password to continue",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmation": "Confirm new password",
+    "changeSubmit": "Change password and sign in",
+    "required": "Enter both username and password",
+    "passwordMismatch": "The new passwords do not match"
+  },
+  "menu": {
+    "system": "System Management",
+    "users": "Users & Access",
+    "roles": "Roles",
+    "permissions": "Permission Catalog",
+    "sessions": "Sessions",
+    "audit": "Security Audit",
+    "clients": "OAuth Clients"
+  },
+  "common": {
+    "logout": "Sign out",
+    "factory": "Current factory",
+    "retry": "Reload menus",
+    "back": "Back to an accessible page",
+    "unknown": "Unknown",
+    "required": "Required",
+    "no": "No",
+    "builtInReadOnly": "Built-in · read-only"
+  },
+  "fallback": {
+    "forbiddenTitle": "Access denied",
+    "forbiddenDescription": "Your account cannot access this page. Permissions may have changed.",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The address is invalid or the page has moved.",
+    "menuErrorTitle": "Menus failed to load",
+    "menuErrorDescription": "Your sign-in is still active. Retry permissions and menus, or sign out safely."
+  },
+  "defaults": {
+    "sessionReason": "Revoked by administrator",
+    "clientReason": "Client status changed by administrator"
+  },
+  "pages": {
+    "users": {
+      "title": "User Management",
+      "description": "Manage members, account state, and access scope with one iam_user aggregate version."
+    },
+    "roles": {
+      "title": "Role Configuration",
+      "description": "Built-in roles are read-only; custom role permissions use the iam_role version."
+    },
+    "permissions": {
+      "title": "Permission Catalog",
+      "description": "System permissions are read-only and cannot be created or changed here."
+    },
+    "sessions": {
+      "title": "Session Management",
+      "description": "Revoke commands are never retried automatically; query the final state after network failures."
+    },
+    "audit": {
+      "title": "Security Audit",
+      "description": "Shows only the non-sensitive projection of server-side security events."
+    },
+    "clients": {
+      "title": "OAuth Clients",
+      "description": "Disabling a client also revokes its related sessions."
+    }
+  },
+  "titles": {
+    "userDirectory": "User Directory",
+    "userDetails": "User Details",
+    "roleDirectory": "Role Directory",
+    "roleDetails": "Role Details",
+    "controlledOperations": "Controlled Operations",
+    "authorizationSnapshot": "Authorization snapshot · v{version}"
+  },
+  "fields": {
+    "user": "User",
+    "username": "Username",
+    "userType": "User type",
+    "type": "Type",
+    "displayName": "Display name",
+    "status": "Status",
+    "failedLoginCount": "Failed attempts",
+    "lockedUntil": "Locked until",
+    "passwordChangeRequired": "Password change",
+    "aggregateVersion": "Aggregate version",
+    "roles": "Roles",
+    "code": "Code",
+    "roleCode": "Role code",
+    "name": "Name",
+    "domain": "Domain",
+    "risk": "Risk",
+    "revokeReason": "Revoke reason",
+    "sessionUser": "Session / User",
+    "loginTime": "Login time",
+    "absoluteExpiry": "Absolute expiry",
+    "eventCategory": "Event category",
+    "time": "Time",
+    "event": "Event",
+    "reason": "Reason",
+    "clientStatusReason": "Client status change reason",
+    "application": "Application",
+    "initialPassword": "Initial password",
+    "partyType": "Party type",
+    "applicableUserType": "Applicable user type",
+    "description": "Description",
+    "auditReason": "Audit reason"
+  },
+  "actions": {
+    "search": "Search",
+    "refresh": "Refresh",
+    "manage": "Manage",
+    "save": "Save",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "createUser": "Create user",
+    "editDisplayName": "Edit display name",
+    "enable": "Enable",
+    "disable": "Disable",
+    "unlock": "Unlock",
+    "delete": "Delete",
+    "revoke": "Revoke",
+    "revokeAllSessions": "Revoke all sessions",
+    "resetCredential": "Reset credentials",
+    "replaceRoles": "Replace roles",
+    "replaceScope": "Replace scope",
+    "rebind": "Rebind",
+    "createRole": "Create role",
+    "editCustomRole": "Edit custom role",
+    "replacePermissions": "Replace permissions"
+  },
+  "placeholders": {
+    "auditReasonRequired": "Audit reason for high-risk operation (required)",
+    "temporaryPassword": "Temporary password, 12–200 characters",
+    "factoryId": "Enter a Factory ID",
+    "permissionReason": "Audit reason for the Permission change (required)"
+  },
+  "empty": {
+    "selectUser": "Select a user to load the full authorization snapshot",
+    "selectRole": "Select a role to load its Permission snapshot",
+    "noReadPermission": "This account has no IAM administration read permissions"
+  },
+  "messages": {
+    "commandSucceeded": "The operation completed and the latest server state was loaded",
+    "reasonRequired": "An audit reason is required for high-risk operations",
+    "highRiskContent": "Audit reason: {reason}. The server will perform the final security checks.",
+    "temporaryPasswordRequired": "Enter a temporary password",
+    "sessionsRevoked": "{count} sessions revoked",
+    "selfProtection": "Current account: self-disable and self-delete are blocked",
+    "authorizationChanged": "Your permissions changed. Review the latest state and try the operation again.",
+    "authenticationFailed": "Authentication request failed"
+  },
+  "operations": {
+    "enableUser": "Enable user {user}",
+    "disableUser": "Disable user {user}",
+    "unlockUser": "Unlock user {user}",
+    "resetCredential": "Reset credentials for {user}",
+    "deleteUser": "Logically delete user {user}",
+    "replaceUserRoles": "Replace user roles",
+    "replaceFactoryScope": "Replace Factory Scope",
+    "changeMobileAccess": "Change Mobile Access",
+    "rebindParty": "Rebind external party",
+    "revokeAllSessions": "Revoke all sessions for {user}",
+    "replaceRolePermissions": "Replace role Permissions",
+    "revokeSession": "Revoke Session {id}",
+    "enableClient": "Enable Client {id}",
+    "disableClient": "Disable Client {id}"
+  }
+}

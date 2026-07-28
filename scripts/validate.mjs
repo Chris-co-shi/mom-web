@@ -2,7 +2,12 @@ import { access, readFile } from 'node:fs/promises';
 
 const requiredPaths = [
   'apps/mom-admin/package.json',
-  'apps/mom-admin/src/AuthGate.vue',
+  'apps/mom-admin/src/bootstrap.ts',
+  'apps/mom-admin/src/preferences.ts',
+  'apps/mom-admin/src/router/access.ts',
+  'apps/mom-admin/src/router/menu-source.ts',
+  'apps/mom-admin/src/locales/langs/zh-CN/mom.json',
+  'apps/mom-admin/src/locales/langs/en-US/mom.json',
   'apps/supplier-portal/package.json',
   'apps/supplier-portal/src/AuthGate.vue',
   'apps/customer-portal/package.json',
@@ -33,6 +38,12 @@ const requiredPaths = [
   'docs/prototypes/README.md',
   'docs/page-state-matrix/README.md',
   'docs/api-mapping/README.md',
+  'docs/adr/ADR-009-P1.5-Web第一方认证运行时.md',
+  'docs/adr/ADR-010-MOM-Admin-Vben5.7源码快照.md',
+  'docs/backlog/iam-user-preferences-backend.md',
+  'docs/backlog/iam-menu-internationalization.md',
+  'docs/open-source/vben-5.7.0-snapshot.md',
+  'packages/stores/src/modules/access.ts',
 ];
 
 for (const path of requiredPaths) await access(path);
@@ -132,6 +143,7 @@ if (!adminView.includes("import { Page } from '@mom/common-ui'")) {
 if (adminView.includes('class="page-heading"') || adminView.includes('class="management-page"')) {
   throw new Error('MOM Admin must not reintroduce private page heading/container components');
 }
+const adminMenuSource = await readFile('apps/mom-admin/src/router/menu-source.ts', 'utf8');
 for (const permission of [
   'iam:user:read',
   'iam:role:read',
@@ -140,8 +152,17 @@ for (const permission of [
   'iam:audit:read',
   'iam:client:read',
 ]) {
-  if (!adminView.includes(permission)) {
-    throw new Error(`MOM Admin must gate the S09 section with ${permission}`);
+  if (!adminView.includes(permission) || !adminMenuSource.includes(permission)) {
+    throw new Error(`MOM Admin must gate both the view and Vben menu route with ${permission}`);
+  }
+}
+
+const vbenAccessStore = await readFile('packages/stores/src/modules/access.ts', 'utf8');
+const persistedAccessFields = vbenAccessStore
+  .slice(vbenAccessStore.indexOf('persist:'), vbenAccessStore.indexOf('state:'));
+for (const sensitiveField of ['accessToken', 'refreshToken', 'accessCodes']) {
+  if (persistedAccessFields.includes(`'${sensitiveField}'`)) {
+    throw new Error(`Vben access store must not persist ${sensitiveField}`);
   }
 }
 
@@ -176,6 +197,28 @@ if (!apiClientSource.includes("headers.set('Idempotency-Key'")
 }
 if (!apiClientSource.includes('ApiClient only accepts Gateway-relative paths')) {
   throw new Error('@mom/api-client must reject direct business-service URLs');
+}
+for (const contract of [
+  'authorizationFlight',
+  "normalized === 'GET' || normalized === 'HEAD'",
+  'authorization_changed_retry_required',
+  'retryAuthorization',
+]) {
+  if (!apiClientSource.includes(contract)) {
+    throw new Error(`@mom/api-client must preserve the 403 synchronization contract: ${contract}`);
+  }
+}
+
+for (const path of [
+  'apps/mom-admin/src/locales/langs/zh-CN/mom.json',
+  'apps/mom-admin/src/locales/langs/en-US/mom.json',
+]) {
+  const locale = JSON.parse(await readFile(path, 'utf8'));
+  if (locale?.messages?.authorizationChanged === undefined
+    || locale?.menu?.users === undefined
+    || locale?.pages?.clients?.title === undefined) {
+    throw new Error(`${path} must cover framework, menu, operation, and IAM page copy`);
+  }
 }
 
 console.log(`Validated ${requiredPaths.length} required project boundaries and P1.5 security invariants.`);

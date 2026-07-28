@@ -1,17 +1,19 @@
-import { createPinia } from 'pinia';
-import { createApp } from 'vue';
-import Antd from 'ant-design-vue';
-import 'ant-design-vue/dist/reset.css';
-import '@mom/design-tokens/styles.css';
-import '@mom/common-ui/styles.css';
+import { initPreferences } from '@vben/preferences';
 
-import AuthGate from './AuthGate.vue';
-import { bootstrapRuntime } from './runtime';
-import './styles.css';
+import { overridesPreferences } from './preferences';
 
-async function start(): Promise<void> {
-  await bootstrapRuntime();
-  createApp(AuthGate).use(createPinia()).use(Antd).mount('#app');
+async function initApplication(): Promise<void> {
+  const environment = import.meta.env.PROD ? 'prod' : 'dev';
+  const version = import.meta.env.VITE_APP_VERSION ?? '0.1.0';
+  const namespace = `mom-admin-${version}-${environment}`;
+
+  await initPreferences({
+    namespace,
+    overrides: overridesPreferences,
+  });
+
+  const { bootstrap } = await import('./bootstrap');
+  await bootstrap();
 }
 
-void start();
+void initApplication();

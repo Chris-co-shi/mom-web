@@ -8,7 +8,10 @@ export interface ApiClientOptions {
   baseUrl: string;
   getContext?: () => RequestContext;
   refreshAccessToken?: () => Promise<string>;
+  refreshAuthorization?: () => Promise<void>;
   onAuthenticationRequired?: (error: unknown) => void | Promise<void>;
+  onForbidden?: (error: MomApiError) => void | Promise<void>;
+  onWriteAuthorizationChanged?: (error: MomApiError) => void | Promise<void>;
   fetcher?: typeof fetch;
   timeoutMs?: number;
 }
@@ -17,6 +20,7 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
   body?: BodyInit | Record<string, unknown> | unknown[] | null;
   idempotencyKey?: string;
   timeoutMs?: number;
+  retryAuthorization?: boolean;
   retryAuthentication?: boolean;
 }
 
@@ -65,6 +69,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   const fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
   const baseUrl = options.baseUrl.replace(/\/+$/u, '');
   let refreshFlight: Promise<string> | undefined;
+  let authorizationFlight: Promise<void> | undefined;
 
   async function refreshOnce(): Promise<string> {
     if (!options.refreshAccessToken) {
@@ -77,13 +82,14 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   }
 
   async function request<T>(path: string, requestOptions: ApiRequestOptions = {}): Promise<T> {
-    return execute<T>(path, requestOptions, false);
+    return execute<T>(path, requestOptions, false, false);
   }
 
   async function execute<T>(
     path: string,
     requestOptions: ApiRequestOptions,
     authenticationRetried: boolean,
+    authorizationRetried: boolean,
   ): Promise<T> {
     const context = options.getContext?.() ?? {};
     const correlationId = context.correlationId?.trim() || crypto.randomUUID();
@@ -139,7 +145,38 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         await options.onAuthenticationRequired?.(error);
         throw error;
       }
-      return execute<T>(path, requestOptions, true);
+      return execute<T>(path, requestOptions, true, authorizationRetried);
+    }
+
+    if (response.status === 403) {
+      const error = await toApiError(response, correlationId);
+      if (
+        !authorizationRetried
+        && requestOptions.retryAuthorization !== false
+        && options.refreshAuthorization
+      ) {
+        await refreshAuthorizationOnce();
+        if (isReadOnlyMethod(requestOptions.method)) {
+          return execute<T>(
+            path,
+            requestOptions,
+            authenticationRetried,
+            true,
+          );
+        }
+        const changed = new MomApiError(
+          '权限已发生变化，请确认后重新操作',
+          403,
+          'authorization_changed_retry_required',
+          error.correlationId,
+          error.retryAfterSeconds,
+          error.payload,
+        );
+        await options.onWriteAuthorizationChanged?.(changed);
+        throw changed;
+      }
+      await options.onForbidden?.(error);
+      throw error;
     }
 
     if (!response.ok) {
@@ -148,6 +185,15 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       throw error;
     }
     return readSuccess<T>(response);
+  }
+
+  async function refreshAuthorizationOnce(): Promise<void> {
+    authorizationFlight ??= Promise.resolve(
+      options.refreshAuthorization?.(),
+    ).finally(() => {
+      authorizationFlight = undefined;
+    });
+    return authorizationFlight;
   }
 
   return {
@@ -168,6 +214,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         body: _body,
         idempotencyKey: _idempotencyKey,
         timeoutMs: _timeoutMs,
+        retryAuthorization: _retryAuthorization,
         retryAuthentication: _retryAuthentication,
         ...downloadInit
       } = requestOptions;
@@ -240,6 +287,11 @@ function isJsonBody(value: unknown): value is Record<string, unknown> | unknown[
     && !(value instanceof URLSearchParams)
     && !(value instanceof ArrayBuffer)
     && !ArrayBuffer.isView(value);
+}
+
+function isReadOnlyMethod(method: string | undefined): boolean {
+  const normalized = (method ?? 'GET').toUpperCase();
+  return normalized === 'GET' || normalized === 'HEAD';
 }
 
 function parseRetryAfter(value: string | null): number | undefined {

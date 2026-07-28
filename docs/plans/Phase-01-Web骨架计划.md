@@ -2,10 +2,10 @@
 
 ## 1. 阶段状态
 
-- 状态：**Foundation Complete / Auth Pending**
+- 状态：**Foundation Complete / Superseded by P1.5**
 - 后续安全阶段：[P1.5 Web 认证与授权实施计划](P1.5-Web认证授权实施计划.md)
 
-> Web Phase 01 已完成三应用 Monorepo、可构建应用骨架、设计交付规范和共享包初始边界，但未完成正式 OAuth/OIDC Auth Runtime。
+> 本文保留 Phase 01 的历史规划。P1.5 后续已采用第一方账号密码 API 和 `@mom/first-party-auth` 完成认证闭环；本文中 PKCE/内存 Token 条目不是当前实现。
 
 ## 2. 阶段目标
 
@@ -24,14 +24,11 @@
 
 ## 4. 尚未完成
 
-以下能力统一进入 P1.5：
+以下是当时转入 P1.5 的历史候选能力，最终以 ADR-009 为准：
 
-- `@mom/auth`。
-- Authorization Code + PKCE S256 + OIDC。
-- `mom-admin-web`、`mom-supplier-web`、`mom-customer-web` 三个正式 Public Client 配置。
-- Access/Refresh Token 内存生命周期。
-- Callback、`state`、`nonce`、`code_verifier` 和地址栏清理。
-- 页面刷新后的顶层 PKCE 恢复。
+- `@mom/first-party-auth` 第一方登录、首次改密、刷新与退出。
+- `mom-admin-web`、`mom-supplier-web`、`mom-customer-web` 三个固定第一方 Client。
+- Access/Refresh Token 当前标签页生命周期。
 - Single Flight Refresh 与每请求最多一次自动重试。
 - `/api/iam/me` 权限上下文。
 - Client/user_type 入口隔离。
@@ -58,13 +55,11 @@ pnpm build
 
 ### Slice 03：OAuth2.1/OIDC Access
 
-原计划未完成，不属于 Web Phase 01 已交付能力。由 P1.5 S08 替代并细化为：
+原计划未完成，不属于 Web Phase 01 已交付能力。P1.5 最终采用：
 
-- 三个固定 Public Client。
-- PKCE S256 + OIDC。
-- Token 只存在内存。
-- `sessionStorage` 仅保存一次性事务。
-- 顶层 PKCE 页面刷新恢复。
+- 三个固定第一方 Client。
+- 应用内账号密码与首次改密页面。
+- Token 只由 `@mom/first-party-auth` 保存到当前标签页 `sessionStorage`。
 - Single Flight Refresh。
 - `/api/iam/me`。
 
@@ -95,7 +90,7 @@ Web Phase 01 完成表示：
 - Gateway-only、前端非最终授权和设计交付原则明确。
 - 工程校验脚本可用。
 
-Web Phase 01 不表示 OAuth、Token、Refresh、`/api/iam/me` 或权限管理页面已实现。
+Web Phase 01 当时不表示认证、Token、Refresh、`/api/iam/me` 或权限管理页面已实现；这些能力随后在 P1.5 完成。
 
 ## 7. P1.5 后续
 

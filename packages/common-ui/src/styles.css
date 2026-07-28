@@ -1,6 +1,7 @@
 .mom-page {
   display: flex;
   min-height: 100%;
+  padding-top: 12px;
   flex-direction: column;
 }
 

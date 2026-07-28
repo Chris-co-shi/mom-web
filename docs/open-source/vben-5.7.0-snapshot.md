@@ -80,6 +80,7 @@
 | P-004 | Vben Access Store | MOM Bootstrap 不写 Token；持久化配置排除 Access/Permission | 防止认证与权限数据进入长期存储 |
 | P-005 | TypeScript 6 / Vue Router 5 | 删除 8 个已失效的模板变量 `@ts-expect-error`；菜单重定向仅接受字符串路径 | 保持严格类型检查，并适配 Router 5 扩展后的重定向类型 |
 | P-006 | MOM Vite 适配 | 复用上游 Tailwind `@reference` 注入逻辑，并提供 `sass-embedded` | 使快照组件的 `@apply` 与 SCSS 按 Vben 5.7 构建语义处理 |
+| P-007 | Preferences 自定义触发器 | 向默认 Slot 暴露 `open`，Header 齿轮显式绑定 Drawer 打开动作 | 修复自定义按钮替换默认触发器后点击无反馈，并保留固定按钮与用户菜单调用方式 |
 
 代码完成后若出现新的兼容补丁，必须追加到本表。
 

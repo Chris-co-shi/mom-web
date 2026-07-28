@@ -481,7 +481,19 @@ onMounted(() => {
         </Page>
 
         <Page v-else-if="section === 'clients'" :title="$t('mom.pages.clients.title')" :description="$t('mom.pages.clients.description')">
-          <a-card size="small" class="filter-card"><a-input v-model:value="clientReason" :placeholder="$t('mom.fields.clientStatusReason')" /></a-card><a-card><a-table :data-source="clients" row-key="clientId" size="small" :pagination="false"><a-table-column title="Client"><template #default="{ record }"><strong>{{ record.clientName }}</strong><div class="muted">{{ record.clientId }}</div></template></a-table-column><a-table-column :title="$t('mom.fields.application')" data-index="applicationCode" /><a-table-column :title="$t('mom.fields.userType')" data-index="allowedUserType" /><a-table-column title="Channel" data-index="channel" /><a-table-column :title="$t('mom.fields.status')"><template #default="{ record }"><a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status" /></template></a-table-column><a-table-column title="Version" data-index="version" /><a-table-column title=""><template #default="{ record }"><a-button v-if="can(record.status === 'ENABLED' ? 'iam:client:disable' : 'iam:client:enable')" danger @click="changeClientStatus(record)">{{ $t(record.status === 'ENABLED' ? 'mom.actions.disable' : 'mom.actions.enable') }}</a-button></template></a-table-column></a-table></a-card>
+          <a-card :title="$t('mom.titles.clientDirectory')" class="client-directory-card">
+            <div class="client-command-bar">
+              <label for="client-status-reason">{{ $t('mom.fields.clientStatusReason') }}</label>
+              <a-input
+                id="client-status-reason"
+                v-model:value="clientReason"
+                class="client-reason-input"
+                :placeholder="$t('mom.fields.clientStatusReason')"
+              />
+              <span>{{ $t('mom.messages.clientStatusReasonHint') }}</span>
+            </div>
+            <a-table :data-source="clients" row-key="clientId" size="small" :pagination="false"><a-table-column title="Client"><template #default="{ record }"><strong>{{ record.clientName }}</strong><div class="muted">{{ record.clientId }}</div></template></a-table-column><a-table-column :title="$t('mom.fields.application')" data-index="applicationCode" /><a-table-column :title="$t('mom.fields.userType')" data-index="allowedUserType" /><a-table-column title="Channel" data-index="channel" /><a-table-column :title="$t('mom.fields.status')"><template #default="{ record }"><a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status" /></template></a-table-column><a-table-column title="Version" data-index="version" /><a-table-column title=""><template #default="{ record }"><a-button v-if="can(record.status === 'ENABLED' ? 'iam:client:disable' : 'iam:client:enable')" danger @click="changeClientStatus(record)">{{ $t(record.status === 'ENABLED' ? 'mom.actions.disable' : 'mom.actions.enable') }}</a-button></template></a-table-column></a-table>
+          </a-card>
         </Page>
 
         <a-empty v-else-if="visibleSections.length === 0" :description="$t('mom.empty.noReadPermission')" />

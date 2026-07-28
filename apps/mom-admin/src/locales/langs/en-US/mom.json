@@ -81,6 +81,7 @@
     "userDetails": "User Details",
     "roleDirectory": "Role Directory",
     "roleDetails": "Role Details",
+    "clientDirectory": "OAuth Client Directory",
     "controlledOperations": "Controlled Operations",
     "authorizationSnapshot": "Authorization snapshot · v{version}"
   },
@@ -157,6 +158,7 @@
     "highRiskContent": "Audit reason: {reason}. The server will perform the final security checks.",
     "temporaryPasswordRequired": "Enter a temporary password",
     "sessionsRevoked": "{count} sessions revoked",
+    "clientStatusReasonHint": "Confirm this audit reason before enabling or disabling a client.",
     "selfProtection": "Current account: self-disable and self-delete are blocked",
     "authorizationChanged": "Your permissions changed. Review the latest state and try the operation again.",
     "authenticationFailed": "Authentication request failed"

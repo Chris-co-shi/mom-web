@@ -20,7 +20,8 @@
     "validate": "node scripts/validate.mjs && node scripts/validate-s08-ports.mjs",
     "test:auth": "rm -rf .tmp/auth-test && tsc -p tsconfig.test.json && node --test .tmp/auth-test/auth/src/index.test.js .tmp/auth-test/first-party-auth/src/index.test.js .tmp/auth-test/api-client/src/index.test.js .tmp/auth-test/iam-admin/src/index.test.js .tmp/auth-test/portal-access/src/index.test.js .tmp/auth-test/security-e2e/src/index.test.js",
     "test:admin-runtime": "rm -rf .tmp/admin-runtime-test && tsc -p tsconfig.admin-runtime-test.json && node --test .tmp/admin-runtime-test/section-navigation.test.js",
-    "test": "pnpm run test:auth && pnpm run test:admin-runtime",
+    "test:admin-ui": "node --test apps/mom-admin/src/ui-regression.test.mjs",
+    "test": "pnpm run test:auth && pnpm run test:admin-runtime && pnpm run test:admin-ui",
     "check": "pnpm run validate && pnpm run check:type && pnpm run test"
   },
   "devDependencies": {

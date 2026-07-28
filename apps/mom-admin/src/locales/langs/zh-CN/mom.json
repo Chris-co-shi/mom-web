@@ -81,6 +81,7 @@
     "userDetails": "用户详情",
     "roleDirectory": "角色目录",
     "roleDetails": "角色详情",
+    "clientDirectory": "OAuth Client 列表",
     "controlledOperations": "受控操作",
     "authorizationSnapshot": "授权快照 · v{version}"
   },
@@ -157,6 +158,7 @@
     "highRiskContent": "审计原因：{reason}。服务端将执行最终安全校验。",
     "temporaryPasswordRequired": "请输入临时密码",
     "sessionsRevoked": "已撤销 {count} 个 Session",
+    "clientStatusReasonHint": "启用或禁用前，请确认该审计原因。",
     "selfProtection": "当前账号：禁止自我禁用/删除",
     "authorizationChanged": "权限已发生变化，请确认后重新操作",
     "authenticationFailed": "认证请求失败"

@@ -108,6 +108,35 @@ textarea {
   background: var(--mom-color-surface);
 }
 
+.client-command-bar {
+  display: flex;
+  min-width: 0;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  align-items: center;
+  gap: 12px;
+  background: hsl(var(--muted) / 45%);
+  border: 1px solid var(--mom-color-border);
+  border-radius: var(--mom-radius-control);
+}
+
+.client-command-bar label {
+  flex: 0 0 auto;
+  color: hsl(var(--foreground));
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.client-command-bar span {
+  flex: 0 0 auto;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
+.client-reason-input {
+  width: min(420px, 42vw);
+}
+
 .split-grid {
   display: grid;
   grid-template-columns: minmax(520px, 1fr) minmax(440px, 0.92fr);
@@ -156,5 +185,13 @@ textarea {
 @media (max-width: 1260px) {
   .split-grid {
     grid-template-columns: 1fr;
+  }
+
+  .client-command-bar {
+    flex-wrap: wrap;
+  }
+
+  .client-reason-input {
+    width: min(100%, 520px);
   }
 }

@@ -13,6 +13,52 @@ test('MOM Page owns its fixed-tab safety spacing', async () => {
   );
 });
 
+test('IAM pages use breadcrumbs as the only page heading', async () => {
+  const adminView = await read('./App.vue');
+  const pageTags = [...adminView.matchAll(/<Page\b[^>]*>/gs)].map(
+    ([tag]) => tag,
+  );
+
+  assert.equal(pageTags.length, 6);
+  for (const tag of pageTags) {
+    assert.doesNotMatch(tag, /:title=/);
+    assert.doesNotMatch(tag, /:description=/);
+  }
+  assert.doesNotMatch(adminView, /<template #extra>\s*<a-button[^>]*createUserOpen/);
+});
+
+test('IAM actions stay with their list or filter containers', async () => {
+  const adminView = await read('./App.vue');
+  const userSection = adminView.slice(
+    adminView.indexOf("section === 'users'"),
+    adminView.indexOf("section === 'roles'"),
+  );
+  const roleSection = adminView.slice(
+    adminView.indexOf("section === 'roles'"),
+    adminView.indexOf("section === 'permissions'"),
+  );
+  const permissionSection = adminView.slice(
+    adminView.indexOf("section === 'permissions'"),
+    adminView.indexOf("section === 'sessions'"),
+  );
+
+  assert.match(userSection, /class="user-command-bar"/);
+  assert.match(userSection, /createUserOpen = true/);
+  assert.match(roleSection, /mom\.titles\.roleDirectory/);
+  assert.match(roleSection, /<template #extra>.*createRoleOpen = true/s);
+  assert.match(permissionSection, /<template #extra>.*loadPermissions/s);
+});
+
+test('MOM Admin uses a local logo that remains visible when collapsed', async () => {
+  const preferences = await read('./preferences.ts');
+  const logo = await read('./assets/mom-logo.svg');
+
+  assert.match(preferences, /import momLogo from '\.\/assets\/mom-logo\.svg';/);
+  assert.match(preferences, /logo:\s*\{[^}]*source:\s*momLogo,/s);
+  assert.match(logo, /<svg\b/);
+  assert.match(logo, /<title[^>]*>MOM<\/title>/);
+});
+
 test('OAuth Client reason is part of the list command toolbar', async () => {
   const adminView = await read('./App.vue');
   const clientSection = adminView.slice(

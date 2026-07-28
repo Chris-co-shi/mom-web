@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-labelledby="mom-logo-title">
+  <title id="mom-logo-title">MOM</title>
+  <rect width="40" height="40" rx="10" fill="#5146e5"/>
+  <path d="M8 29V11h4.25L20 19.3l7.75-8.3H32v18h-5v-10.6l-7 7.3-7-7.3V29H8Z" fill="#fff"/>
+</svg>

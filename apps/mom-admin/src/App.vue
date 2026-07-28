@@ -23,11 +23,14 @@ import { useRoute } from 'vue-router';
 
 import { $t } from './locales';
 import { access, iamAdmin, runtimeState } from './runtime';
-
-type Section = 'users' | 'roles' | 'permissions' | 'sessions' | 'audit' | 'clients';
+import {
+  SECTION_DEFINITIONS,
+  sectionFromRoute,
+  type Section,
+} from './section-navigation';
 
 const route = useRoute();
-const section = ref<Section>(sectionFromRoute());
+const section = ref<Section>(sectionFromRoute(route.meta.section));
 const busy = ref(false);
 const notice = ref<AdminErrorView>();
 
@@ -60,15 +63,7 @@ const editUserName = ref('');
 const createRoleForm = reactive({ code: '', name: '', applicableUserType: 'INTERNAL' as IamUserType, description: '' });
 const editRoleForm = reactive({ name: '', description: '', status: 'ENABLED' as IamStatus, reason: '' });
 
-const sectionDefinitions: { key: Section; permission: PermissionCode }[] = [
-  { key: 'users', permission: 'iam:user:read' },
-  { key: 'roles', permission: 'iam:role:read' },
-  { key: 'permissions', permission: 'iam:permission:read' },
-  { key: 'sessions', permission: 'iam:session:read' },
-  { key: 'audit', permission: 'iam:audit:read' },
-  { key: 'clients', permission: 'iam:client:read' },
-];
-const visibleSections = computed(() => sectionDefinitions.filter((item) => can(item.permission)));
+const visibleSections = computed(() => SECTION_DEFINITIONS.filter((item) => can(item.permission)));
 const compatibleRoles = computed(() => roles.value.filter((role) => role.status === 'ENABLED' && role.applicableUserType === selectedUser.value?.userType));
 const activePermissions = computed(() => permissions.value.filter((permission) => permission.status === 'ENABLED'));
 const isCurrentUser = computed(() => selectedUser.value?.id === runtimeState.user?.userId);
@@ -381,21 +376,14 @@ function formatTime(value: string | null | undefined): string {
 
 watch(
   () => route.meta.section,
-  () => {
-    section.value = sectionFromRoute();
+  (routeSection) => {
+    section.value = sectionFromRoute(routeSection);
   },
 );
 watch(section, () => { notice.value = undefined; void loadCurrentSection(); });
 onMounted(() => {
   void loadCurrentSection();
 });
-
-function sectionFromRoute(): Section {
-  const value = route.meta.section;
-  return sectionDefinitions.some((item) => item.key === value)
-    ? value as Section
-    : 'users';
-}
 </script>
 
 <template>

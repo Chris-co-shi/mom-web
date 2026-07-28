@@ -4,6 +4,8 @@ const requiredPaths = [
   'apps/mom-admin/package.json',
   'apps/mom-admin/src/bootstrap.ts',
   'apps/mom-admin/src/preferences.ts',
+  'apps/mom-admin/src/section-navigation.ts',
+  'apps/mom-admin/src/section-navigation.test.ts',
   'apps/mom-admin/src/router/access.ts',
   'apps/mom-admin/src/router/menu-source.ts',
   'apps/mom-admin/src/locales/langs/zh-CN/mom.json',
@@ -34,6 +36,7 @@ const requiredPaths = [
   'packages/domain-components/package.json',
   'packages/shared/package.json',
   'packages/traceability-graph/package.json',
+  'tsconfig.admin-runtime-test.json',
   'tsconfig.test.json',
   'docs/prototypes/README.md',
   'docs/page-state-matrix/README.md',
@@ -140,9 +143,17 @@ const adminView = await readFile('apps/mom-admin/src/App.vue', 'utf8');
 if (!adminView.includes("import { Page } from '@mom/common-ui'")) {
   throw new Error('MOM Admin pages must use @mom/common-ui Page instead of private page heading markup');
 }
+if (!adminView.includes("from './section-navigation'")) {
+  throw new Error('MOM Admin must use the tested Section navigation module');
+}
+if (adminView.includes('const sectionDefinitions')
+  || adminView.includes('function sectionFromRoute')) {
+  throw new Error('MOM Admin App setup must not depend on local Section declaration order');
+}
 if (adminView.includes('class="page-heading"') || adminView.includes('class="management-page"')) {
   throw new Error('MOM Admin must not reintroduce private page heading/container components');
 }
+const adminSectionNavigation = await readFile('apps/mom-admin/src/section-navigation.ts', 'utf8');
 const adminMenuSource = await readFile('apps/mom-admin/src/router/menu-source.ts', 'utf8');
 for (const permission of [
   'iam:user:read',
@@ -152,8 +163,8 @@ for (const permission of [
   'iam:audit:read',
   'iam:client:read',
 ]) {
-  if (!adminView.includes(permission) || !adminMenuSource.includes(permission)) {
-    throw new Error(`MOM Admin must gate both the view and Vben menu route with ${permission}`);
+  if (!adminSectionNavigation.includes(permission) || !adminMenuSource.includes(permission)) {
+    throw new Error(`MOM Admin must gate both the Section registry and Vben menu route with ${permission}`);
   }
 }
 

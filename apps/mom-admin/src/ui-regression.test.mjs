@@ -42,3 +42,33 @@ test('Preferences header button calls the Drawer open slot action', async () => 
   assert.match(button, /v-slot="\{ open \}"/);
   assert.match(button, /@click="open"/);
 });
+
+test('MOM Admin authentication finish handlers bind an Ant Form model', async () => {
+  const authenticationViews = [
+    './views/auth/login.vue',
+    './views/auth/password-change.vue',
+  ];
+
+  for (const path of authenticationViews) {
+    const source = await read(path);
+    const formTags = [...source.matchAll(/<a-form\b[^>]*>/gs)]
+      .map(([tag]) => tag)
+      .filter((tag) => tag.includes('@finish'));
+
+    assert.equal(
+      formTags.length,
+      1,
+      `${path} must keep exactly one authentication finish form`,
+    );
+    assert.match(
+      formTags[0],
+      /:model="form"/,
+      `${path} must bind its reactive model before using Ant Form finish`,
+    );
+    assert.match(
+      formTags[0],
+      /@finish="submit"/,
+      `${path} must delegate successful form submission to submit()`,
+    );
+  }
+});

@@ -1,7 +1,8 @@
 # ADR-001：Vben 5 作为前端参考基线
 
-- 状态：Accepted
+- 状态：Superseded
 - 日期：2026-07-18
+- 替代决策：[ADR-010：MOM Admin 使用 Vben 5.7 源码快照](ADR-010-MOM-Admin-Vben5.7源码快照.md)
 - 关联架构：[前端总体架构](../architecture/前端总体架构.md)
 
 ## 1. 背景
@@ -30,7 +31,7 @@ MOM 管理端需要成熟的后台布局、路由、权限、主题、国际化�
 
 ## 3. 决策
 
-选择方案 C。
+历史上选择方案 C；该决策已由 ADR-010 替代。MOM Admin 现迁入固定的 Vben 5.7.0 最小运行闭包，Supplier/Customer Portal 仍保持 MOM 自有实现。
 
 参考基线：
 

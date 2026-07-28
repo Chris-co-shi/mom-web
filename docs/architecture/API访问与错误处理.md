@@ -23,7 +23,7 @@ Browser
 负责：
 
 - Gateway Base URL。
-- 从 `@mom/auth` 获取内存 Access Token 并注入 Bearer Header。
+- 从 `@mom/first-party-auth` 获取当前标签页 Access Token 并注入 Bearer Header。
 - correlation ID。
 - 当前 `X-Factory-Id`。
 - Content-Type 和语言头。
@@ -31,11 +31,11 @@ Browser
 - 请求超时、取消和文件下载。
 - 幂等键。
 - 401、403、409、429 和 5xx 基础处理。
-- 与 `@mom/auth` 协作执行 Single Flight Refresh。
+- 与 `@mom/first-party-auth` 协作执行 Single Flight Refresh。
 
 不负责：
 
-- 保存 Token 到 localStorage、IndexedDB、Pinia 持久化或 Cookie。
+- 直接保存 Token；Token 存储只能由 `@mom/first-party-auth` 管理。
 - 解析前端参数后自行认定 Factory/Party 授权。
 - 业务状态机或最终授权。
 - 直接访问 IAM 之外的内部服务地址。
@@ -72,7 +72,7 @@ interface MomApiError {
 1. 判断该业务请求是否已自动重试过。
 2. 未重试且存在可刷新 Session 时，加入当前应用实例的单一 Refresh Flight。
 3. 第一个请求发起 Refresh，其他请求等待同一个结果。
-4. Refresh 成功后更新内存 Token。
+4. Refresh 成功后轮换当前标签页 Token。
 5. 每个原业务请求最多自动重试一次。
 6. Refresh 失败、Session 撤销、绝对期限到达或网络结果不确定时，拒绝等待队列并重新登录。
 
@@ -86,7 +86,10 @@ interface MomApiError {
 ## 5. 403
 
 - 不触发 Token Refresh。
-- 显示无权限、应用入口不匹配或操作不允许。
+- MOM Admin 首次 403 单飞同步 `/api/iam/me`、Permission 和菜单。
+- 同步后仅 GET/HEAD 自动重试一次；写请求不自动重试。
+- 只读请求再次 403 时进入无权限页，不循环同步。
+- Supplier/Customer Portal 保持显示无权限、应用入口不匹配或操作不允许。
 - 提供安全返回路径。
 - 不把 403 伪装成空数据。
 
@@ -180,4 +183,4 @@ API Client 不以本地解析 JWT 替代 `/api/iam/me`。
 - 403 不刷新。
 - 409、429、404 防枚举和结果未知有明确状态。
 - `X-Factory-Id` 不被当作授权证明。
-- Token 不进入持久化存储、日志或错误详情。
+- Token 不进入长期存储、日志、Vben Preferences 或错误详情。

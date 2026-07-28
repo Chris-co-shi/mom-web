@@ -3,7 +3,7 @@
 ## 1. 原则
 
 - 标准运行时和 UI 库通过正式包依赖使用。
-- Vue Vben Admin 作为架构与能力参考，不能整仓复制演示业务。
+- MOM Admin 仅迁入 ADR-010 登记的 Vben 5.7.0 最小运行闭包，不复制演示业务。
 - 任何源码迁移必须记录上游路径、Tag、License 和 MOM 修改。
 - 禁止引入前雇主、客户或未授权商业项目源码、页面、图片和数据。
 - 精确安装版本以 `package.json`、Workspace Catalog 和 `pnpm-lock.yaml` 为准。
@@ -12,7 +12,7 @@
 
 | 组件 | 上游 | 基线/版本来源 | License | 使用方式 | 是否复制源码 | 备注 |
 |---|---|---|---|---|---|---|
-| Vue Vben Admin | `vbenjs/vue-vben-admin` | `v5.7.0` / `63a38dce49ba109f61607994e21ba921d8e970e9` | MIT | 架构、布局、路由、权限和工程机制参考 | 否 | `BasicLayout`、Tabbar、Menu、Breadcrumb、Preferences、Locales 不在 MOM 重复封装 |
+| Vue Vben Admin | `vbenjs/vue-vben-admin` | `v5.7.0` / `63a38dce49ba109f61607994e21ba921d8e970e9` | MIT | MOM Admin 固定 Workspace 源码快照 | 是 | 迁入闭包与补丁见 [Vben 5.7.0 源码快照台账](vben-5.7.0-snapshot.md) |
 | Vben `Page` | `vbenjs/vue-vben-admin` | `v5.7.0` / `packages/effects/common-ui/src/components/page/{page.vue,types.ts}` | MIT | 参考重写 | 是 | 目标 `packages/common-ui/src/Page.vue`；移除 Vben 内部 Tailwind、自动高度与 Footer 依赖，保留 title/description/extra/content Slots，改用 MOM Token 与 BEM CSS；升级时对照上游 `PageProps` 和 Slots |
 | Vue | `vuejs/core` | 锁文件 | MIT | 正式运行时依赖 | 否 | Vue 3 |
 | Vite | `vitejs/vite` | `package.json` / 锁文件 | MIT | 构建工具 | 否 | 当前根版本 `8.0.10` |
@@ -39,7 +39,7 @@
 
 ## 4. 禁止事项
 
-- 批量复制完整 Vben 演示应用后改名。
+- 批量复制完整 Vben 演示应用后改名；ADR-010 登记的最小运行闭包除外。
 - 复制其他开源后台的权限、用户和业务模型作为 MOM 模型。
 - 引入来源不明的图标、图片和字体。
 - 使用真实客户页面截图作为公开原型。

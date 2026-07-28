@@ -4,7 +4,7 @@
 
 ### 工业 MOM 管理端、供应商门户与客户门户
 
-基于 Vue 3、Vite、TypeScript 和 Ant Design Vue 构建三个独立浏览器应用，并将认证运行时、权限体验、用户流程、页面状态、原型和 API 契约作为正式设计资产。
+基于 Vue 3、Vite、TypeScript、Ant Design Vue 和 Vben 5.7 构建三个独立浏览器应用，并将认证运行时、权限体验、用户流程、页面状态、原型和 API 契约作为正式设计资产。
 
 <p>
   <a href="https://github.com/Chris-co-shi/mom-web/actions/workflows/ci.yml">
@@ -32,7 +32,7 @@
 - MOM 内部运营与权限管理工作台。
 - Supplier Portal。
 - Customer Portal。
-- Authorization Code + PKCE 浏览器运行时。
+- 第一方账号密码与当前标签页认证运行时。
 - Gateway API Client、前端 Access Context 与错误恢复。
 - 用户流程、页面状态、原型、组件和 API 映射。
 - 工业领域组件、设计 Token 与批次谱系图。
@@ -49,14 +49,13 @@
 
 统一规则：
 
-- Authorization Code + PKCE `S256` + OpenID Connect。
-- 三个 Public Client，无 `client_secret`，Redirect URI 精确匹配。
+- 三应用使用 Gateway 下的第一方 IAM 登录、首次改密、刷新和退出接口。
+- 登录 UI 位于各应用，IAM 不提供独立登录页面。
 - 不建设 BFF；Gateway API 使用 Bearer Access Token。
-- Access Token 与 Refresh Token 都只存在内存。
-- `sessionStorage` 只保存 `state`、`nonce`、`code_verifier`、`returnUrl`。
-- 页面刷新后重新执行顶层 PKCE，利用 IAM 登录状态快速恢复。
-- 不使用 localStorage、IndexedDB、持久化 Pinia、普通 Cookie、hidden iframe 或跨标签 Token 同步。
-- 401 使用 Single Flight Refresh，每个业务请求最多自动重试一次；403 不刷新。
+- Access Token 与 Refresh Token 只由 `@mom/first-party-auth` 保存到当前标签页 `sessionStorage`。
+- 不使用 localStorage、IndexedDB、持久化 Pinia、普通 Cookie 或跨标签 Token 同步。
+- 401 使用 Single Flight Refresh，每个业务请求最多自动重试一次。
+- MOM Admin 首次 403 单飞同步权限与菜单；仅 GET/HEAD 自动重试一次，写请求不自动重试。
 - `/api/iam/me` 是正式权限上下文来源。
 - `X-Factory-Id` 只是工作上下文，不是授权证明。
 - Supplier/Customer Portal 不提供 Party 切换器。
@@ -73,7 +72,7 @@ flowchart LR
     Customer[CUSTOMER] --> CP[customer-portal / mom-customer-web]
 
     subgraph Shared[共享前端能力]
-        Auth[@mom/auth - P1.5 S08]
+        Auth[@mom/first-party-auth - P1.5 S08]
         API[@mom/api-client]
         Access[@mom/access]
         Tokens[@mom/design-tokens]
@@ -85,7 +84,7 @@ flowchart LR
     Admin --> Shared
     SP --> Shared
     CP --> Shared
-    Auth --> IAM[IAM / PKCE / OIDC]
+    Auth --> IAM[IAM / First-party Auth API]
     API --> Gateway[MOM API Gateway]
     Gateway --> Services[业务 Resource Servers]
 ```
@@ -104,11 +103,13 @@ flowchart LR
 
 | 包 | 职责 | 当前状态 |
 |---|---|---|
-| `@mom/auth` | PKCE、Callback、内存 Token、Single Flight Refresh、退出和恢复 | P1.5 Completed |
+| `@mom/first-party-auth` | 第一方登录、首次改密、当前标签页 Token、Single Flight Refresh、退出和恢复 | P1.5 Completed |
+| `@mom/auth` | OAuth/OIDC/PKCE 标准协议兼容能力，当前三应用不直接使用 | Compatibility |
 | `@mom/api-client` | Gateway HTTP、Bearer Token、Correlation ID、`X-Factory-Id`、错误与幂等 | P1.5 Completed |
 | `@mom/access` | `/api/iam/me`、路由、菜单、按钮和当前 Factory 体验控制 | 已有边界，S08 完善 |
 | `@mom/design-tokens` | 色彩、间距、字体和工业状态 Token | 基础骨架 |
-| `@mom/common-ui` | Vben 对齐的页面级公共组合，不重复封装布局、菜单、页签或 Ant Design Vue 基础组件 | Page 已落地 |
+| Vben 5.7 Workspace | MOM Admin 的 BasicLayout、菜单、页签、Preferences、Locale 与路由基础 | 固定源码快照 |
+| `@mom/common-ui` | MOM 页面级公共组合 | Page 已落地 |
 | `@mom/domain-components` | 批次、库存、工单、检验、设备状态等领域组件 | 基础骨架 |
 | `@mom/shared` | 通用类型、格式化、校验与无业务工具 | 基础骨架 |
 | `@mom/traceability-graph` | 批次谱系可视化边界 | 基础骨架 |
@@ -136,13 +137,15 @@ mom-web/
 │   ├── supplier-portal/
 │   └── customer-portal/
 ├── packages/
+│   ├── @core/
 │   ├── access/
 │   ├── api-client/
 │   ├── common-ui/
 │   ├── design-tokens/
 │   ├── domain-components/
 │   ├── shared/
-│   └── traceability-graph/
+│   ├── traceability-graph/
+│   └── Vben 5.7 Workspace packages...
 ├── docs/
 ├── scripts/
 ├── pnpm-workspace.yaml
@@ -204,7 +207,7 @@ pnpm check
 ## 🧠 前端原则
 
 1. **服务端授权为准**：前端权限只用于体验控制。
-2. **Token 不持久化**：浏览器 Token 只存在内存。
+2. **Token 受控存储**：Token 只由认证运行时保存到当前标签页，不进入长期存储或 Preferences。
 3. **Gateway-only**：业务请求只访问 MOM Gateway。
 4. **应用隔离**：三个 Client、Token 和 Store 不混用。
 5. **Party 固定**：门户不能自由切换供应商或客户主体。

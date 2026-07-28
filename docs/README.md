@@ -2,7 +2,7 @@
 
 本目录是 `mom-web` 的需求、计划、前端架构、认证运行时、交互设计、原型、页面状态、API 映射和架构决策权威入口。
 
-> P1.5 S00、S08～S10、S12 已完成并合并。当前清理继续使用既有 `phase/p1.5-auth-authorization`；Phase 02 从清理后的最新 `main` 开始。
+> P1.5 S00、S08～S10、S12 已完成并合并。MOM Admin 的 Vben 5.7 迁移继续使用既有 `phase/p1.5-auth-authorization`；本轮不扩大到 IAM 后端或两个外部门户。
 
 ## 文档使用原则
 
@@ -25,9 +25,19 @@
 ## P1.5 认证与授权
 
 - [P1.5 Web 认证与授权运行时基线](architecture/P1.5-Web认证授权运行时基线.md)
+- [S08 Web 第一方认证运行时实现](architecture/S08-Web认证运行时实现.md)
 - [P1.5 Web 认证与授权实施计划](plans/P1.5-Web认证授权实施计划.md)
-- [ADR-008：P1.5 Web 认证运行时](adr/ADR-008-P1.5-Web认证运行时.md)
+- [ADR-009：P1.5 Web 第一方认证运行时](adr/ADR-009-P1.5-Web第一方认证运行时.md)
 - [mom-platform P1.5 S00 权威 PR](https://github.com/Chris-co-shi/mom-platform/pull/15)
+
+## MOM Admin Vben 5.7
+
+- [迁移架构](architecture/MOM-Admin-Vben5.7迁移架构.md)
+- [迁移计划](plans/MOM-Admin-Vben5.7迁移计划.md)
+- [ADR-010：Vben 5.7 源码快照](adr/ADR-010-MOM-Admin-Vben5.7源码快照.md)
+- [Vben 5.7.0 来源与补丁台账](open-source/vben-5.7.0-snapshot.md)
+- [IAM 用户偏好后端待办](backlog/iam-user-preferences-backend.md)
+- [IAM 动态菜单与国际化待办](backlog/iam-menu-internationalization.md)
 
 ## 需求
 
@@ -41,12 +51,14 @@
 - [V1 页面路线图](plans/V1页面路线图.md)
 - [Phase 01：Web 技术骨架计划](plans/Phase-01-Web骨架计划.md)
 - [P1.5：Web 认证与授权实施计划](plans/P1.5-Web认证授权实施计划.md)
+- [MOM Admin Vben 5.7 迁移计划](plans/MOM-Admin-Vben5.7迁移计划.md)
 - [VS-01：原料到成品页面设计计划](plans/VS-01-页面设计计划.md)
 
 ## 前端架构
 
 - [前端总体架构](architecture/前端总体架构.md)
 - [P1.5 Web 认证与授权运行时基线](architecture/P1.5-Web认证授权运行时基线.md)
+- [MOM Admin Vben 5.7 迁移架构](architecture/MOM-Admin-Vben5.7迁移架构.md)
 - [Monorepo 与模块边界](architecture/Monorepo与模块边界.md)
 - [三应用职责边界](architecture/三应用职责边界.md)
 - [状态管理与数据流](architecture/状态管理与数据流.md)

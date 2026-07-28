@@ -15,8 +15,8 @@
     "dev:admin": "pnpm --filter @mom/mom-admin dev",
     "dev:supplier": "pnpm --filter @mom/supplier-portal dev",
     "dev:customer": "pnpm --filter @mom/customer-portal dev",
-    "build": "pnpm -r --if-present run build",
-    "check:type": "pnpm -r --if-present run typecheck",
+    "build": "pnpm -r --filter '@mom/*' --if-present run build",
+    "check:type": "pnpm -r --filter '@mom/*' --if-present run typecheck",
     "validate": "node scripts/validate.mjs && node scripts/validate-s08-ports.mjs",
     "test:auth": "rm -rf .tmp/auth-test && tsc -p tsconfig.test.json && node --test .tmp/auth-test/auth/src/index.test.js .tmp/auth-test/first-party-auth/src/index.test.js .tmp/auth-test/api-client/src/index.test.js .tmp/auth-test/iam-admin/src/index.test.js .tmp/auth-test/portal-access/src/index.test.js .tmp/auth-test/security-e2e/src/index.test.js",
     "test": "pnpm run test:auth",
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@types/node": "^25.9.4",
     "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/compiler-sfc": "3.5.34",
     "typescript": "^6.0.3",
     "vite": "8.0.10",
     "vue-tsc": "^3.3.5"

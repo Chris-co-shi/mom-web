@@ -9,8 +9,10 @@
 - 上游：`vbenjs/vue-vben-admin`
 - 参考基线：`v5.7.0`
 - License：MIT
-- 当前使用方式：架构、布局、路由、权限和工程能力参考；`Page` 组件按 MOM 包边界参考重写
-- 当前骨架状态：未复制完整上游演示项目
+- 当前使用方式：MOM Admin 使用固定的 Workspace 最小运行闭包；`Page` 组件此前按 MOM 包边界参考重写
+- 快照 Commit：`63a38dce49ba109f61607994e21ba921d8e970e9`
+- 排除：上游演示业务、Mock、`@vben/request`、`@vben/plugins` 与发布工具链
+- 完整目录和补丁：[Vben 5.7.0 源码快照台账](docs/open-source/vben-5.7.0-snapshot.md)
 
 `packages/common-ui/src/Page.vue` 来源边界：
 

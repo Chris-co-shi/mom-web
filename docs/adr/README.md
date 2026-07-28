@@ -14,14 +14,16 @@ ADR 用于记录影响多个应用、共享包、页面交付或长期维护的�
 
 | ADR | 标题 | 状态 | 主要范围 |
 |---|---|---|---|
-| [ADR-001](ADR-001-Vben5作为参考基线.md) | Vben 5 作为前端参考基线 | Accepted | 工程与上游复用 |
+| [ADR-001](ADR-001-Vben5作为参考基线.md) | Vben 5 作为前端参考基线 | Superseded | 工程与上游复用 |
 | [ADR-002](ADR-002-三应用Monorepo.md) | 三应用 Monorepo | Accepted | 应用与发布边界 |
 | [ADR-003](ADR-003-原型先行交付.md) | 原型先行交付 | Accepted | 页面设计门禁 |
 | [ADR-004](ADR-004-浏览器仅访问Gateway.md) | 浏览器仅访问 MOM Gateway | Accepted | API 与安全边界 |
 | [ADR-005](ADR-005-API模型与ViewModel隔离.md) | API 模型与 View Model 隔离 | Accepted | 类型与组件边界 |
 | [ADR-006](ADR-006-共享组件准入边界.md) | 共享组件准入边界 | Accepted | 设计系统与共享包 |
 | [ADR-007](ADR-007-批次谱系图独立边界.md) | 批次谱系图独立边界 | Accepted | 追溯可视化 |
-| [ADR-008](ADR-008-P1.5-Web认证运行时.md) | P1.5 Web 认证运行时 | Accepted | PKCE、内存 Token、Single Flight、三应用 Client |
+| [ADR-008](ADR-008-P1.5-Web认证运行时.md) | P1.5 Web 认证运行时 | Superseded | 历史 PKCE、内存 Token 方案 |
+| [ADR-009](ADR-009-P1.5-Web第一方认证运行时.md) | P1.5 Web 第一方认证运行时 | Accepted | 第一方登录、sessionStorage、Single Flight、三应用 Client |
+| [ADR-010](ADR-010-MOM-Admin-Vben5.7源码快照.md) | MOM Admin 使用 Vben 5.7 源码快照 | Accepted | Vben Workspace 运行闭包与升级治理 |
 
 ## 创建规则
 

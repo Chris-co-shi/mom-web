@@ -30,7 +30,7 @@ test('concurrent 401 responses create one refresh and retry once', async () => {
   assert.equal(requests, 6);
 });
 
-test('403 never triggers refresh', async () => {
+test('403 never triggers token refresh', async () => {
   let refreshCalls = 0;
   const client = createApiClient({
     baseUrl: '',
@@ -44,6 +44,92 @@ test('403 never triggers refresh', async () => {
     return true;
   });
   assert.equal(refreshCalls, 0);
+});
+
+test('concurrent 403 responses share one authorization refresh and retry GET once', async () => {
+  let authorizationVersion = 1;
+  let authorizationRefreshCalls = 0;
+  let requestCalls = 0;
+  const client = createApiClient({
+    baseUrl: '',
+    refreshAuthorization: async () => {
+      authorizationRefreshCalls += 1;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      authorizationVersion = 2;
+    },
+    fetcher: async () => {
+      requestCalls += 1;
+      return authorizationVersion === 2
+        ? Response.json({ ok: true })
+        : Response.json({ code: 'stale_authorization' }, { status: 403 });
+    },
+  });
+
+  assert.deepEqual(
+    await Promise.all([
+      client.get('/api/a'),
+      client.get('/api/b'),
+      client.get('/api/c'),
+    ]),
+    [{ ok: true }, { ok: true }, { ok: true }],
+  );
+  assert.equal(authorizationRefreshCalls, 1);
+  assert.equal(requestCalls, 6);
+});
+
+test('a read-only request cannot enter an infinite 403 synchronization loop', async () => {
+  let authorizationRefreshCalls = 0;
+  let forbiddenCalls = 0;
+  let requestCalls = 0;
+  const client = createApiClient({
+    baseUrl: '',
+    refreshAuthorization: async () => {
+      authorizationRefreshCalls += 1;
+    },
+    onForbidden: async () => {
+      forbiddenCalls += 1;
+    },
+    fetcher: async () => {
+      requestCalls += 1;
+      return Response.json({ code: 'forbidden' }, { status: 403 });
+    },
+  });
+
+  await assert.rejects(client.get('/api/protected'), MomApiError);
+  assert.equal(authorizationRefreshCalls, 1);
+  assert.equal(forbiddenCalls, 1);
+  assert.equal(requestCalls, 2);
+});
+
+test('a write request refreshes authorization but is never retried automatically', async () => {
+  let authorizationRefreshCalls = 0;
+  let writeChangedCalls = 0;
+  let requestCalls = 0;
+  const client = createApiClient({
+    baseUrl: '',
+    refreshAuthorization: async () => {
+      authorizationRefreshCalls += 1;
+    },
+    onWriteAuthorizationChanged: async () => {
+      writeChangedCalls += 1;
+    },
+    fetcher: async () => {
+      requestCalls += 1;
+      return Response.json({ code: 'stale_authorization' }, { status: 403 });
+    },
+  });
+
+  await assert.rejects(
+    client.post('/api/users', { displayName: 'Changed' }),
+    (error) => {
+      assert.ok(error instanceof MomApiError);
+      assert.equal(error.code, 'authorization_changed_retry_required');
+      return true;
+    },
+  );
+  assert.equal(authorizationRefreshCalls, 1);
+  assert.equal(writeChangedCalls, 1);
+  assert.equal(requestCalls, 1);
 });
 
 test('a retried request cannot enter an infinite 401 loop', async () => {

@@ -3,6 +3,7 @@ import { createApp } from 'vue';
 import Antd from 'ant-design-vue';
 import 'ant-design-vue/dist/reset.css';
 import '@mom/design-tokens/styles.css';
+import '@mom/common-ui/styles.css';
 
 import AuthGate from './AuthGate.vue';
 import { bootstrapRuntime } from './runtime';

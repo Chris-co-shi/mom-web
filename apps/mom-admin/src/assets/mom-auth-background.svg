@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">MOM 制造运营平台工业蓝图背景</title>
+  <desc id="desc">由厂房、产线、数据节点和网格构成的抽象工业蓝图。</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07172e"/>
+      <stop offset="0.56" stop-color="#0b3155"/>
+      <stop offset="1" stop-color="#0b5d73"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.26" cy="0.2" r="0.78">
+      <stop offset="0" stop-color="#2ab9d7" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#2ab9d7" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#9ed8e4" stroke-opacity="0.1" stroke-width="1"/>
+    </pattern>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  <rect width="1600" height="1000" fill="url(#grid)"/>
+
+  <g fill="none" stroke="#73d4e6" stroke-width="2" opacity="0.72">
+    <path d="M90 260H352L438 346H650L750 246H970"/>
+    <path d="M210 712H430L512 630H770L852 712H1110L1224 598H1510"/>
+    <path d="M564 138v146M1035 180v166M1295 326v180" stroke-dasharray="8 10" opacity="0.55"/>
+  </g>
+
+  <g fill="#93e1ed">
+    <circle cx="90" cy="260" r="6"/><circle cx="438" cy="346" r="6"/><circle cx="750" cy="246" r="6"/>
+    <circle cx="210" cy="712" r="6"/><circle cx="512" cy="630" r="6"/><circle cx="852" cy="712" r="6"/>
+    <circle cx="1224" cy="598" r="6"/><circle cx="1510" cy="598" r="6"/>
+  </g>
+
+  <g transform="translate(150 408)" fill="#061c34" stroke="#75cddd" stroke-width="2">
+    <path d="M0 330V135l126 54V92l138 61V74l142 67V0h70v330Z"/>
+    <path d="M476 330V126h88v204M564 330V182h160v148"/>
+    <path d="M34 235h54v46H34zm118 0h54v46h-54zm122 0h54v46h-54zm170-98h20v94h-20z" fill="#2e8397" opacity="0.72"/>
+    <path d="M595 218h98M595 250h98M595 282h98" opacity="0.68"/>
+  </g>
+
+  <g transform="translate(950 405)" fill="none" stroke="#74d7e8" stroke-width="3" opacity="0.78">
+    <circle cx="132" cy="132" r="126"/>
+    <circle cx="132" cy="132" r="82" stroke-dasharray="9 12"/>
+    <path d="M132 5v48M132 211v48M5 132h48M211 132h48M42 42l34 34M188 188l34 34M222 42l-34 34M76 188l-34 34"/>
+    <path d="M87 144l28 28 66-78" stroke="#b8f1c9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g fill="#8bd9e8" opacity="0.18" filter="url(#softGlow)">
+    <circle cx="438" cy="346" r="28"/><circle cx="852" cy="712" r="34"/><circle cx="1224" cy="598" r="30"/>
+  </g>
+  <path d="M0 840C330 760 560 920 870 834s470-80 730 8v158H0Z" fill="#041426" opacity="0.76"/>
+</svg>

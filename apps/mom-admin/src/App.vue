@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PermissionCode } from '@mom/access';
+import { Page } from '@mom/common-ui';
 import {
   describeAdminError,
   type AdminErrorView,
@@ -454,8 +455,14 @@ onMounted(() => {
           </template>
         </a-alert>
 
-        <section v-if="section === 'users'" class="management-page">
-          <div class="page-heading"><div><h1>用户管理</h1><p>管理组织成员、账号状态与访问范围；授权聚合继续使用同一个 iam_user version。</p></div><a-button v-if="can('iam:user:create')" type="primary" @click="createUserOpen = true">新增用户</a-button></div>
+        <Page
+          v-if="section === 'users'"
+          title="用户管理"
+          description="管理组织成员、账号状态与访问范围；授权聚合继续使用同一个 iam_user version。"
+        >
+          <template #extra>
+            <a-button v-if="can('iam:user:create')" type="primary" @click="createUserOpen = true">新增用户</a-button>
+          </template>
           <a-card size="small" class="filter-card"><a-space wrap>
             <a-select v-model:value="userFilters.userType" allow-clear placeholder="用户类型" style="width: 150px"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select>
             <a-select v-model:value="userFilters.status" allow-clear placeholder="状态" style="width: 130px"><a-select-option value="ENABLED">ENABLED</a-select-option><a-select-option value="DISABLED">DISABLED</a-select-option></a-select>
@@ -500,10 +507,16 @@ onMounted(() => {
             </a-card>
             <a-empty v-else description="选择用户后读取完整授权快照" />
           </div>
-        </section>
+        </Page>
 
-        <section v-else-if="section === 'roles'" class="management-page">
-          <div class="page-heading"><div><h1>角色配置</h1><p>内置角色只读；自定义角色 Permission 使用 iam_role version。</p></div><a-button v-if="can('iam:role:create')" type="primary" @click="createRoleOpen = true">创建角色</a-button></div>
+        <Page
+          v-else-if="section === 'roles'"
+          title="角色配置"
+          description="内置角色只读；自定义角色 Permission 使用 iam_role version。"
+        >
+          <template #extra>
+            <a-button v-if="can('iam:role:create')" type="primary" @click="createRoleOpen = true">创建角色</a-button>
+          </template>
           <div class="split-grid"><a-card title="角色目录"><a-table :data-source="roles" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }"><a-table-column title="代码" data-index="code" /><a-table-column title="名称" data-index="name" /><a-table-column title="类型" data-index="applicableUserType" /><a-table-column title="状态" data-index="status" /><a-table-column title=""><template #default="{ record }"><a-button type="link" @click="selectRole(record)">管理</a-button></template></a-table-column></a-table></a-card>
             <a-card v-if="selectedRole" title="角色详情"><template #extra><a-tag :color="selectedRole.builtIn ? 'orange' : 'blue'">{{ selectedRole.builtIn ? '内置只读' : `v${rolePermissions?.roleVersion ?? selectedRole.version}` }}</a-tag></template>
               <a-descriptions bordered size="small" :column="2"><a-descriptions-item label="代码">{{ selectedRole.code }}</a-descriptions-item><a-descriptions-item label="状态">{{ selectedRole.status }}</a-descriptions-item><a-descriptions-item label="名称">{{ selectedRole.name }}</a-descriptions-item><a-descriptions-item label="类型">{{ selectedRole.applicableUserType }}</a-descriptions-item></a-descriptions>
@@ -513,15 +526,24 @@ onMounted(() => {
               <a-input v-model:value="rolePermissionDraft.reason" class="reason-input" placeholder="Permission 变更审计原因（必填）" />
               <a-button v-if="can('iam:role:permission-manage')" danger :disabled="selectedRole.builtIn" @click="saveRolePermissions">替换 Permission</a-button>
             </a-card><a-empty v-else description="选择角色后读取 Permission 快照" /></div>
-        </section>
+        </Page>
 
-        <section v-else-if="section === 'permissions'" class="management-page"><div class="page-heading"><div><h1>Permission 目录</h1><p>系统 Permission 只读，不在前端创建或修改。</p></div><a-button :loading="busy" @click="loadPermissions">刷新</a-button></div><a-card><a-table :data-source="permissions" row-key="id" size="small" :pagination="{ pageSize: 15 }"><a-table-column title="代码" data-index="code" /><a-table-column title="名称" data-index="name" /><a-table-column title="领域" data-index="domainCode" /><a-table-column title="风险"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : record.riskLevel === 'MEDIUM' ? 'orange' : 'green'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column title="状态" data-index="status" /></a-table></a-card></section>
+        <Page v-else-if="section === 'permissions'" title="Permission 目录" description="系统 Permission 只读，不在前端创建或修改。">
+          <template #extra><a-button :loading="busy" @click="loadPermissions">刷新</a-button></template>
+          <a-card><a-table :data-source="permissions" row-key="id" size="small" :pagination="{ pageSize: 15 }"><a-table-column title="代码" data-index="code" /><a-table-column title="名称" data-index="name" /><a-table-column title="领域" data-index="domainCode" /><a-table-column title="风险"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : record.riskLevel === 'MEDIUM' ? 'orange' : 'green'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column title="状态" data-index="status" /></a-table></a-card>
+        </Page>
 
-        <section v-else-if="section === 'sessions'" class="management-page"><div class="page-heading"><div><h1>Session 管理</h1><p>撤销命令不会自动重试，网络失败后先查询最终状态。</p></div></div><a-card size="small" class="filter-card"><a-space wrap><a-input v-model:value="sessionFilters.userId" placeholder="User ID" /><a-input v-model:value="sessionFilters.status" placeholder="状态" /><a-input v-model:value="sessionReason" placeholder="撤销原因" /><a-button @click="loadSessions">查询</a-button></a-space></a-card><a-card><a-table :data-source="sessions" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column title="Session / 用户"><template #default="{ record }"><strong>{{ record.id }}</strong><div class="muted">{{ record.userId }}</div></template></a-table-column><a-table-column title="Client" data-index="clientId" /><a-table-column title="Channel" data-index="channel" /><a-table-column title="状态" data-index="status" /><a-table-column title="登录时间"><template #default="{ record }">{{ formatTime(record.loginAt) }}</template></a-table-column><a-table-column title="绝对过期"><template #default="{ record }">{{ formatTime(record.absoluteExpiresAt) }}</template></a-table-column><a-table-column title=""><template #default="{ record }"><a-button v-if="can('iam:session:revoke')" type="link" danger :disabled="record.status !== 'ACTIVE'" @click="revokeSession(record)">撤销</a-button></template></a-table-column></a-table></a-card></section>
+        <Page v-else-if="section === 'sessions'" title="Session 管理" description="撤销命令不会自动重试，网络失败后先查询最终状态。">
+          <a-card size="small" class="filter-card"><a-space wrap><a-input v-model:value="sessionFilters.userId" placeholder="User ID" /><a-input v-model:value="sessionFilters.status" placeholder="状态" /><a-input v-model:value="sessionReason" placeholder="撤销原因" /><a-button @click="loadSessions">查询</a-button></a-space></a-card><a-card><a-table :data-source="sessions" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column title="Session / 用户"><template #default="{ record }"><strong>{{ record.id }}</strong><div class="muted">{{ record.userId }}</div></template></a-table-column><a-table-column title="Client" data-index="clientId" /><a-table-column title="Channel" data-index="channel" /><a-table-column title="状态" data-index="status" /><a-table-column title="登录时间"><template #default="{ record }">{{ formatTime(record.loginAt) }}</template></a-table-column><a-table-column title="绝对过期"><template #default="{ record }">{{ formatTime(record.absoluteExpiresAt) }}</template></a-table-column><a-table-column title=""><template #default="{ record }"><a-button v-if="can('iam:session:revoke')" type="link" danger :disabled="record.status !== 'ACTIVE'" @click="revokeSession(record)">撤销</a-button></template></a-table-column></a-table></a-card>
+        </Page>
 
-        <section v-else-if="section === 'audit'" class="management-page"><div class="page-heading"><div><h1>安全审计</h1><p>仅展示服务端安全事件的非敏感投影。</p></div></div><a-card size="small" class="filter-card"><a-space><a-input v-model:value="auditFilters.category" placeholder="事件分类" /><a-input v-model:value="auditFilters.targetId" placeholder="Target ID" /><a-button @click="loadAudit">查询</a-button></a-space></a-card><a-card><a-table :data-source="audits" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column title="时间"><template #default="{ record }">{{ formatTime(record.occurredAt) }}</template></a-table-column><a-table-column title="事件" data-index="eventType" /><a-table-column title="风险"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : 'blue'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column title="Actor"><template #default="{ record }">{{ record.actorUserId ?? record.actorClientId ?? record.actorType }}</template></a-table-column><a-table-column title="Target"><template #default="{ record }">{{ record.targetType }} · {{ record.targetId }}</template></a-table-column><a-table-column title="原因" data-index="reasonCode" /><a-table-column title="Correlation ID" data-index="correlationId" /></a-table></a-card></section>
+        <Page v-else-if="section === 'audit'" title="安全审计" description="仅展示服务端安全事件的非敏感投影。">
+          <a-card size="small" class="filter-card"><a-space><a-input v-model:value="auditFilters.category" placeholder="事件分类" /><a-input v-model:value="auditFilters.targetId" placeholder="Target ID" /><a-button @click="loadAudit">查询</a-button></a-space></a-card><a-card><a-table :data-source="audits" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column title="时间"><template #default="{ record }">{{ formatTime(record.occurredAt) }}</template></a-table-column><a-table-column title="事件" data-index="eventType" /><a-table-column title="风险"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : 'blue'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column title="Actor"><template #default="{ record }">{{ record.actorUserId ?? record.actorClientId ?? record.actorType }}</template></a-table-column><a-table-column title="Target"><template #default="{ record }">{{ record.targetType }} · {{ record.targetId }}</template></a-table-column><a-table-column title="原因" data-index="reasonCode" /><a-table-column title="Correlation ID" data-index="correlationId" /></a-table></a-card>
+        </Page>
 
-        <section v-else-if="section === 'clients'" class="management-page"><div class="page-heading"><div><h1>OAuth Client</h1><p>禁用 Client 会联动撤销相关 Session。</p></div></div><a-card size="small" class="filter-card"><a-input v-model:value="clientReason" placeholder="Client 状态变更原因" /></a-card><a-card><a-table :data-source="clients" row-key="clientId" size="small" :pagination="false"><a-table-column title="Client"><template #default="{ record }"><strong>{{ record.clientName }}</strong><div class="muted">{{ record.clientId }}</div></template></a-table-column><a-table-column title="应用" data-index="applicationCode" /><a-table-column title="用户类型" data-index="allowedUserType" /><a-table-column title="Channel" data-index="channel" /><a-table-column title="状态"><template #default="{ record }"><a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status" /></template></a-table-column><a-table-column title="Version" data-index="version" /><a-table-column title=""><template #default="{ record }"><a-button v-if="can(record.status === 'ENABLED' ? 'iam:client:disable' : 'iam:client:enable')" danger @click="changeClientStatus(record)">{{ record.status === 'ENABLED' ? '禁用' : '启用' }}</a-button></template></a-table-column></a-table></a-card></section>
+        <Page v-else-if="section === 'clients'" title="OAuth Client" description="禁用 Client 会联动撤销相关 Session。">
+          <a-card size="small" class="filter-card"><a-input v-model:value="clientReason" placeholder="Client 状态变更原因" /></a-card><a-card><a-table :data-source="clients" row-key="clientId" size="small" :pagination="false"><a-table-column title="Client"><template #default="{ record }"><strong>{{ record.clientName }}</strong><div class="muted">{{ record.clientId }}</div></template></a-table-column><a-table-column title="应用" data-index="applicationCode" /><a-table-column title="用户类型" data-index="allowedUserType" /><a-table-column title="Channel" data-index="channel" /><a-table-column title="状态"><template #default="{ record }"><a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status" /></template></a-table-column><a-table-column title="Version" data-index="version" /><a-table-column title=""><template #default="{ record }"><a-button v-if="can(record.status === 'ENABLED' ? 'iam:client:disable' : 'iam:client:enable')" danger @click="changeClientStatus(record)">{{ record.status === 'ENABLED' ? '禁用' : '启用' }}</a-button></template></a-table-column></a-table></a-card>
+        </Page>
 
         <a-empty v-else-if="visibleSections.length === 0" description="当前账号没有 IAM 管理读取权限" />
         </a-layout-content>

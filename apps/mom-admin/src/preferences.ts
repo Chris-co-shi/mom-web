@@ -1,5 +1,7 @@
 import { defineOverridesPreferences } from '@vben/preferences';
 
+import momLogo from './assets/mom-logo.svg';
+
 export const overridesPreferences = defineOverridesPreferences({
   app: {
     accessMode: 'backend',
@@ -33,7 +35,7 @@ export const overridesPreferences = defineOverridesPreferences({
   logo: {
     enable: true,
     fit: 'contain',
-    source: '',
+    source: momLogo,
   },
   sidebar: {
     collapseWidth: 64,

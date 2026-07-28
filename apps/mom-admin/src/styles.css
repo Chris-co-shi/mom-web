@@ -108,6 +108,14 @@ textarea {
   background: var(--mom-color-surface);
 }
 
+.user-command-bar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .client-command-bar {
   display: flex;
   min-width: 0;
@@ -193,5 +201,16 @@ textarea {
 
   .client-reason-input {
     width: min(100%, 520px);
+  }
+}
+
+@media (max-width: 720px) {
+  .user-command-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .user-command-bar > .ant-btn {
+    align-self: flex-start;
   }
 }

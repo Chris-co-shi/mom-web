@@ -394,19 +394,17 @@ onMounted(() => {
           </template>
         </a-alert>
 
-        <Page
-          v-if="section === 'users'"
-          :title="$t('mom.pages.users.title')"
-          :description="$t('mom.pages.users.description')"
-        >
-          <template #extra>
-            <a-button v-if="can('iam:user:create')" type="primary" @click="createUserOpen = true">{{ $t('mom.actions.createUser') }}</a-button>
-          </template>
-          <a-card size="small" class="filter-card"><a-space wrap>
-            <a-select v-model:value="userFilters.userType" allow-clear :placeholder="$t('mom.fields.userType')" style="width: 150px"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select>
-            <a-select v-model:value="userFilters.status" allow-clear :placeholder="$t('mom.fields.status')" style="width: 130px"><a-select-option value="ENABLED">ENABLED</a-select-option><a-select-option value="DISABLED">DISABLED</a-select-option></a-select>
-            <a-button :loading="busy" @click="loadUsers">{{ $t('mom.actions.search') }}</a-button>
-          </a-space></a-card>
+        <Page v-if="section === 'users'">
+          <a-card size="small" class="filter-card">
+            <div class="user-command-bar">
+              <a-space wrap>
+                <a-select v-model:value="userFilters.userType" allow-clear :placeholder="$t('mom.fields.userType')" style="width: 150px"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select>
+                <a-select v-model:value="userFilters.status" allow-clear :placeholder="$t('mom.fields.status')" style="width: 130px"><a-select-option value="ENABLED">ENABLED</a-select-option><a-select-option value="DISABLED">DISABLED</a-select-option></a-select>
+                <a-button :loading="busy" @click="loadUsers">{{ $t('mom.actions.search') }}</a-button>
+              </a-space>
+              <a-button v-if="can('iam:user:create')" type="primary" @click="createUserOpen = true">{{ $t('mom.actions.createUser') }}</a-button>
+            </div>
+          </a-card>
           <div class="split-grid">
             <a-card :title="$t('mom.titles.userDirectory')" :bordered="false"><a-table :data-source="users" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }">
               <a-table-column :title="$t('mom.fields.user')" data-index="username"><template #default="{ record }"><strong>{{ record.username }}</strong><div class="muted">{{ record.displayName }}</div></template></a-table-column>
@@ -448,15 +446,8 @@ onMounted(() => {
           </div>
         </Page>
 
-        <Page
-          v-else-if="section === 'roles'"
-          :title="$t('mom.pages.roles.title')"
-          :description="$t('mom.pages.roles.description')"
-        >
-          <template #extra>
-            <a-button v-if="can('iam:role:create')" type="primary" @click="createRoleOpen = true">{{ $t('mom.actions.createRole') }}</a-button>
-          </template>
-          <div class="split-grid"><a-card :title="$t('mom.titles.roleDirectory')"><a-table :data-source="roles" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.type')" data-index="applicableUserType" /><a-table-column :title="$t('mom.fields.status')" data-index="status" /><a-table-column title=""><template #default="{ record }"><a-button type="link" @click="selectRole(record)">{{ $t('mom.actions.manage') }}</a-button></template></a-table-column></a-table></a-card>
+        <Page v-else-if="section === 'roles'">
+          <div class="split-grid"><a-card :title="$t('mom.titles.roleDirectory')"><template #extra><a-button v-if="can('iam:role:create')" type="primary" @click="createRoleOpen = true">{{ $t('mom.actions.createRole') }}</a-button></template><a-table :data-source="roles" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.type')" data-index="applicableUserType" /><a-table-column :title="$t('mom.fields.status')" data-index="status" /><a-table-column title=""><template #default="{ record }"><a-button type="link" @click="selectRole(record)">{{ $t('mom.actions.manage') }}</a-button></template></a-table-column></a-table></a-card>
             <a-card v-if="selectedRole" :title="$t('mom.titles.roleDetails')"><template #extra><a-tag :color="selectedRole.builtIn ? 'orange' : 'blue'">{{ selectedRole.builtIn ? $t('mom.common.builtInReadOnly') : `v${rolePermissions?.roleVersion ?? selectedRole.version}` }}</a-tag></template>
               <a-descriptions bordered size="small" :column="2"><a-descriptions-item :label="$t('mom.fields.code')">{{ selectedRole.code }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.status')">{{ selectedRole.status }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.name')">{{ selectedRole.name }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.type')">{{ selectedRole.applicableUserType }}</a-descriptions-item></a-descriptions>
               <a-button v-if="can('iam:role:update')" class="detail-action" :disabled="selectedRole.builtIn" @click="editRoleOpen = true">{{ $t('mom.actions.editCustomRole') }}</a-button>
@@ -467,20 +458,19 @@ onMounted(() => {
             </a-card><a-empty v-else :description="$t('mom.empty.selectRole')" /></div>
         </Page>
 
-        <Page v-else-if="section === 'permissions'" :title="$t('mom.pages.permissions.title')" :description="$t('mom.pages.permissions.description')">
-          <template #extra><a-button :loading="busy" @click="loadPermissions">{{ $t('mom.actions.refresh') }}</a-button></template>
-          <a-card><a-table :data-source="permissions" row-key="id" size="small" :pagination="{ pageSize: 15 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.domain')" data-index="domainCode" /><a-table-column :title="$t('mom.fields.risk')"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : record.riskLevel === 'MEDIUM' ? 'orange' : 'green'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column :title="$t('mom.fields.status')" data-index="status" /></a-table></a-card>
+        <Page v-else-if="section === 'permissions'">
+          <a-card :title="$t('mom.pages.permissions.title')"><template #extra><a-button :loading="busy" @click="loadPermissions">{{ $t('mom.actions.refresh') }}</a-button></template><a-table :data-source="permissions" row-key="id" size="small" :pagination="{ pageSize: 15 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.domain')" data-index="domainCode" /><a-table-column :title="$t('mom.fields.risk')"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : record.riskLevel === 'MEDIUM' ? 'orange' : 'green'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column :title="$t('mom.fields.status')" data-index="status" /></a-table></a-card>
         </Page>
 
-        <Page v-else-if="section === 'sessions'" :title="$t('mom.pages.sessions.title')" :description="$t('mom.pages.sessions.description')">
+        <Page v-else-if="section === 'sessions'">
           <a-card size="small" class="filter-card"><a-space wrap><a-input v-model:value="sessionFilters.userId" placeholder="User ID" /><a-input v-model:value="sessionFilters.status" :placeholder="$t('mom.fields.status')" /><a-input v-model:value="sessionReason" :placeholder="$t('mom.fields.revokeReason')" /><a-button @click="loadSessions">{{ $t('mom.actions.search') }}</a-button></a-space></a-card><a-card><a-table :data-source="sessions" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column :title="$t('mom.fields.sessionUser')"><template #default="{ record }"><strong>{{ record.id }}</strong><div class="muted">{{ record.userId }}</div></template></a-table-column><a-table-column title="Client" data-index="clientId" /><a-table-column title="Channel" data-index="channel" /><a-table-column :title="$t('mom.fields.status')" data-index="status" /><a-table-column :title="$t('mom.fields.loginTime')"><template #default="{ record }">{{ formatTime(record.loginAt) }}</template></a-table-column><a-table-column :title="$t('mom.fields.absoluteExpiry')"><template #default="{ record }">{{ formatTime(record.absoluteExpiresAt) }}</template></a-table-column><a-table-column title=""><template #default="{ record }"><a-button v-if="can('iam:session:revoke')" type="link" danger :disabled="record.status !== 'ACTIVE'" @click="revokeSession(record)">{{ $t('mom.actions.revoke') }}</a-button></template></a-table-column></a-table></a-card>
         </Page>
 
-        <Page v-else-if="section === 'audit'" :title="$t('mom.pages.audit.title')" :description="$t('mom.pages.audit.description')">
+        <Page v-else-if="section === 'audit'">
           <a-card size="small" class="filter-card"><a-space><a-input v-model:value="auditFilters.category" :placeholder="$t('mom.fields.eventCategory')" /><a-input v-model:value="auditFilters.targetId" placeholder="Target ID" /><a-button @click="loadAudit">{{ $t('mom.actions.search') }}</a-button></a-space></a-card><a-card><a-table :data-source="audits" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column :title="$t('mom.fields.time')"><template #default="{ record }">{{ formatTime(record.occurredAt) }}</template></a-table-column><a-table-column :title="$t('mom.fields.event')" data-index="eventType" /><a-table-column :title="$t('mom.fields.risk')"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : 'blue'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column title="Actor"><template #default="{ record }">{{ record.actorUserId ?? record.actorClientId ?? record.actorType }}</template></a-table-column><a-table-column title="Target"><template #default="{ record }">{{ record.targetType }} · {{ record.targetId }}</template></a-table-column><a-table-column :title="$t('mom.fields.reason')" data-index="reasonCode" /><a-table-column title="Correlation ID" data-index="correlationId" /></a-table></a-card>
         </Page>
 
-        <Page v-else-if="section === 'clients'" :title="$t('mom.pages.clients.title')" :description="$t('mom.pages.clients.description')">
+        <Page v-else-if="section === 'clients'">
           <a-card :title="$t('mom.titles.clientDirectory')" class="client-directory-card">
             <div class="client-command-bar">
               <label for="client-status-reason">{{ $t('mom.fields.clientStatusReason') }}</label>

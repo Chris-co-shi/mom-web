@@ -68,7 +68,7 @@ async function submit(): Promise<void> {
 <template>
   <a-card :bordered="false" class="mom-auth-card">
     <h1>{{ $t('mom.auth.changeTitle') }}</h1>
-    <a-form layout="vertical" @finish="submit">
+    <a-form :model="form" layout="vertical" @finish="submit">
       <a-form-item :label="$t('mom.auth.username')" required>
         <a-input
           v-model:value="form.username"

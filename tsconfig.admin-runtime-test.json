@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "rootDir": "./apps/mom-admin/src",
+    "outDir": "./.tmp/admin-runtime-test",
+    "types": ["node"],
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": [
+    "apps/mom-admin/src/section-navigation.ts",
+    "apps/mom-admin/src/section-navigation.test.ts"
+  ]
+}

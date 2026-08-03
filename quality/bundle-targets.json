@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "measurement": {
+    "buildMode": "production",
+    "entry": "index.html",
+    "gzip": "node:zlib gzipSync level=9",
+    "initialClosure": "Vite manifest entry plus recursive static imports; dynamicImports excluded",
+    "chunkSize": "minified JavaScript file bytes",
+    "sourceMaps": "all *.map files below application dist"
+  },
+  "applications": {
+    "mom-admin": {
+      "dist": "apps/mom-admin/dist",
+      "initialGzipBytes": 358400,
+      "maxChunkBytes": 512000
+    },
+    "supplier-portal": {
+      "dist": "apps/supplier-portal/dist",
+      "initialGzipBytes": 256000,
+      "maxChunkBytes": 512000
+    },
+    "customer-portal": {
+      "dist": "apps/customer-portal/dist",
+      "initialGzipBytes": 256000,
+      "maxChunkBytes": 512000
+    }
+  }
+}

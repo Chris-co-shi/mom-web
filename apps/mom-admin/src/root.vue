@@ -7,17 +7,24 @@ import { preferences, usePreferences } from '@vben/preferences';
 import { App as AntApp, ConfigProvider, theme } from 'ant-design-vue';
 
 import { antdLocale } from './locales';
+import { momAntdTheme } from './app/theme';
 
 const { isDark } = usePreferences();
 const { tokens } = useAntdDesignTokens();
 
-const tokenTheme = computed(() => ({
+const legacyTokenTheme = computed(() => ({
   algorithm: [
     isDark.value ? theme.darkAlgorithm : theme.defaultAlgorithm,
     ...(preferences.app.compact ? [theme.compactAlgorithm] : []),
   ],
   token: tokens,
 }));
+
+const tokenTheme = computed(() =>
+  import.meta.env.VITE_MOM_THEME_PROVIDER === 'legacy'
+    ? legacyTokenTheme.value
+    : momAntdTheme.value,
+);
 </script>
 
 <template>

@@ -1,0 +1,175 @@
+/* Generated from tokens/mom.tokens.json (CSS Variables). Do not edit. */
+:root {
+  --mom-font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  --mom-font-letter-spacing-body: 0;
+  --mom-font-letter-spacing-heading: -0.012em;
+  --mom-font-line-height-body: 1.5;
+  --mom-font-line-height-relaxed: 1.7;
+  --mom-font-line-height-tight: 1.25;
+  --mom-font-size-12: 12px;
+  --mom-font-size-13: 13px;
+  --mom-font-size-14: 14px;
+  --mom-font-size-16: 16px;
+  --mom-font-size-20: 20px;
+  --mom-font-size-24: 24px;
+  --mom-font-size-32: 32px;
+  --mom-font-weight-bold: 700;
+  --mom-font-weight-medium: 500;
+  --mom-font-weight-regular: 400;
+  --mom-font-weight-semibold: 600;
+  --mom-space-1: 4px;
+  --mom-space-10: 40px;
+  --mom-space-12: 48px;
+  --mom-space-16: 64px;
+  --mom-space-2: 8px;
+  --mom-space-3: 12px;
+  --mom-space-4: 16px;
+  --mom-space-5: 20px;
+  --mom-space-6: 24px;
+  --mom-space-8: 32px;
+  --mom-size-content-lg: 1440px;
+  --mom-size-content-md: 1120px;
+  --mom-size-content-sm: 720px;
+  --mom-size-field-lg: 520px;
+  --mom-size-field-md: 420px;
+  --mom-size-field-sm: 240px;
+  --mom-size-icon-lg: 24px;
+  --mom-size-icon-md: 20px;
+  --mom-size-icon-sm: 16px;
+  --mom-radius-card: 12px;
+  --mom-radius-control: 8px;
+  --mom-radius-modal: 16px;
+  --mom-radius-pill: 999px;
+  --mom-shadow-modal: 0 24px 72px rgb(17 17 19 / 20%);
+  --mom-shadow-overlay: 0 16px 44px rgb(17 17 19 / 16%);
+  --mom-border-style: solid;
+  --mom-border-width: 1px;
+  --mom-z-index-modal: 1100;
+  --mom-z-index-notification: 1200;
+  --mom-z-index-page: 0;
+  --mom-z-index-popover: 1000;
+  --mom-z-index-sticky: 100;
+  --mom-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --mom-motion-fast: 140ms;
+  --mom-motion-slow: 220ms;
+  --mom-motion-standard: 180ms;
+  --mom-breakpoint-lg: 1280px;
+  --mom-breakpoint-md: 1024px;
+  --mom-breakpoint-sm: 768px;
+  --mom-breakpoint-xl: 1600px;
+  --mom-breakpoint-xs: 480px;
+  --mom-card-radius: 12px;
+  --mom-control-focus-width: 2px;
+  --mom-control-radius: 8px;
+  --mom-modal-radius: 16px;
+  --mom-modal-shadow: 0 24px 72px rgb(17 17 19 / 20%);
+}
+
+:root,
+[data-mom-theme="LIGHT"] {
+  --mom-color-action-primary: #4F46E5;
+  --mom-color-action-primary-active: #3730A3;
+  --mom-color-action-primary-foreground: #FFFFFF;
+  --mom-color-action-primary-hover: #4338CA;
+  --mom-color-action-primary-soft: #EEF2FF;
+  --mom-color-border-default: #D7D7DC;
+  --mom-color-border-strong: #B9BBC2;
+  --mom-color-focus-ring: #4F46E5;
+  --mom-color-status-danger: #B42318;
+  --mom-color-status-danger-surface: #FDECEC;
+  --mom-color-status-info: #1D4ED8;
+  --mom-color-status-info-surface: #EFF6FF;
+  --mom-color-status-success: #207A4B;
+  --mom-color-status-success-surface: #EAF7F0;
+  --mom-color-status-warning: #A15C00;
+  --mom-color-status-warning-surface: #FFF4E5;
+  --mom-color-surface-canvas: #F5F5F7;
+  --mom-color-surface-container: #FFFFFF;
+  --mom-color-surface-elevated: #FFFFFF;
+  --mom-color-surface-navigation: #FAFAFB;
+  --mom-color-surface-subtle: #FAFAFB;
+  --mom-color-text-disabled: #8E9199;
+  --mom-color-text-inverse: #FFFFFF;
+  --mom-color-text-primary: #1D1D1F;
+  --mom-color-text-secondary: #5F6368;
+}
+
+[data-mom-theme="DARK"] {
+  --mom-color-action-primary: #818CF8;
+  --mom-color-action-primary-active: #6366F1;
+  --mom-color-action-primary-foreground: #111113;
+  --mom-color-action-primary-hover: #A5B4FC;
+  --mom-color-action-primary-soft: #252A5A;
+  --mom-color-border-default: #3A3A3E;
+  --mom-color-border-strong: #52525A;
+  --mom-color-focus-ring: #818CF8;
+  --mom-color-status-danger: #F87171;
+  --mom-color-status-danger-surface: #4A2020;
+  --mom-color-status-info: #60A5FA;
+  --mom-color-status-info-surface: #172554;
+  --mom-color-status-success: #34D399;
+  --mom-color-status-success-surface: #123C2A;
+  --mom-color-status-warning: #FBBF24;
+  --mom-color-status-warning-surface: #4A3500;
+  --mom-color-surface-canvas: #111113;
+  --mom-color-surface-container: #1C1C1E;
+  --mom-color-surface-elevated: #252528;
+  --mom-color-surface-navigation: #1C1C1E;
+  --mom-color-surface-subtle: #252528;
+  --mom-color-text-disabled: #6F727A;
+  --mom-color-text-inverse: #111113;
+  --mom-color-text-primary: #F5F5F7;
+  --mom-color-text-secondary: #A1A1AA;
+}
+
+[data-mom-channel="ADMIN"][data-mom-density="COMFORTABLE"] {
+  --mom-channel-control-height: 36px;
+  --mom-channel-font-size-body: 14px;
+  --mom-channel-page-gutter: 20px;
+  --mom-channel-table-cell-block: 12px;
+  --mom-channel-table-cell-inline: 16px;
+  --mom-channel-touch-target-min: 36px;
+}
+
+[data-mom-channel="ADMIN"][data-mom-density="COMPACT"] {
+  --mom-channel-control-height: 32px;
+  --mom-channel-font-size-body: 14px;
+  --mom-channel-page-gutter: 16px;
+  --mom-channel-table-cell-block: 8px;
+  --mom-channel-table-cell-inline: 12px;
+  --mom-channel-touch-target-min: 32px;
+}
+
+[data-mom-channel="PORTAL"] {
+  --mom-channel-control-height: 44px;
+  --mom-channel-font-size-body: 16px;
+  --mom-channel-page-gutter: 24px;
+  --mom-channel-table-cell-block: 14px;
+  --mom-channel-table-cell-inline: 16px;
+  --mom-channel-touch-target-min: 44px;
+}
+
+/* S01～S04 兼容别名；消费者清零后删除。 */
+:root {
+  --mom-color-primary: var(--mom-color-action-primary);
+  --mom-color-primary-hover: var(--mom-color-action-primary-hover);
+  --mom-color-primary-active: var(--mom-color-action-primary-active);
+  --mom-color-primary-soft: var(--mom-color-action-primary-soft);
+  --mom-color-page: var(--mom-color-surface-canvas);
+  --mom-color-surface: var(--mom-color-surface-container);
+  --mom-color-navigation: var(--mom-color-surface-navigation);
+  --mom-color-text: var(--mom-color-text-primary);
+  --mom-color-border: var(--mom-color-border-default);
+  --mom-color-success: var(--mom-color-status-success);
+  --mom-color-warning: var(--mom-color-status-warning);
+  --mom-color-error: var(--mom-color-status-danger);
+  --mom-space-unit: var(--mom-space-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mom-motion-fast: 0ms;
+    --mom-motion-standard: 0ms;
+    --mom-motion-slow: 0ms;
+  }
+}

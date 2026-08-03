@@ -2,7 +2,7 @@
 
 本目录是 `mom-web` 的需求、计划、前端架构、认证运行时、交互设计、原型、页面状态、API 映射和架构决策权威入口。
 
-> P1.5 S00、S08～S10、S12 已完成并合并。MOM Admin 的 Vben 5.7 迁移继续使用既有 `phase/p1.5-auth-authorization`；本轮不扩大到 IAM 后端或两个外部门户。
+> P1.6 Product Architecture 与 Frontend Architecture 已生效，S01 Token 与主题已完成。MOM Admin 的 Vben 5.7 快照保留为有期限的迁移例外；当前停在 S02 前，不自动进入 Shell、System Runtime、IAM 后端或 `mom-mobile`。
 
 ## 文档使用原则
 
@@ -20,7 +20,23 @@
 
 - Web Phase 01：三应用技术骨架已完成。
 - P1.5：**Completed / Merged**，Web Auth Runtime、MOM Admin、Supplier/Customer Portal 与安全 E2E 全部完成。
-- Phase 02：**Pending / Ready after preflight cleanup**，下一业务目标为供应商送货与到货协同。
+- P1.6 D01：**Completed / Accepted**，产品架构、前端架构和 ADR-011～016 已生效。
+- S00：**Completed**，质量门禁与契约/Bundle 基线已建立；严格 Bundle 产品目标仍按 S02/S05 治理。
+- S01：**Completed**，单一 Token Source、三主题、渠道密度与三应用 Provider 已建立。
+- S02：**Not Started / Awaiting explicit approval**，不得自动进入 UI 与 Shell 基础实现。
+
+## P1.6 产品与前端架构
+
+- [产品定位](product-architecture/product-positioning.md)
+- [信息架构](product-architecture/information-architecture.md)
+- [角色任务模型](product-architecture/role-task-model.md)
+- [页面地图](product-architecture/page-map.md)
+- [渠道边界](product-architecture/channel-boundaries.md)
+- [前端架构产品输入](product-architecture/frontend-architecture-input.md)
+- [P1.6 前端架构入口](frontend-architecture/README.md)
+- [D01 决策生效报告](frontend-architecture/reviews/D01-decision-activation-report.md)
+- [S00 质量安全网报告](frontend-architecture/reviews/S00-quality-safety-net-report.md)
+- [S01 Token 与主题实施报告](frontend-architecture/reviews/S01-token-theme-implementation-report.md)
 
 ## P1.5 认证与授权
 
@@ -30,11 +46,12 @@
 - [ADR-009：P1.5 Web 第一方认证运行时](adr/ADR-009-P1.5-Web第一方认证运行时.md)
 - [mom-platform P1.5 S00 权威 PR](https://github.com/Chris-co-shi/mom-platform/pull/15)
 
-## MOM Admin Vben 5.7
+## MOM Admin Vben 5.7 历史与退出治理
 
-- [迁移架构](architecture/MOM-Admin-Vben5.7迁移架构.md)
-- [迁移计划](plans/MOM-Admin-Vben5.7迁移计划.md)
-- [ADR-010：Vben 5.7 源码快照](adr/ADR-010-MOM-Admin-Vben5.7源码快照.md)
+- [历史迁移架构](architecture/MOM-Admin-Vben5.7迁移架构.md)
+- [历史迁移计划](plans/MOM-Admin-Vben5.7迁移计划.md)
+- [ADR-010：Vben 5.7 源码快照（Superseded）](adr/ADR-010-MOM-Admin-Vben5.7源码快照.md)
+- [ADR-011：MOM 自有运行时与 Vben 渐进退出](adr/ADR-011-MOM自有轻量前端运行时与Vben渐进退出.md)
 - [Vben 5.7.0 来源与补丁台账](open-source/vben-5.7.0-snapshot.md)
 - [IAM 用户偏好后端待办](backlog/iam-user-preferences-backend.md)
 - [IAM 动态菜单与国际化待办](backlog/iam-menu-internationalization.md)
@@ -69,7 +86,8 @@
 
 ## 设计交付
 
-- [MOM Web 全局视觉基线](design/MOM-Web全局视觉基线.md)\n- [用户流程规范](user-flows/README.md)
+- [MOM Web 全局视觉基线](design/MOM-Web全局视觉基线.md)
+- [用户流程规范](user-flows/README.md)
 - [Web 原型交付规范](prototypes/README.md)
 - [页面状态矩阵规范](page-state-matrix/README.md)
 - [组件映射规范](component-mapping/README.md)

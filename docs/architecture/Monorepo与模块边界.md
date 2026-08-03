@@ -1,5 +1,10 @@
 # Monorepo 与模块边界
 
+> 状态：Historical baseline / P1.6 target superseded
+> 当前权威：[目录结构](../frontend-architecture/04-directory-structure.md)、[模块边界](../frontend-architecture/05-module-boundaries.md)、[复用规则](../frontend-architecture/06-reuse-rules.md)
+
+本文保留当前代码形成过程的历史边界；其中 Axios、Vben 公共能力和占位共享包描述不再定义 P1.6 目标架构。
+
 ## 1. 目录模型
 
 ```text

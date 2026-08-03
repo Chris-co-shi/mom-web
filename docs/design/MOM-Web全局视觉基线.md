@@ -1,6 +1,7 @@
 # MOM Web 全局视觉基线 v1
 
-> 状态：Draft / 视觉基础已进入代码；业务页面仍按后端契约逐步迁移。
+> 状态：Historical visual baseline；已落地代码事实保留，P1.6 目标由 [视觉方向](../frontend-architecture/01-visual-direction.md) 与 [样式系统](../frontend-architecture/07-style-system.md) 取代。
+> 其中 Vben Layout/Preferences 相关限制仅是迁移历史，不再定义目标架构。
 
 ![MOM Admin 用户管理视觉稿](../assets/mom-admin-visual-foundation-v1.png)
 

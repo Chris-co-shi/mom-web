@@ -6,7 +6,7 @@ on:
     branches:
       - main
 
-# P1.5 stage work is accepted only from the exact PR head SHA.
+# P1.6 quality gates validate the exact PR head SHA.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -37,6 +37,15 @@ jobs:
       - name: Validate repository boundaries
         run: pnpm validate
 
+      - name: Lint TypeScript and Vue sources
+        run: pnpm lint
+
+      - name: Lint styles
+        run: pnpm stylelint
+
+      - name: Check generated token drift
+        run: pnpm tokens:check
+
       - name: Type check
         run: |
           set -o pipefail
@@ -54,5 +63,45 @@ jobs:
       - name: Run auth runtime tests
         run: pnpm test
 
+      - name: Run component tests
+        run: pnpm test:component
+
       - name: Build applications
         run: pnpm build
+
+      - name: Check bundle regression baseline
+        run: pnpm bundle:check
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run application shell smoke tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

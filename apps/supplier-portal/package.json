@@ -10,12 +10,14 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@mom/design-tokens": "workspace:*",
     "@mom/portal-access": "workspace:*",
     "ant-design-vue": "catalog:",
     "pinia": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

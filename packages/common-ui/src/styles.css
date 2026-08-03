@@ -1,17 +1,17 @@
 .mom-page {
   display: flex;
   min-height: 100%;
-  padding-top: 12px;
+  padding-top: var(--mom-space-3);
   flex-direction: column;
 }
 
 .mom-page__header {
   display: flex;
-  min-height: 58px;
-  margin-bottom: 16px;
+  min-height: calc(var(--mom-space-12) + var(--mom-space-3));
+  margin-bottom: var(--mom-space-4);
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--mom-space-6);
 }
 
 .mom-page__heading {
@@ -20,25 +20,26 @@
 }
 
 .mom-page__heading h1 {
-  margin: 0 0 6px;
-  color: var(--mom-color-text);
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.25;
+  margin: 0 0 var(--mom-space-2);
+  color: var(--mom-color-text-primary);
+  font-size: var(--mom-font-size-24);
+  font-weight: var(--mom-font-weight-semibold);
+  line-height: var(--mom-font-line-height-tight);
+  letter-spacing: var(--mom-font-letter-spacing-heading);
 }
 
 .mom-page__heading p {
   margin: 0;
   color: var(--mom-color-text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--mom-channel-font-size-body);
+  line-height: var(--mom-font-line-height-body);
 }
 
 .mom-page__extra {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 8px;
+  gap: var(--mom-space-2);
 }
 
 .mom-page__content {
@@ -46,12 +47,12 @@
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--mom-space-4);
 }
 
-@media (max-width: 800px) {
+@media (width <= 768px) {
   .mom-page__header {
     flex-direction: column;
-    gap: 12px;
+    gap: var(--mom-space-3);
   }
 }

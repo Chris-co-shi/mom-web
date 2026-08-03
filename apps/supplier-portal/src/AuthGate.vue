@@ -48,8 +48,8 @@ function backToLogin(): void {
         <h2>供应商登录</h2>
         <a-alert v-if="runtimeState.authError" type="error" show-icon :message="runtimeState.authError" class="auth-alert" />
         <a-form layout="vertical" @submit.prevent="submitLogin">
-          <a-form-item label="用户名" required><a-input v-model:value="form.username" autocomplete="username" maxlength="120" /></a-form-item>
-          <a-form-item label="密码" required><a-input-password v-model:value="form.password" autocomplete="current-password" maxlength="128" /></a-form-item>
+          <a-form-item label="用户名" required><a-input v-model:value="form.username" autocomplete="username" :maxlength="120" /></a-form-item>
+          <a-form-item label="密码" required><a-input-password v-model:value="form.password" autocomplete="current-password" :maxlength="128" /></a-form-item>
           <a-button type="primary" html-type="submit" block :loading="busy" :disabled="!form.username.trim() || !form.password">登录</a-button>
         </a-form>
       </template>
@@ -59,9 +59,9 @@ function backToLogin(): void {
         <a-alert v-if="runtimeState.authError" type="warning" show-icon :message="runtimeState.authError" class="auth-alert" />
         <a-form layout="vertical" @submit.prevent="submitPasswordChange">
           <a-form-item label="账号"><a-input :value="form.username" disabled /></a-form-item>
-          <a-form-item label="新密码" required><a-input-password v-model:value="form.newPassword" autocomplete="new-password" maxlength="128" /></a-form-item>
-          <a-form-item label="确认新密码" required><a-input-password v-model:value="form.confirmation" autocomplete="new-password" maxlength="128" /></a-form-item>
-          <a-space direction="vertical" style="width:100%"><a-button type="primary" html-type="submit" block :loading="busy">修改并登录</a-button><a-button block @click="backToLogin">返回登录</a-button></a-space>
+          <a-form-item label="新密码" required><a-input-password v-model:value="form.newPassword" autocomplete="new-password" :maxlength="128" /></a-form-item>
+          <a-form-item label="确认新密码" required><a-input-password v-model:value="form.confirmation" autocomplete="new-password" :maxlength="128" /></a-form-item>
+          <a-space direction="vertical" class="auth-actions"><a-button type="primary" html-type="submit" block :loading="busy">修改并登录</a-button><a-button block @click="backToLogin">返回登录</a-button></a-space>
         </a-form>
       </template>
     </a-card>
@@ -70,5 +70,55 @@ function backToLogin(): void {
 </template>
 
 <style scoped>
-.auth-loading{min-height:100vh;display:grid;place-items:center;background:#f5f7fb}.auth-page{min-height:100vh;display:grid;grid-template-columns:minmax(18rem,32rem) minmax(20rem,27rem);gap:4rem;align-items:center;justify-content:center;padding:3rem;background:linear-gradient(135deg,#f3e8ff,#f7f8fc 48%,#eef2f8)}.auth-brand h1{font-size:2.5rem;margin:.8rem 0}.auth-brand p{color:#5f6d80;line-height:1.8}.auth-card{box-shadow:0 24px 70px rgba(50,25,90,.14);border-radius:16px}.auth-alert{margin:1rem 0}@media(max-width:800px){.auth-page{grid-template-columns:1fr;padding:1.25rem;gap:1rem}}
+.auth-loading {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: var(--mom-color-surface-canvas);
+}
+
+.auth-page {
+  display: grid;
+  width: 100%;
+  max-width: var(--mom-size-content-md);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: var(--mom-space-12);
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: var(--mom-space-16);
+  align-items: center;
+  background: linear-gradient(135deg, var(--mom-color-action-primary-soft), var(--mom-color-surface-canvas));
+}
+
+.auth-brand h1 {
+  margin: var(--mom-space-3) 0;
+  font-size: var(--mom-font-size-32);
+  letter-spacing: var(--mom-font-letter-spacing-heading);
+}
+
+.auth-brand p {
+  color: var(--mom-color-text-secondary);
+  line-height: var(--mom-font-line-height-relaxed);
+}
+
+.auth-card {
+  border-radius: var(--mom-radius-modal);
+  box-shadow: var(--mom-shadow-modal);
+}
+
+.auth-alert {
+  margin: var(--mom-space-4) 0;
+}
+
+.auth-actions {
+  width: 100%;
+}
+
+@media (width <= 768px) {
+  .auth-page {
+    padding: var(--mom-space-5);
+    grid-template-columns: 1fr;
+    gap: var(--mom-space-4);
+  }
+}
 </style>

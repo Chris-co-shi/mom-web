@@ -1,10 +1,13 @@
 # MOM Admin Vben 5.7 迁移架构
 
-- 状态：Current / Accepted
+- 状态：Historical / Superseded as target architecture
 - 版本基线：Vue Vben Admin `v5.7.0`
 - 范围：仅 `apps/mom-admin`
 - 认证权威：[ADR-009](../adr/ADR-009-P1.5-Web第一方认证运行时.md)
-- 源码策略：[ADR-010](../adr/ADR-010-MOM-Admin-Vben5.7源码快照.md)
+- 历史源码策略：[ADR-010](../adr/ADR-010-MOM-Admin-Vben5.7源码快照.md)
+- 当前迁移权威：[ADR-011](../adr/ADR-011-MOM自有轻量前端运行时与Vben渐进退出.md)、[P1.6 技术架构](../frontend-architecture/02-technical-architecture.md)
+
+> 本文保留 P1.5 已实现 Vben 迁入行为和安全回归基线，不再定义 P1.6 目标架构。Vben 快照在 S05 删除门禁满足前仍是冻结的迁移例外。
 
 ## 1. 目标
 

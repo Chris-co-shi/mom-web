@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "purpose": "S01 后 MOM 自有样式禁用值的精确迁移例外；数量只能减少，不能扩大",
+  "exceptions": [
+    {
+      "file": "apps/mom-admin/src/App.vue",
+      "rule": "inline-style",
+      "count": 1,
+      "reason": "Roles 页面尚未进入 S01 /iam/users 示范迁移范围",
+      "removalSlice": "S06"
+    }
+  ]
+}

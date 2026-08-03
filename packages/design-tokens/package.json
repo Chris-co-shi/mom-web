@@ -5,10 +5,13 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./tailwind.css": "./src/generated/tailwind.css"
   },
   "types": "./src/index.ts",
   "scripts": {
+    "generate": "node scripts/generate-tokens.mjs",
+    "check": "node scripts/generate-tokens.mjs --check",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

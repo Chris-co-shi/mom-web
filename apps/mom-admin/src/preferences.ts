@@ -1,4 +1,5 @@
 import { defineOverridesPreferences } from '@vben/preferences';
+import { momDesignTokens } from '@mom/design-tokens';
 
 import momLogo from './assets/mom-logo.svg';
 
@@ -48,7 +49,7 @@ export const overridesPreferences = defineOverridesPreferences({
     styleType: 'chrome',
   },
   theme: {
-    colorPrimary: 'hsl(243 75% 59%)',
+    colorPrimary: momDesignTokens.semantic.LIGHT.color['action-primary'],
     mode: 'light',
     radius: '0.5',
     semiDarkHeader: false,

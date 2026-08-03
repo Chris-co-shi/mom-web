@@ -1,36 +1,17 @@
-export const momDesignTokens = {
-  colorPrimary: '#4f46e5',
-  colorPrimaryHover: '#4338ca',
-  colorPrimaryActive: '#3730a3',
-  colorSuccess: '#2f855a',
-  colorWarning: '#b7791f',
-  colorError: '#c2414f',
-  colorText: '#1f2937',
-  colorTextSecondary: '#667085',
-  colorBorder: '#e5e7eb',
-  colorPage: '#f6f5f3',
-  colorSurface: '#fffefc',
-  colorNavigation: '#eef0f8',
-  colorPrimarySoft: '#eef2ff',
-  borderRadius: 12,
-  borderRadiusControl: 8,
-  controlHeight: 36,
-  spacingUnit: 4,
-  layout: {
-    headerHeight: 56,
-    tabHeight: 40,
-    siderWidth: 240,
-    siderCollapsedWidth: 64,
-    contentGutterCompact: 16,
-    contentGutterStandard: 20,
-    contentGutterWide: 24,
-  },
-  motion: {
-    fast: 140,
-    standard: 180,
-    slow: 220,
-    easing: 'cubic-bezier(0.2, 0, 0, 1)',
-  },
-} as const;
-
-export type MomDesignTokens = typeof momDesignTokens;
+export { getMomAntdThemeTokens } from './generated/antd-theme';
+export {
+  momDesignTokens,
+  type MomChannel,
+  type MomDensity,
+  type MomDesignTokens,
+  type MomResolvedTheme,
+  type MomThemeMode,
+} from './generated/tokens';
+export {
+  createMomThemeRuntime,
+  type MomThemeDocument,
+  type MomThemeMediaQuery,
+  type MomThemeRuntime,
+  type MomThemeRuntimeOptions,
+  type MomThemeSnapshot,
+} from './runtime';

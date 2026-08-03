@@ -12,6 +12,9 @@ async function initApplication(): Promise<void> {
     overrides: overridesPreferences,
   });
 
+  const { startAdminThemeBridge } = await import('./app/theme');
+  startAdminThemeBridge();
+
   const { bootstrap } = await import('./bootstrap');
   await bootstrap();
 }

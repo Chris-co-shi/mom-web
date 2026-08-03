@@ -4,7 +4,7 @@
 
 ### 工业 MOM 管理端、供应商门户与客户门户
 
-基于 Vue 3、Vite、TypeScript、Ant Design Vue 和 Vben 5.7 构建三个独立浏览器应用，并将认证运行时、权限体验、用户流程、页面状态、原型和 API 契约作为正式设计资产。
+基于 Vue 3、Vite、TypeScript 和 Ant Design Vue 构建三个独立浏览器应用。MOM Admin 当前仍包含冻结的 Vben 5.7 源码快照，并按已接受的渐进退出决策迁移到 MOM 自有轻量运行时。
 
 <p>
   <a href="https://github.com/Chris-co-shi/mom-web/actions/workflows/ci.yml">
@@ -13,17 +13,17 @@
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-42B883?logo=vue.js&logoColor=white">
   <img alt="Vite" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white">
-  <img alt="Status" src="https://img.shields.io/badge/Status-Phase%2002%20Ready-2563EB">
+  <img alt="Status" src="https://img.shields.io/badge/Status-P1.6%20S01%20Completed-2563EB">
 </p>
 
-[文档中心](docs/README.md) · [全局视觉基线](docs/design/MOM-Web全局视觉基线.md) · [P1.5 Web 运行时](docs/architecture/P1.5-Web认证授权运行时基线.md) · [P1.5 Web 计划](docs/plans/P1.5-Web认证授权实施计划.md) · [前端总体架构](docs/architecture/前端总体架构.md) · [ADR](docs/adr/README.md)
+[文档中心](docs/README.md) · [产品架构](docs/product-architecture/product-positioning.md) · [P1.6 前端架构](docs/frontend-architecture/README.md) · [P1.5 Web 运行时](docs/architecture/P1.5-Web认证授权运行时基线.md) · [ADR](docs/adr/README.md)
 
 </div>
 
 ---
 
 > [!IMPORTANT]
-> P1.5 Web Auth Runtime、MOM Admin、Supplier/Customer Portal 与安全 E2E 已完成并合并。当前状态为 **P1.5 Completed / Merged**，下一阶段是 Phase 02 供应商送货与到货协同。
+> P1.6 Product Architecture 与 Frontend Architecture 已生效，S01 Token 与主题已完成。当前停在 **S02 UI 与 Shell 基础之前**；未经独立批准不进入公共 UI、图标 Registry 或 Shell 重构。System S19-A 正式客户端与跨仓库集成证据仍待完成。
 
 ## 🌟 项目定位
 
@@ -91,11 +91,11 @@ flowchart LR
 
 ## 🖥️ 三套应用
 
-| 应用 | 用户 | V1 职责 | 默认端口 |
-|---|---|---|---:|
-| `apps/mom-admin` | 内部计划、生产、仓库、质量、设备、集成和安全管理人员 | MOM 内部工作台、业务处理、IAM 管理、追溯与监控 | 5555 |
-| `apps/supplier-portal` | 供应商业务、物流和质量人员 | 送货、预约、单据、质量协同和状态查询 | 5556 |
-| `apps/customer-portal` | 客户业务、物流和质量人员 | 订单、发运、COA、客诉与处理进度 | 5557 |
+| 应用 | 用户 | 长期产品边界 | 当前已交付 | 默认端口 |
+|---|---|---|---|---:|
+| `apps/mom-admin` | 内部计划、生产、仓库、质量、设备、集成和安全管理人员 | 内部制造协同与平台治理 | IAM 管理与安全运行时；P1.6 System 页面尚未实施 | 5555 |
+| `apps/supplier-portal` | 供应商业务、物流和质量人员 | 供应商交货、来料质量与文档协同 | 身份/Party/Factory 隔离骨架；业务页为 Future | 5556 |
+| `apps/customer-portal` | 客户业务、物流和质量人员 | 履约、质量证明与反馈协同 | 身份/Party/Factory 隔离骨架；业务页为 Future | 5557 |
 
 三套应用独立路由、独立构建、独立 Client、独立内存 Auth State 和独立发布。
 
@@ -107,8 +107,8 @@ flowchart LR
 | `@mom/auth` | OAuth/OIDC/PKCE 标准协议兼容能力，当前三应用不直接使用 | Compatibility |
 | `@mom/api-client` | Gateway HTTP、Bearer Token、Correlation ID、`X-Factory-Id`、错误与幂等 | P1.5 Completed |
 | `@mom/access` | `/api/iam/me`、路由、菜单、按钮和当前 Factory 体验控制 | 已有边界，S08 完善 |
-| `@mom/design-tokens` | 色彩、间距、字体和工业状态 Token | 基础骨架 |
-| Vben 5.7 Workspace | MOM Admin 的 BasicLayout、菜单、页签、Preferences、Locale 与路由基础 | 固定源码快照 |
+| `@mom/design-tokens` | 单一 Token Source、CSS/Tailwind/Antdv/TS 生成与三主题运行时 | P1.6 S01 Completed |
+| Vben 5.7 Workspace | MOM Admin 现有 BasicLayout、菜单、页签、Preferences、Locale 与路由基础 | 冻结迁移例外；按 ADR-011 渐进退出 |
 | `@mom/common-ui` | MOM 页面级公共组合 | Page 已落地 |
 | `@mom/domain-components` | 批次、库存、工单、检验、设备状态等领域组件 | 基础骨架 |
 | `@mom/shared` | 通用类型、格式化、校验与无业务工具 | 基础骨架 |
@@ -125,7 +125,7 @@ flowchart LR
 | 类型系统 | TypeScript `6.0.3` |
 | 状态管理 | Pinia（不得持久化 Token） |
 | UI 基础 | Ant Design Vue |
-| 请求边界 | Axios / Gateway-only API access |
+| 请求边界 | 浏览器 Fetch / `@mom/api-client` / Gateway-only API access |
 | 工程校验 | 自定义边界校验、vue-tsc、Vite Build、GitHub Actions |
 
 ## 🏗️ 仓库结构
@@ -145,7 +145,7 @@ mom-web/
 │   ├── domain-components/
 │   ├── shared/
 │   ├── traceability-graph/
-│   └── Vben 5.7 Workspace packages...
+│   └── Vben 5.7 Workspace packages... # 冻结迁移例外
 ├── docs/
 ├── scripts/
 ├── pnpm-workspace.yaml
@@ -169,14 +169,21 @@ pnpm dev:customer
 
 ```bash
 pnpm validate
+pnpm lint
+pnpm stylelint
+pnpm tokens:check
 pnpm check:type
+pnpm test
+pnpm test:component
 pnpm build
+pnpm bundle:check
 ```
 
-或：
+`pnpm check` 聚合构建前的静态、类型、Node/Vitest 与组件检查；涉及路由、认证、Shell 或 Runtime 时另执行：
 
 ```bash
 pnpm check
+pnpm test:e2e
 ```
 
 ## 📚 文档导航
@@ -186,7 +193,8 @@ pnpm check
 | 总览 | [文档中心](docs/README.md) | 全部文档导航和维护规则 |
 | 安全 | [P1.5 Web Runtime](docs/architecture/P1.5-Web认证授权运行时基线.md) | PKCE、Token、Refresh、`/api/iam/me` 和三应用边界 |
 | 计划 | [P1.5 Web 计划](docs/plans/P1.5-Web认证授权实施计划.md) | S08～S10 和 S12 实施范围 |
-| 设计 | [MOM Web 全局视觉基线](docs/design/MOM-Web全局视觉基线.md) | 全局布局、颜色、样式、动效及国际化边界 |\n| 架构 | [前端总体架构](docs/architecture/前端总体架构.md) | 三应用与共享包协作方式 |
+| 设计 | [MOM Web 全局视觉基线](docs/design/MOM-Web全局视觉基线.md) | 全局布局、颜色、样式、动效及国际化边界 |
+| 架构 | [前端总体架构](docs/architecture/前端总体架构.md) | 三应用与共享包协作方式 |
 | 架构 | [三应用职责边界](docs/architecture/三应用职责边界.md) | Client、user_type、Party 和应用边界 |
 | 架构 | [权限与数据权限](docs/architecture/权限与数据权限.md) | Permission、Factory、Party 与前端体验控制 |
 | 架构 | [API 访问与错误处理](docs/architecture/API访问与错误处理.md) | Single Flight 和 HTTP 错误语义 |
@@ -202,6 +210,10 @@ pnpm check
 | P1.5 S09 | MOM Admin 权限管理页面 | ✅ Completed / Merged |
 | P1.5 S10 | Supplier/Customer Portal | ✅ Completed / Merged |
 | P1.5 S12 | Web 安全 E2E 与封板 | ✅ Completed / Merged |
+| P1.6 D00～D01 | 产品与前端架构评审、决策生效 | ✅ Completed / Accepted |
+| P1.6 S00 | 质量安全网与契约/Bundle 基线 | ✅ Completed |
+| P1.6 S01 | Token 与主题 | ✅ Completed |
+| P1.6 S02 | UI 与 Shell 基础 | ⏸ Awaiting explicit approval |
 | Phase 02 | 供应商送货与到货协同 | ⏳ Pending / Ready after preflight cleanup |
 
 ## 🧠 前端原则

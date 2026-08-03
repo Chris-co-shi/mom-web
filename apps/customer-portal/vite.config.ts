@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
@@ -13,7 +14,7 @@ const alias = {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [vue()],
+    plugins: [vue(), tailwindcss()],
     resolve: { alias },
     server: {
       port: 5557,
@@ -24,6 +25,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    build: { sourcemap: true },
+    build: {
+      manifest: true,
+      sourcemap: false,
+    },
   };
 });

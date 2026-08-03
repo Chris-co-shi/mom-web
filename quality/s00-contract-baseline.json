@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "iamNavigation": [
+    { "path": "/iam/users", "permission": "iam:user:read" },
+    { "path": "/iam/roles", "permission": "iam:role:read" },
+    { "path": "/iam/permissions", "permission": "iam:permission:read" },
+    { "path": "/iam/sessions", "permission": "iam:session:read" },
+    { "path": "/iam/audit", "permission": "iam:audit:read" },
+    { "path": "/iam/clients", "permission": "iam:client:read" }
+  ],
+  "applications": [
+    { "app": "mom-admin", "clientId": "mom-admin-web", "userType": "INTERNAL", "port": 5555 },
+    { "app": "supplier-portal", "clientId": "mom-supplier-web", "userType": "SUPPLIER", "port": 5556 },
+    { "app": "customer-portal", "clientId": "mom-customer-web", "userType": "CUSTOMER", "port": 5557 }
+  ],
+  "authentication": {
+    "endpoints": [
+      "/api/iam/auth/login",
+      "/api/iam/auth/password/change-required",
+      "/api/iam/auth/refresh",
+      "/api/iam/auth/logout"
+    ],
+    "accessContextEndpoint": "/api/iam/me",
+    "storage": "sessionStorage",
+    "storageKeyPrefix": "mom.auth.session."
+  },
+  "security": {
+    "browserApiPrefix": "/api",
+    "requestImplementation": "Fetch",
+    "forbiddenRefresh": "single-flight; read-only request may retry once; write request never retries automatically",
+    "forbiddenPersistentStorage": ["localStorage", "Cookie", "IndexedDB"]
+  },
+  "build": {
+    "ciNode": 24,
+    "pnpm": "11.7.0",
+    "manifest": true,
+    "publicSourceMaps": false
+  }
+}

@@ -1,7 +1,8 @@
 # ADR-010：MOM Admin 使用 Vben 5.7 源码快照
 
-- 状态：Accepted
+- 状态：Superseded
 - 日期：2026-07-28
+- 替代决策：[ADR-011：MOM 自有轻量前端运行时与 Vben 渐进退出](ADR-011-MOM自有轻量前端运行时与Vben渐进退出.md)
 - 替代：[ADR-001：Vben 5 作为前端参考基线](ADR-001-Vben5作为参考基线.md)
 - 关联架构：[MOM Admin Vben 5.7 迁移架构](../architecture/MOM-Admin-Vben5.7迁移架构.md)
 - 来源台账：[Vben 5.7.0 源码快照台账](../open-source/vben-5.7.0-snapshot.md)

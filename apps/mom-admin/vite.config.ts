@@ -43,6 +43,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
-    build: { sourcemap: true },
+    build: {
+      manifest: true,
+      sourcemap: false,
+    },
   };
 });

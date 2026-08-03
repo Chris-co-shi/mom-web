@@ -6,11 +6,13 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 test('MOM Page owns its fixed-tab safety spacing', async () => {
   const pageStyles = await read('../../../packages/common-ui/src/styles.css');
+  const generatedTokens = await read('../../../packages/design-tokens/src/generated/tokens.css');
 
   assert.match(
     pageStyles,
-    /\.mom-page\s*\{[^}]*padding-top:\s*12px;/s,
+    /\.mom-page\s*\{[^}]*padding-top:\s*var\(--mom-space-3\);/s,
   );
+  assert.match(generatedTokens, /--mom-space-3:\s*12px;/);
 });
 
 test('IAM pages use breadcrumbs as the only page heading', async () => {

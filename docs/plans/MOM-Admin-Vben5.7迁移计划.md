@@ -1,9 +1,11 @@
 # MOM Admin Vben 5.7 迁移计划
 
-- 状态：Completed
+- 状态：Completed / Historical
 - 分支：`phase/p1.5-auth-authorization`
 - Base：远程阶段分支最新 Head
 - 顺序：文档 → 代码 → 测试
+
+> 本计划记录 P1.5 已完成的 Vben 迁入，不再指导 P1.6。当前退出计划与门禁见 [ADR-011](../adr/ADR-011-MOM自有轻量前端运行时与Vben渐进退出.md) 和 [P1.6 实施计划](../frontend-architecture/08-implementation-plan.md)。
 
 ## 1. 文档门禁
 

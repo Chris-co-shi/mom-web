@@ -41,7 +41,7 @@ const entries = portalFeatures('customer');
             <a-descriptions-item label="固定 Party">{{ runtimeState.user.partyType }} · {{ runtimeState.user.partyId }}</a-descriptions-item>
             <a-descriptions-item label="当前 Factory">{{ runtimeState.user.currentFactoryId ?? '未选择' }}</a-descriptions-item>
           </a-descriptions>
-          <div class="factory-control"><div><strong>Factory Scope</strong><p>只能从 `/api/iam/me` 返回的范围选择；刷新后失效的偏好会被清除。</p></div><a-select v-if="runtimeState.user.factoryIds.length" :value="runtimeState.user.currentFactoryId ?? undefined" placeholder="选择当前工厂" style="width: 240px" @change="selectFactory"><a-select-option v-for="factoryId in runtimeState.user.factoryIds" :key="factoryId" :value="factoryId">{{ factoryId }}</a-select-option></a-select><a-tag v-else color="orange">无 Factory Scope</a-tag></div>
+          <div class="factory-control"><div><strong>Factory Scope</strong><p>只能从 `/api/iam/me` 返回的范围选择；刷新后失效的偏好会被清除。</p></div><a-select v-if="runtimeState.user.factoryIds.length" :value="runtimeState.user.currentFactoryId ?? undefined" class="factory-select" placeholder="选择当前工厂" @change="selectFactory"><a-select-option v-for="factoryId in runtimeState.user.factoryIds" :key="factoryId" :value="factoryId">{{ factoryId }}</a-select-option></a-select><a-tag v-else color="orange">无 Factory Scope</a-tag></div>
         </a-card>
 
         <div><h2>业务能力</h2><p class="section-copy">当前仅展示规划能力；切换为 enabled 后仍必须同时满足固定 Client、user_type、Party 和 Permission。</p></div>

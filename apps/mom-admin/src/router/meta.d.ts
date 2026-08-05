@@ -1,11 +1,13 @@
 import type { PermissionCode } from '@mom/access';
-import type { IamSection } from './menu-source';
+import type { AdminTaskDomainKey, IamSection } from './registry';
 
 declare module 'vue-router' {
   interface RouteMeta {
     menuCode?: string;
     requiredPermission?: PermissionCode;
+    routeKey?: string;
     section?: IamSection;
+    taskDomain?: AdminTaskDomainKey;
   }
 }
 

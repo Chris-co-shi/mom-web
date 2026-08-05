@@ -125,7 +125,10 @@
 [data-mom-channel="ADMIN"][data-mom-density="COMFORTABLE"] {
   --mom-channel-control-height: 36px;
   --mom-channel-font-size-body: 14px;
-  --mom-channel-page-gutter: 20px;
+  --mom-channel-header-height: 56px;
+  --mom-channel-page-gutter: 24px;
+  --mom-channel-sidebar-rail-width: 64px;
+  --mom-channel-sidebar-width: 240px;
   --mom-channel-table-cell-block: 12px;
   --mom-channel-table-cell-inline: 16px;
   --mom-channel-touch-target-min: 36px;
@@ -134,7 +137,10 @@
 [data-mom-channel="ADMIN"][data-mom-density="COMPACT"] {
   --mom-channel-control-height: 32px;
   --mom-channel-font-size-body: 14px;
-  --mom-channel-page-gutter: 16px;
+  --mom-channel-header-height: 56px;
+  --mom-channel-page-gutter: 20px;
+  --mom-channel-sidebar-rail-width: 64px;
+  --mom-channel-sidebar-width: 240px;
   --mom-channel-table-cell-block: 8px;
   --mom-channel-table-cell-inline: 12px;
   --mom-channel-touch-target-min: 32px;

@@ -1,16 +1,16 @@
-import type { MomDensity, MomThemeMode, MomThemeSnapshot } from '@mom/design-tokens';
+import type { MomThemeMode, MomThemeSnapshot } from '@mom/design-tokens';
 import { createMomThemeRuntime, getMomAntdThemeTokens } from '@mom/design-tokens';
-import { preferences } from '@vben/preferences';
+import type { ResolvedUserPreference } from '@mom/system-client';
 import type { ThemeConfig } from 'ant-design-vue/es/config-provider/context';
-import { computed, readonly, shallowRef, watch } from 'vue';
+import { computed, readonly, shallowRef } from 'vue';
 import { theme } from 'ant-design-vue';
 
 const snapshot = shallowRef<Readonly<MomThemeSnapshot>>();
 
 export const momThemeRuntime = createMomThemeRuntime({
   channel: 'ADMIN',
-  density: mapDensity(preferences.app.compact),
-  mode: mapThemeMode(preferences.theme.mode),
+  density: 'COMFORTABLE',
+  mode: 'LIGHT',
 });
 
 snapshot.value = momThemeRuntime.snapshot();
@@ -37,33 +37,13 @@ export const momAntdTheme = computed<ThemeConfig>(() => {
   };
 });
 
-let bridgeStarted = false;
-
-/**
- * 启动 Vben 到 MOM Theme Runtime 的迁移桥。
- *
- * S01～S03 期间旧 Shell 仍拥有 Theme Toggle 和 Compact Toggle，因此只监听旧状态并映射到
- * MOM 根属性与 Antdv Adapter；S04 替换 Preferences/Shell 后删除本桥。
- */
-export function startAdminThemeBridge(): void {
-  if (bridgeStarted) return;
-  bridgeStarted = true;
-  watch(
-    () => preferences.theme.mode,
-    (mode) => momThemeRuntime.setMode(mapThemeMode(mode)),
-  );
-  watch(
-    () => preferences.app.compact,
-    (compact) => momThemeRuntime.setDensity(mapDensity(compact)),
-  );
+/** 匿名阶段只切换当前运行实例，不写入或伪造 System Preference。 */
+export function setAnonymousThemeMode(mode: MomThemeMode): void {
+  momThemeRuntime.setMode(mode);
 }
 
-function mapThemeMode(mode: string): MomThemeMode {
-  if (mode === 'dark') return 'DARK';
-  if (mode === 'auto') return 'SYSTEM';
-  return 'LIGHT';
-}
-
-function mapDensity(compact: boolean): MomDensity {
-  return compact ? 'COMPACT' : 'COMFORTABLE';
+/** 将 System 返回的白名单显示偏好应用到 MOM 主题运行时。 */
+export function applySystemPreference(preference: ResolvedUserPreference): void {
+  momThemeRuntime.setMode(preference.themeMode);
+  momThemeRuntime.setDensity(preference.density);
 }

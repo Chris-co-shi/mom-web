@@ -20,7 +20,8 @@
       "@mom/api-client": ["./packages/api-client/src/index.ts"],
       "@mom/common-ui": ["./packages/common-ui/src/index.ts"],
       "@mom/iam-admin": ["./packages/iam-admin/src/index.ts"],
-      "@mom/portal-access": ["./packages/portal-access/src/index.ts"]
+      "@mom/portal-access": ["./packages/portal-access/src/index.ts"],
+      "@mom/system-client": ["./packages/system-client/src/index.ts"]
     }
   }
 }

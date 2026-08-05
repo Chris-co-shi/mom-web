@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import {
+  Button as AButton,
+  Result as AResult,
+  Space as ASpace,
+} from 'ant-design-vue';
 
-import { $t } from '@vben/locales';
-
+import { $t } from '../../locales';
 import {
   logout,
   retryAccessInitialization,

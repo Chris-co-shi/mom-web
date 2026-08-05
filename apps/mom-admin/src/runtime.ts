@@ -6,7 +6,12 @@ import {
   FirstPartyAuthError,
 } from '@mom/first-party-auth';
 import { createIamAdminClient } from '@mom/iam-admin';
-import { reactive } from 'vue';
+import {
+  createSystemRuntime,
+  DEFAULT_SYSTEM_PREFERENCE,
+  type SystemRuntimeSnapshot,
+} from '@mom/system-client';
+import { reactive, readonly, shallowRef } from 'vue';
 
 import { $t } from './locales';
 
@@ -32,6 +37,7 @@ export const auth = createFirstPartyAuthRuntime({
 });
 
 let accessRuntime: ReturnType<typeof createAccessRuntime> | undefined;
+let systemRuntimeRef: ReturnType<typeof createSystemRuntime> | undefined;
 export const api = createApiClient({
   baseUrl: gatewayBase,
   getContext: () => ({
@@ -46,6 +52,7 @@ export const api = createApiClient({
   onAuthenticationRequired: async () => {
     auth.clear();
     accessRuntime?.clear();
+    systemRuntimeRef?.clear();
     runtimeState.user = undefined;
     runtimeState.phase = 'anonymous';
   },
@@ -64,6 +71,34 @@ export const api = createApiClient({
   },
 });
 export const iamAdmin = createIamAdminClient(api);
+
+export const systemRuntime = createSystemRuntime({
+  api,
+  applicationCode: 'mom-admin',
+  clientId,
+  defaultPreference: DEFAULT_SYSTEM_PREFERENCE,
+  onPreference: async (preference) => {
+    const [{ applySystemPreference }, { applySystemLocale }] = await Promise.all([
+      import('./app/theme'),
+      import('./locales'),
+    ]);
+    applySystemPreference(preference);
+    await applySystemLocale(preference.locale, {});
+  },
+  onI18n: async (locale, messages) => {
+    const { applySystemLocale } = await import('./locales');
+    await applySystemLocale(locale, messages);
+  },
+});
+systemRuntimeRef = systemRuntime;
+const systemSnapshot = shallowRef<Readonly<SystemRuntimeSnapshot>>(systemRuntime.snapshot());
+systemRuntime.subscribe((snapshot) => {
+  systemSnapshot.value = snapshot;
+  document.documentElement.dataset.momSystemRuntime = snapshot.phase.toLowerCase();
+  document.documentElement.dataset.momSystemPreferenceSource = snapshot.preferenceSource.toLowerCase();
+  document.documentElement.dataset.momSystemI18nSource = snapshot.i18nSource.toLowerCase();
+});
+export const systemRuntimeState = readonly(systemSnapshot);
 
 export const access = createAccessRuntime({
   expectedClientId: clientId,
@@ -95,7 +130,8 @@ export async function bootstrapRuntime(): Promise<boolean> {
     return true;
   }
   try {
-    await access.initialize();
+    const context = await access.initialize();
+    await systemRuntime.activate({ userId: context.userId });
     runtimeState.phase = 'ready';
   }
   catch (error) {
@@ -117,6 +153,7 @@ export async function login(username?: string, password?: string): Promise<void>
   runtimeState.error = undefined;
   auth.clear();
   access.clear();
+  systemRuntime.clear();
   runtimeState.user = undefined;
   if (!username || !password) {
     runtimeState.phase = 'anonymous';
@@ -135,7 +172,8 @@ export async function login(username?: string, password?: string): Promise<void>
     throw error;
   }
   try {
-    await access.initialize();
+    const context = await access.initialize();
+    await systemRuntime.activate({ userId: context.userId });
     runtimeState.phase = 'ready';
   }
   catch (error) {
@@ -167,7 +205,8 @@ export async function changeRequiredPassword(
     throw error;
   }
   try {
-    await access.initialize();
+    const context = await access.initialize();
+    await systemRuntime.activate({ userId: context.userId });
     runtimeState.phase = 'ready';
   }
   catch (error) {
@@ -181,7 +220,8 @@ export async function retryAccessInitialization(): Promise<void> {
   runtimeState.error = undefined;
   runtimeState.phase = 'starting';
   try {
-    await access.initialize();
+    const context = await access.initialize();
+    await systemRuntime.activate({ userId: context.userId });
     runtimeState.phase = 'ready';
   }
   catch (error) {
@@ -192,6 +232,7 @@ export async function retryAccessInitialization(): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
+  systemRuntime.clear();
   access.clear();
   runtimeState.user = undefined;
   try {

@@ -17,11 +17,18 @@ export interface ApiClientOptions {
 }
 
 export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
-  body?: BodyInit | Record<string, unknown> | unknown[] | null;
+  body?: BodyInit | object | null;
   idempotencyKey?: string;
+  notifyForbidden?: boolean;
   timeoutMs?: number;
   retryAuthorization?: boolean;
   retryAuthentication?: boolean;
+}
+
+export interface ApiResponse<T> {
+  status: number;
+  headers: Readonly<Record<string, string>>;
+  data?: T;
 }
 
 export interface ApiErrorPayload {
@@ -58,6 +65,7 @@ export class MomNetworkError extends Error {
 
 export interface ApiClient {
   request<T>(path: string, options?: ApiRequestOptions): Promise<T>;
+  conditionalGet<T>(path: string, options?: ApiRequestOptions): Promise<ApiResponse<T>>;
   get<T>(path: string, options?: ApiRequestOptions): Promise<T>;
   post<T>(path: string, body?: ApiRequestOptions['body'], options?: ApiRequestOptions): Promise<T>;
   put<T>(path: string, body?: ApiRequestOptions['body'], options?: ApiRequestOptions): Promise<T>;
@@ -82,15 +90,35 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   }
 
   async function request<T>(path: string, requestOptions: ApiRequestOptions = {}): Promise<T> {
-    return execute<T>(path, requestOptions, false, false);
+    const response = await execute(path, requestOptions, false, false, false);
+    return readSuccess<T>(response);
   }
 
-  async function execute<T>(
+  async function conditionalGet<T>(
+    path: string,
+    requestOptions: ApiRequestOptions = {},
+  ): Promise<ApiResponse<T>> {
+    const response = await execute(
+      path,
+      { ...requestOptions, method: 'GET' },
+      false,
+      false,
+      true,
+    );
+    return Object.freeze({
+      status: response.status,
+      headers: responseHeaders(response),
+      ...(response.status === 304 ? {} : { data: await readSuccess<T>(response) }),
+    });
+  }
+
+  async function execute(
     path: string,
     requestOptions: ApiRequestOptions,
     authenticationRetried: boolean,
     authorizationRetried: boolean,
-  ): Promise<T> {
+    acceptNotModified: boolean,
+  ): Promise<Response> {
     const context = options.getContext?.() ?? {};
     const correlationId = context.correlationId?.trim() || crypto.randomUUID();
     const headers = new Headers(requestOptions.headers);
@@ -116,8 +144,17 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
     let response: Response;
     try {
+      const {
+        body: _body,
+        idempotencyKey: _idempotencyKey,
+        notifyForbidden: _notifyForbidden,
+        retryAuthentication: _retryAuthentication,
+        retryAuthorization: _retryAuthorization,
+        timeoutMs: _timeoutMs,
+        ...requestInit
+      } = requestOptions;
       response = await fetcher(requestUrl, {
-        ...requestOptions,
+        ...requestInit,
         body: body as BodyInit | null | undefined,
         headers,
         signal: controller.signal,
@@ -145,7 +182,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         await options.onAuthenticationRequired?.(error);
         throw error;
       }
-      return execute<T>(path, requestOptions, true, authorizationRetried);
+      return execute(path, requestOptions, true, authorizationRetried, acceptNotModified);
     }
 
     if (response.status === 403) {
@@ -157,11 +194,12 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       ) {
         await refreshAuthorizationOnce();
         if (isReadOnlyMethod(requestOptions.method)) {
-          return execute<T>(
+          return execute(
             path,
             requestOptions,
             authenticationRetried,
             true,
+            acceptNotModified,
           );
         }
         const changed = new MomApiError(
@@ -175,16 +213,18 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         await options.onWriteAuthorizationChanged?.(changed);
         throw changed;
       }
-      await options.onForbidden?.(error);
+      if (requestOptions.notifyForbidden !== false) {
+        await options.onForbidden?.(error);
+      }
       throw error;
     }
 
-    if (!response.ok) {
+    if (!response.ok && !(acceptNotModified && response.status === 304)) {
       const error = await toApiError(response, correlationId);
       if (response.status === 401) await options.onAuthenticationRequired?.(error);
       throw error;
     }
-    return readSuccess<T>(response);
+    return response;
   }
 
   async function refreshAuthorizationOnce(): Promise<void> {
@@ -198,6 +238,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
   return {
     request,
+    conditionalGet,
     get: (path, requestOptions = {}) => request(path, { ...requestOptions, method: 'GET' }),
     post: (path, body, requestOptions = {}) => request(path, { ...requestOptions, method: 'POST', body }),
     put: (path, body, requestOptions = {}) => request(path, { ...requestOptions, method: 'PUT', body }),
@@ -213,6 +254,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       const {
         body: _body,
         idempotencyKey: _idempotencyKey,
+        notifyForbidden: _notifyForbidden,
         timeoutMs: _timeoutMs,
         retryAuthorization: _retryAuthorization,
         retryAuthentication: _retryAuthentication,
@@ -228,6 +270,15 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       return response.blob();
     },
   };
+}
+
+function responseHeaders(response: Response): Readonly<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  for (const name of ['cache-control', 'etag', 'x-correlation-id']) {
+    const value = response.headers.get(name);
+    if (value !== null) headers[name] = value;
+  }
+  return Object.freeze(headers);
 }
 
 async function readSuccess<T>(response: Response): Promise<T> {

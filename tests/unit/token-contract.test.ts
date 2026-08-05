@@ -41,4 +41,28 @@ describe('MOM Token Contract', () => {
     expect(getMomAntdThemeTokens('DARK', 'PORTAL', 'COMPACT').token.controlHeight).toBe(44);
     expect(getMomAntdThemeTokens('DARK', 'PORTAL', 'COMPACT').token.colorSuccess).toBe('#34D399');
   });
+
+  it('Admin 页面安全边距按已批准密度冻结为 24px 和 20px', async () => {
+    const generated = await readFile(
+      resolve(root, 'packages/design-tokens/src/generated/tokens.css'),
+      'utf8',
+    );
+    const comfortable = generated.slice(
+      generated.indexOf('[data-mom-channel="ADMIN"][data-mom-density="COMFORTABLE"]'),
+      generated.indexOf('[data-mom-channel="ADMIN"][data-mom-density="COMPACT"]'),
+    );
+    const compact = generated.slice(
+      generated.indexOf('[data-mom-channel="ADMIN"][data-mom-density="COMPACT"]'),
+      generated.indexOf('[data-mom-channel="PORTAL"]'),
+    );
+
+    expect(comfortable).toContain('--mom-channel-page-gutter: 24px;');
+    expect(comfortable).toContain('--mom-channel-header-height: 56px;');
+    expect(comfortable).toContain('--mom-channel-sidebar-width: 240px;');
+    expect(comfortable).toContain('--mom-channel-sidebar-rail-width: 64px;');
+    expect(compact).toContain('--mom-channel-page-gutter: 20px;');
+    expect(compact).toContain('--mom-channel-header-height: 56px;');
+    expect(compact).toContain('--mom-channel-sidebar-width: 240px;');
+    expect(compact).toContain('--mom-channel-sidebar-rail-width: 64px;');
+  });
 });

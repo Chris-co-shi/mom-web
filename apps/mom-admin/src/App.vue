@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { PermissionCode } from '@mom/access';
-import { Page } from '@mom/common-ui';
+import {
+  ConfirmAction,
+  DataState,
+  Page,
+  type ConfirmActionState,
+} from '@mom/common-ui';
 import {
   describeAdminError,
   type AdminErrorView,
@@ -16,12 +21,37 @@ import {
   type UserAuthorizationView,
   type UserRow,
 } from '@mom/iam-admin';
-import { Modal, message } from 'ant-design-vue';
-import { preferences } from '@vben/preferences';
+import {
+  Alert as AAlert,
+  Badge as ABadge,
+  Button as AButton,
+  Descriptions as ADescriptions,
+  DescriptionsItem as ADescriptionsItem,
+  Divider as ADivider,
+  Form as AForm,
+  FormItem as AFormItem,
+  Input as AInput,
+  InputPassword as AInputPassword,
+  Modal as AModal,
+  Select as ASelect,
+  SelectOption as ASelectOption,
+  Space as ASpace,
+  Switch as ASwitch,
+  Table as ATable,
+  TableColumn as ATableColumn,
+  Tag as ATag,
+  Textarea as ATextarea,
+  message,
+} from 'ant-design-vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { $t } from './locales';
+import {
+  AdminContentSection,
+  AdminFilterBar,
+  AdminMasterDetail,
+} from './layouts/page';
+import { $t, currentLocale } from './locales';
 import { access, iamAdmin, runtimeState } from './runtime';
 import {
   SECTION_DEFINITIONS,
@@ -58,6 +88,13 @@ const createUserOpen = ref(false);
 const editUserOpen = ref(false);
 const createRoleOpen = ref(false);
 const editRoleOpen = ref(false);
+const confirmOpen = ref(false);
+const confirmTitle = ref('');
+const confirmReason = ref('');
+const confirmReasonError = ref('');
+const confirmState = ref<ConfirmActionState>('IDLE');
+let pendingConfirmOperation: (() => Promise<void>) | undefined;
+let pendingReasonCommit: ((value: string) => void) | undefined;
 const createUserForm = reactive({ username: '', displayName: '', userType: 'INTERNAL' as IamUserType, initialPassword: '', partyType: 'SUPPLIER' as PartyType, partyId: '' });
 const editUserName = ref('');
 const createRoleForm = reactive({ code: '', name: '', applicableUserType: 'INTERNAL' as IamUserType, description: '' });
@@ -113,19 +150,54 @@ async function command<T>(operation: () => Promise<T>, apply: (result: T) => voi
   }
 }
 
-function confirmHighRisk(title: string, operation: () => Promise<void>, reason: string): void {
-  if (!reason.trim()) {
-    message.warning($t('mom.messages.reasonRequired'));
+function confirmHighRisk(
+  title: string,
+  operation: () => Promise<void>,
+  reason: string,
+  commitReason: (value: string) => void,
+): void {
+  confirmTitle.value = title;
+  confirmReason.value = reason;
+  confirmReasonError.value = '';
+  confirmState.value = 'IDLE';
+  pendingConfirmOperation = operation;
+  pendingReasonCommit = commitReason;
+  confirmOpen.value = true;
+}
+
+function updateConfirmReason(value: string): void {
+  confirmReason.value = value;
+  pendingReasonCommit?.(value);
+  if (value.trim()) confirmReasonError.value = '';
+}
+
+function cancelHighRisk(): void {
+  if (confirmState.value === 'SUBMITTING') return;
+  confirmOpen.value = false;
+  pendingConfirmOperation = undefined;
+  pendingReasonCommit = undefined;
+  confirmReasonError.value = '';
+  confirmState.value = 'IDLE';
+}
+
+async function submitHighRisk(): Promise<void> {
+  if (!confirmReason.value.trim()) {
+    confirmReasonError.value = $t('mom.messages.reasonRequired');
     return;
   }
-  Modal.confirm({
-    title,
-    content: $t('mom.messages.highRiskContent', { reason: reason.trim() }),
-    okText: $t('mom.actions.confirm'),
-    okType: 'danger',
-    cancelText: $t('mom.actions.cancel'),
-    onOk: operation,
-  });
+  const operation = pendingConfirmOperation;
+  if (!operation) return;
+  confirmState.value = 'SUBMITTING';
+  try {
+    await operation();
+    confirmState.value = 'IDLE';
+    cancelHighRisk();
+  }
+  catch {
+    confirmState.value = notice.value?.kind === 'unknown_result'
+      ? 'RESULT_UNKNOWN'
+      : 'IDLE';
+  }
 }
 
 async function loadUsers(): Promise<void> {
@@ -195,7 +267,7 @@ function changeUserStatus(status: IamStatus): void {
   confirmHighRisk($t(status === 'ENABLED' ? 'mom.operations.enableUser' : 'mom.operations.disableUser', { user: user.username }), async () => {
     await command(() => iamAdmin.setUserStatus(user.id, { status, version: user.version, reason: authorizationDraft.reason }), replaceUserRow, loadUserAuthorization);
     await loadUserAuthorization();
-  }, authorizationDraft.reason);
+  }, authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function unlockUser(): void {
@@ -204,7 +276,7 @@ function unlockUser(): void {
   confirmHighRisk($t('mom.operations.unlockUser', { user: user.username }), async () => {
     await command(() => iamAdmin.unlockUser(user.id, { version: user.version, reason: authorizationDraft.reason }), replaceUserRow, loadUserAuthorization);
     await loadUserAuthorization();
-  }, authorizationDraft.reason);
+  }, authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function resetCredential(): void {
@@ -217,7 +289,7 @@ function resetCredential(): void {
     await command(() => iamAdmin.resetCredential(user.id, { temporaryPassword: temporaryPassword.value, version: user.version, reason: authorizationDraft.reason }), replaceUserRow, loadUserAuthorization);
     temporaryPassword.value = '';
     await loadUserAuthorization();
-  }, authorizationDraft.reason);
+  }, authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function deleteUser(): void {
@@ -229,7 +301,7 @@ function deleteUser(): void {
       selectedUser.value = undefined;
       userAuthorization.value = undefined;
     });
-  }, authorizationDraft.reason);
+  }, authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function saveRoles(): void {
@@ -238,7 +310,7 @@ function saveRoles(): void {
   if (!user || !snapshot) return;
   confirmHighRisk($t('mom.operations.replaceUserRoles'), () => command(() => iamAdmin.replaceUserRoles(user.id, {
     roleIds: authorizationDraft.roleIds, version: snapshot.userVersion, reason: authorizationDraft.reason,
-  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason);
+  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function saveFactories(): void {
@@ -247,7 +319,7 @@ function saveFactories(): void {
   if (!user || !snapshot) return;
   confirmHighRisk($t('mom.operations.replaceFactoryScope'), () => command(() => iamAdmin.replaceFactoryScopes(user.id, {
     factoryIds: authorizationDraft.factoryIds, version: snapshot.userVersion, reason: authorizationDraft.reason,
-  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason);
+  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function saveMobileAccess(): void {
@@ -256,7 +328,7 @@ function saveMobileAccess(): void {
   if (!user || !snapshot) return;
   confirmHighRisk($t('mom.operations.changeMobileAccess'), () => command(() => iamAdmin.setMobileAccess(user.id, {
     enabled: authorizationDraft.mobileAccessEnabled, version: snapshot.userVersion, reason: authorizationDraft.reason,
-  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason);
+  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function savePartyBinding(): void {
@@ -266,7 +338,7 @@ function savePartyBinding(): void {
   confirmHighRisk($t('mom.operations.rebindParty'), () => command(() => iamAdmin.rebindParty(user.id, {
     partyType: authorizationDraft.partyType, partyId: authorizationDraft.partyId,
     version: snapshot.userVersion, reason: authorizationDraft.reason,
-  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason);
+  }), applyUserAuthorization, loadUserAuthorization), authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 function revokeAllUserSessions(): void {
@@ -275,7 +347,7 @@ function revokeAllUserSessions(): void {
   confirmHighRisk($t('mom.operations.revokeAllSessions', { user: user.username }), () => command(
     () => iamAdmin.revokeUserSessions(user.id, authorizationDraft.reason),
     (result) => { message.info($t('mom.messages.sessionsRevoked', { count: result.revoked })); },
-  ), authorizationDraft.reason);
+  ), authorizationDraft.reason, (value) => { authorizationDraft.reason = value; });
 }
 
 async function loadRoles(showBusy = true): Promise<void> {
@@ -334,7 +406,7 @@ function saveRolePermissions(): void {
   if (!role || !snapshot) return;
   confirmHighRisk($t('mom.operations.replaceRolePermissions'), () => command(() => iamAdmin.replaceRolePermissions(role.id, {
     permissionIds: rolePermissionDraft.permissionIds, version: snapshot.roleVersion, reason: rolePermissionDraft.reason,
-  }), applyRolePermissions, loadRolePermissions), rolePermissionDraft.reason);
+  }), applyRolePermissions, loadRolePermissions), rolePermissionDraft.reason, (value) => { rolePermissionDraft.reason = value; });
 }
 
 async function loadPermissions(): Promise<void> {
@@ -350,7 +422,7 @@ function revokeSession(item: SessionRow): void {
     () => iamAdmin.revokeSession(item.id, sessionReason.value),
     () => { sessions.value = sessions.value.map((session) => session.id === item.id ? { ...session, status: 'REVOKED' } : session); },
     loadSessions,
-  ), sessionReason.value);
+  ), sessionReason.value, (value) => { sessionReason.value = value; });
 }
 
 async function loadAudit(): Promise<void> {
@@ -367,11 +439,11 @@ function changeClientStatus(client: ClientRow): void {
     () => iamAdmin.setClientStatus(client.clientId, { status: next, version: client.version, reason: clientReason.value }),
     (updated) => { clients.value = clients.value.map((item) => item.clientId === updated.clientId ? updated : item); },
     loadClients,
-  ), clientReason.value);
+  ), clientReason.value, (value) => { clientReason.value = value; });
 }
 
 function formatTime(value: string | null | undefined): string {
-  return value ? new Intl.DateTimeFormat(preferences.app.locale, { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(value)) : '—';
+  return value ? new Intl.DateTimeFormat(currentLocale.value, { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(value)) : '—';
 }
 
 watch(
@@ -394,28 +466,43 @@ onMounted(() => {
           </template>
         </a-alert>
 
-        <Page v-if="section === 'users'">
-          <a-card size="small" class="filter-card">
-            <div class="user-command-bar">
-              <a-space wrap>
-                <a-select v-model:value="userFilters.userType" allow-clear class="iam-filter--user-type" :placeholder="$t('mom.fields.userType')"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select>
-                <a-select v-model:value="userFilters.status" allow-clear class="iam-filter--status" :placeholder="$t('mom.fields.status')"><a-select-option value="ENABLED">ENABLED</a-select-option><a-select-option value="DISABLED">DISABLED</a-select-option></a-select>
-                <a-button :loading="busy" @click="loadUsers">{{ $t('mom.actions.search') }}</a-button>
-              </a-space>
-              <a-button v-if="can('iam:user:create')" type="primary" @click="createUserOpen = true">{{ $t('mom.actions.createUser') }}</a-button>
-            </div>
-          </a-card>
-          <div class="split-grid">
-            <a-card :title="$t('mom.titles.userDirectory')" :bordered="false"><a-table :data-source="users" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }">
+        <Page
+          v-if="section === 'users'"
+          :description="$t('mom.pages.users.description')"
+          :title="$t('mom.pages.users.title')"
+        >
+          <template #actions>
+            <a-button
+              v-if="can('iam:user:create')"
+              type="primary"
+              @click="createUserOpen = true"
+            >
+              {{ $t('mom.actions.createUser') }}
+            </a-button>
+          </template>
+          <AdminFilterBar :label="$t('mom.pages.users.title')" @submit="loadUsers">
+            <label class="iam-visually-hidden" for="iam-user-type-filter">{{ $t('mom.fields.userType') }}</label>
+            <a-select id="iam-user-type-filter" v-model:value="userFilters.userType" allow-clear class="iam-filter--user-type" :placeholder="$t('mom.fields.userType')"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select>
+            <label class="iam-visually-hidden" for="iam-user-status-filter">{{ $t('mom.fields.status') }}</label>
+            <a-select id="iam-user-status-filter" v-model:value="userFilters.status" allow-clear class="iam-filter--status" :placeholder="$t('mom.fields.status')"><a-select-option value="ENABLED">ENABLED</a-select-option><a-select-option value="DISABLED">DISABLED</a-select-option></a-select>
+            <template #actions>
+              <a-button html-type="submit" :loading="busy">{{ $t('mom.actions.search') }}</a-button>
+            </template>
+          </AdminFilterBar>
+          <AdminMasterDetail :has-detail="Boolean(selectedUser)">
+            <template #master>
+              <AdminContentSection :title="$t('mom.titles.userDirectory')"><a-table :data-source="users" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }">
               <a-table-column :title="$t('mom.fields.user')" data-index="username"><template #default="{ record }"><strong>{{ record.username }}</strong><div class="muted">{{ record.displayName }}</div></template></a-table-column>
               <a-table-column :title="$t('mom.fields.type')" data-index="userType" />
               <a-table-column :title="$t('mom.fields.status')"><template #default="{ record }"><a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status" /></template></a-table-column>
               <a-table-column title="Version" data-index="version" width="90" />
               <a-table-column title=""><template #default="{ record }"><a-button type="link" @click="selectUser(record)">{{ $t('mom.actions.manage') }}</a-button></template></a-table-column>
-            </a-table></a-card>
+              </a-table></AdminContentSection>
+            </template>
 
-            <a-card v-if="selectedUser" :title="$t('mom.titles.userDetails')" :bordered="false">
-              <template #extra><a-tag v-if="isCurrentUser" color="orange">{{ $t('mom.messages.selfProtection') }}</a-tag></template>
+            <template v-if="selectedUser" #detail>
+              <AdminContentSection :title="$t('mom.titles.userDetails')">
+                <template #actions><a-tag v-if="isCurrentUser" color="orange">{{ $t('mom.messages.selfProtection') }}</a-tag></template>
               <a-descriptions size="small" :column="2" bordered>
                 <a-descriptions-item :label="$t('mom.fields.username')">{{ selectedUser.username }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.userType')">{{ selectedUser.userType }}</a-descriptions-item>
                 <a-descriptions-item :label="$t('mom.fields.displayName')">{{ selectedUser.displayName }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.status')">{{ selectedUser.status }}</a-descriptions-item>
@@ -437,41 +524,70 @@ onMounted(() => {
               <template v-if="userAuthorization">
                 <a-divider orientation="left">{{ $t('mom.titles.authorizationSnapshot', { version: userAuthorization.userVersion }) }}</a-divider>
                 <div class="editor-block"><label>{{ $t('mom.fields.roles') }}</label><a-select v-model:value="authorizationDraft.roleIds" class="editor-field" mode="multiple" :disabled="!can('iam:user:role-assign')"><a-select-option v-for="role in compatibleRoles" :key="role.id" :value="role.id">{{ role.code }} · {{ role.name }}</a-select-option></a-select><a-button v-if="can('iam:user:role-assign')" danger @click="saveRoles">{{ $t('mom.actions.replaceRoles') }}</a-button></div>
-                <div class="editor-block"><label>Factory Scope</label><a-select v-model:value="authorizationDraft.factoryIds" class="editor-field" mode="tags" token-separators="," :disabled="!can('iam:user:factory-scope-assign')" :placeholder="$t('mom.placeholders.factoryId')" /><a-button v-if="can('iam:user:factory-scope-assign')" danger @click="saveFactories">{{ $t('mom.actions.replaceScope') }}</a-button></div>
+                <div class="editor-block"><label>Factory Scope</label><a-select v-model:value="authorizationDraft.factoryIds" class="editor-field" mode="tags" :token-separators="[',']" :disabled="!can('iam:user:factory-scope-assign')" :placeholder="$t('mom.placeholders.factoryId')" /><a-button v-if="can('iam:user:factory-scope-assign')" danger @click="saveFactories">{{ $t('mom.actions.replaceScope') }}</a-button></div>
                 <div v-if="selectedUser.userType === 'INTERNAL'" class="editor-block"><label>Mobile Access</label><a-switch v-model:checked="authorizationDraft.mobileAccessEnabled" :disabled="!can('iam:user:mobile-access-manage')" /><a-button v-if="can('iam:user:mobile-access-manage')" danger @click="saveMobileAccess">{{ $t('mom.actions.save') }}</a-button></div>
                 <div v-else class="editor-block"><label>Party Binding</label><a-select v-model:value="authorizationDraft.partyType" class="party-type-field" :disabled="!can('iam:user:party-rebind')"><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select><a-input v-model:value="authorizationDraft.partyId" placeholder="Party ID" :disabled="!can('iam:user:party-rebind')" /><a-button v-if="can('iam:user:party-rebind')" danger @click="savePartyBinding">{{ $t('mom.actions.rebind') }}</a-button></div>
               </template>
-            </a-card>
-            <a-empty v-else :description="$t('mom.empty.selectUser')" />
-          </div>
+              </AdminContentSection>
+            </template>
+          </AdminMasterDetail>
         </Page>
 
-        <Page v-else-if="section === 'roles'">
-          <div class="split-grid"><a-card :title="$t('mom.titles.roleDirectory')"><template #extra><a-button v-if="can('iam:role:create')" type="primary" @click="createRoleOpen = true">{{ $t('mom.actions.createRole') }}</a-button></template><a-table :data-source="roles" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.type')" data-index="applicableUserType" /><a-table-column :title="$t('mom.fields.status')" data-index="status" /><a-table-column title=""><template #default="{ record }"><a-button type="link" @click="selectRole(record)">{{ $t('mom.actions.manage') }}</a-button></template></a-table-column></a-table></a-card>
-            <a-card v-if="selectedRole" :title="$t('mom.titles.roleDetails')"><template #extra><a-tag :color="selectedRole.builtIn ? 'orange' : 'blue'">{{ selectedRole.builtIn ? $t('mom.common.builtInReadOnly') : `v${rolePermissions?.roleVersion ?? selectedRole.version}` }}</a-tag></template>
+        <Page
+          v-else-if="section === 'roles'"
+          :description="$t('mom.pages.roles.description')"
+          :title="$t('mom.pages.roles.title')"
+        >
+          <template #actions>
+            <a-button v-if="can('iam:role:create')" type="primary" @click="createRoleOpen = true">{{ $t('mom.actions.createRole') }}</a-button>
+          </template>
+          <AdminMasterDetail :has-detail="Boolean(selectedRole)">
+            <template #master>
+              <AdminContentSection :title="$t('mom.titles.roleDirectory')"><a-table :data-source="roles" :loading="busy" row-key="id" size="small" :pagination="{ pageSize: 10 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.type')" data-index="applicableUserType" /><a-table-column :title="$t('mom.fields.status')" data-index="status" /><a-table-column title=""><template #default="{ record }"><a-button type="link" @click="selectRole(record)">{{ $t('mom.actions.manage') }}</a-button></template></a-table-column></a-table></AdminContentSection>
+            </template>
+            <template v-if="selectedRole" #detail>
+              <AdminContentSection :title="$t('mom.titles.roleDetails')"><template #actions><a-tag :color="selectedRole.builtIn ? 'orange' : 'blue'">{{ selectedRole.builtIn ? $t('mom.common.builtInReadOnly') : `v${rolePermissions?.roleVersion ?? selectedRole.version}` }}</a-tag></template>
               <a-descriptions bordered size="small" :column="2"><a-descriptions-item :label="$t('mom.fields.code')">{{ selectedRole.code }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.status')">{{ selectedRole.status }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.name')">{{ selectedRole.name }}</a-descriptions-item><a-descriptions-item :label="$t('mom.fields.type')">{{ selectedRole.applicableUserType }}</a-descriptions-item></a-descriptions>
               <a-button v-if="can('iam:role:update')" class="detail-action" :disabled="selectedRole.builtIn" @click="editRoleOpen = true">{{ $t('mom.actions.editCustomRole') }}</a-button>
               <a-divider orientation="left">Permission</a-divider>
               <a-select v-model:value="rolePermissionDraft.permissionIds" mode="multiple" show-search option-filter-prop="label" style="width: 100%" :disabled="selectedRole.builtIn || !can('iam:role:permission-manage')"><a-select-option v-for="item in activePermissions" :key="item.id" :value="item.id" :label="item.code">{{ item.code }} · {{ item.name }}</a-select-option></a-select>
               <a-input v-model:value="rolePermissionDraft.reason" class="reason-input" :placeholder="$t('mom.placeholders.permissionReason')" />
               <a-button v-if="can('iam:role:permission-manage')" danger :disabled="selectedRole.builtIn" @click="saveRolePermissions">{{ $t('mom.actions.replacePermissions') }}</a-button>
-            </a-card><a-empty v-else :description="$t('mom.empty.selectRole')" /></div>
+              </AdminContentSection>
+            </template>
+          </AdminMasterDetail>
         </Page>
 
-        <Page v-else-if="section === 'permissions'">
-          <a-card :title="$t('mom.pages.permissions.title')"><template #extra><a-button :loading="busy" @click="loadPermissions">{{ $t('mom.actions.refresh') }}</a-button></template><a-table :data-source="permissions" row-key="id" size="small" :pagination="{ pageSize: 15 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.domain')" data-index="domainCode" /><a-table-column :title="$t('mom.fields.risk')"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : record.riskLevel === 'MEDIUM' ? 'orange' : 'green'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column :title="$t('mom.fields.status')" data-index="status" /></a-table></a-card>
+        <Page
+          v-else-if="section === 'permissions'"
+          :description="$t('mom.pages.permissions.description')"
+          :title="$t('mom.pages.permissions.title')"
+        >
+          <AdminContentSection :title="$t('mom.pages.permissions.title')"><template #actions><a-button :loading="busy" @click="loadPermissions">{{ $t('mom.actions.refresh') }}</a-button></template><a-table :data-source="permissions" row-key="id" size="small" :pagination="{ pageSize: 15 }"><a-table-column :title="$t('mom.fields.code')" data-index="code" /><a-table-column :title="$t('mom.fields.name')" data-index="name" /><a-table-column :title="$t('mom.fields.domain')" data-index="domainCode" /><a-table-column :title="$t('mom.fields.risk')"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : record.riskLevel === 'MEDIUM' ? 'orange' : 'green'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column :title="$t('mom.fields.status')" data-index="status" /></a-table></AdminContentSection>
         </Page>
 
-        <Page v-else-if="section === 'sessions'">
-          <a-card size="small" class="filter-card"><a-space wrap><a-input v-model:value="sessionFilters.userId" placeholder="User ID" /><a-input v-model:value="sessionFilters.status" :placeholder="$t('mom.fields.status')" /><a-input v-model:value="sessionReason" :placeholder="$t('mom.fields.revokeReason')" /><a-button @click="loadSessions">{{ $t('mom.actions.search') }}</a-button></a-space></a-card><a-card><a-table :data-source="sessions" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column :title="$t('mom.fields.sessionUser')"><template #default="{ record }"><strong>{{ record.id }}</strong><div class="muted">{{ record.userId }}</div></template></a-table-column><a-table-column title="Client" data-index="clientId" /><a-table-column title="Channel" data-index="channel" /><a-table-column :title="$t('mom.fields.status')" data-index="status" /><a-table-column :title="$t('mom.fields.loginTime')"><template #default="{ record }">{{ formatTime(record.loginAt) }}</template></a-table-column><a-table-column :title="$t('mom.fields.absoluteExpiry')"><template #default="{ record }">{{ formatTime(record.absoluteExpiresAt) }}</template></a-table-column><a-table-column title=""><template #default="{ record }"><a-button v-if="can('iam:session:revoke')" type="link" danger :disabled="record.status !== 'ACTIVE'" @click="revokeSession(record)">{{ $t('mom.actions.revoke') }}</a-button></template></a-table-column></a-table></a-card>
+        <Page
+          v-else-if="section === 'sessions'"
+          :description="$t('mom.pages.sessions.description')"
+          :title="$t('mom.pages.sessions.title')"
+        >
+          <AdminFilterBar :label="$t('mom.pages.sessions.title')" @submit="loadSessions"><a-input v-model:value="sessionFilters.userId" placeholder="User ID" /><a-input v-model:value="sessionFilters.status" :placeholder="$t('mom.fields.status')" /><a-input v-model:value="sessionReason" :placeholder="$t('mom.fields.revokeReason')" /><template #actions><a-button html-type="submit" :loading="busy">{{ $t('mom.actions.search') }}</a-button></template></AdminFilterBar><AdminContentSection :title="$t('mom.pages.sessions.title')"><a-table :data-source="sessions" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column :title="$t('mom.fields.sessionUser')"><template #default="{ record }"><strong>{{ record.id }}</strong><div class="muted">{{ record.userId }}</div></template></a-table-column><a-table-column title="Client" data-index="clientId" /><a-table-column title="Channel" data-index="channel" /><a-table-column :title="$t('mom.fields.status')" data-index="status" /><a-table-column :title="$t('mom.fields.loginTime')"><template #default="{ record }">{{ formatTime(record.loginAt) }}</template></a-table-column><a-table-column :title="$t('mom.fields.absoluteExpiry')"><template #default="{ record }">{{ formatTime(record.absoluteExpiresAt) }}</template></a-table-column><a-table-column title=""><template #default="{ record }"><a-button v-if="can('iam:session:revoke')" type="link" danger :disabled="record.status !== 'ACTIVE'" @click="revokeSession(record)">{{ $t('mom.actions.revoke') }}</a-button></template></a-table-column></a-table></AdminContentSection>
         </Page>
 
-        <Page v-else-if="section === 'audit'">
-          <a-card size="small" class="filter-card"><a-space><a-input v-model:value="auditFilters.category" :placeholder="$t('mom.fields.eventCategory')" /><a-input v-model:value="auditFilters.targetId" placeholder="Target ID" /><a-button @click="loadAudit">{{ $t('mom.actions.search') }}</a-button></a-space></a-card><a-card><a-table :data-source="audits" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column :title="$t('mom.fields.time')"><template #default="{ record }">{{ formatTime(record.occurredAt) }}</template></a-table-column><a-table-column :title="$t('mom.fields.event')" data-index="eventType" /><a-table-column :title="$t('mom.fields.risk')"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : 'blue'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column title="Actor"><template #default="{ record }">{{ record.actorUserId ?? record.actorClientId ?? record.actorType }}</template></a-table-column><a-table-column title="Target"><template #default="{ record }">{{ record.targetType }} · {{ record.targetId }}</template></a-table-column><a-table-column :title="$t('mom.fields.reason')" data-index="reasonCode" /><a-table-column title="Correlation ID" data-index="correlationId" /></a-table></a-card>
+        <Page
+          v-else-if="section === 'audit'"
+          :description="$t('mom.pages.audit.description')"
+          :title="$t('mom.pages.audit.title')"
+        >
+          <AdminFilterBar :label="$t('mom.pages.audit.title')" @submit="loadAudit"><a-input v-model:value="auditFilters.category" :placeholder="$t('mom.fields.eventCategory')" /><a-input v-model:value="auditFilters.targetId" placeholder="Target ID" /><template #actions><a-button html-type="submit" :loading="busy">{{ $t('mom.actions.search') }}</a-button></template></AdminFilterBar><AdminContentSection :title="$t('mom.pages.audit.title')"><a-table :data-source="audits" row-key="id" size="small" :pagination="{ pageSize: 12 }"><a-table-column :title="$t('mom.fields.time')"><template #default="{ record }">{{ formatTime(record.occurredAt) }}</template></a-table-column><a-table-column :title="$t('mom.fields.event')" data-index="eventType" /><a-table-column :title="$t('mom.fields.risk')"><template #default="{ record }"><a-tag :color="record.riskLevel === 'HIGH' ? 'red' : 'blue'">{{ record.riskLevel }}</a-tag></template></a-table-column><a-table-column title="Actor"><template #default="{ record }">{{ record.actorUserId ?? record.actorClientId ?? record.actorType }}</template></a-table-column><a-table-column title="Target"><template #default="{ record }">{{ record.targetType }} · {{ record.targetId }}</template></a-table-column><a-table-column :title="$t('mom.fields.reason')" data-index="reasonCode" /><a-table-column title="Correlation ID" data-index="correlationId" /></a-table></AdminContentSection>
         </Page>
 
-        <Page v-else-if="section === 'clients'">
-          <a-card :title="$t('mom.titles.clientDirectory')" class="client-directory-card">
+        <Page
+          v-else-if="section === 'clients'"
+          :description="$t('mom.pages.clients.description')"
+          :title="$t('mom.pages.clients.title')"
+        >
+          <AdminContentSection :title="$t('mom.titles.clientDirectory')">
             <div class="client-command-bar">
               <label for="client-status-reason">{{ $t('mom.fields.clientStatusReason') }}</label>
               <a-input
@@ -483,10 +599,36 @@ onMounted(() => {
               <span>{{ $t('mom.messages.clientStatusReasonHint') }}</span>
             </div>
             <a-table :data-source="clients" row-key="clientId" size="small" :pagination="false"><a-table-column title="Client"><template #default="{ record }"><strong>{{ record.clientName }}</strong><div class="muted">{{ record.clientId }}</div></template></a-table-column><a-table-column :title="$t('mom.fields.application')" data-index="applicationCode" /><a-table-column :title="$t('mom.fields.userType')" data-index="allowedUserType" /><a-table-column title="Channel" data-index="channel" /><a-table-column :title="$t('mom.fields.status')"><template #default="{ record }"><a-badge :status="record.status === 'ENABLED' ? 'success' : 'default'" :text="record.status" /></template></a-table-column><a-table-column title="Version" data-index="version" /><a-table-column title=""><template #default="{ record }"><a-button v-if="can(record.status === 'ENABLED' ? 'iam:client:disable' : 'iam:client:enable')" danger @click="changeClientStatus(record)">{{ $t(record.status === 'ENABLED' ? 'mom.actions.disable' : 'mom.actions.enable') }}</a-button></template></a-table-column></a-table>
-          </a-card>
+          </AdminContentSection>
         </Page>
 
-        <a-empty v-else-if="visibleSections.length === 0" :description="$t('mom.empty.noReadPermission')" />
+        <DataState
+          v-else-if="visibleSections.length === 0"
+          kind="FORBIDDEN"
+          :title="$t('mom.empty.noReadPermission')"
+        />
+
+    <ConfirmAction
+      :cancel-label="$t('mom.actions.cancel')"
+      :confirm-label="$t('mom.actions.confirm')"
+      :danger="true"
+      :description="$t('mom.messages.highRiskContent', { reason: confirmReason.trim() || '—' })"
+      :open="confirmOpen"
+      :reason="confirmReason"
+      :reason-error="confirmReasonError"
+      :reason-label="$t('mom.fields.auditReason')"
+      :state="confirmState"
+      :title="confirmTitle"
+      require-reason
+      @cancel="cancelHighRisk"
+      @confirm="submitHighRisk"
+      @update:open="confirmOpen = $event"
+      @update:reason="updateConfirmReason"
+    >
+      <template #resultUnknown>
+        {{ notice?.message }}
+      </template>
+    </ConfirmAction>
 
     <a-modal v-model:open="createUserOpen" :title="$t('mom.actions.createUser')" :confirm-loading="busy" @ok="createUser"><a-form layout="vertical"><a-form-item :label="$t('mom.fields.username')"><a-input v-model:value="createUserForm.username" /></a-form-item><a-form-item :label="$t('mom.fields.displayName')"><a-input v-model:value="createUserForm.displayName" /></a-form-item><a-form-item :label="$t('mom.fields.userType')"><a-select v-model:value="createUserForm.userType"><a-select-option value="INTERNAL">INTERNAL</a-select-option><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select></a-form-item><a-form-item :label="$t('mom.fields.initialPassword')"><a-input-password v-model:value="createUserForm.initialPassword" /></a-form-item><template v-if="createUserForm.userType !== 'INTERNAL'"><a-form-item :label="$t('mom.fields.partyType')"><a-select v-model:value="createUserForm.partyType"><a-select-option value="SUPPLIER">SUPPLIER</a-select-option><a-select-option value="CUSTOMER">CUSTOMER</a-select-option></a-select></a-form-item><a-form-item label="Party ID"><a-input v-model:value="createUserForm.partyId" /></a-form-item></template></a-form></a-modal>
     <a-modal v-model:open="editUserOpen" :title="$t('mom.actions.editDisplayName')" :confirm-loading="busy" @ok="updateUser"><a-input v-model:value="editUserName" /></a-modal>

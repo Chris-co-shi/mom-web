@@ -1,11 +1,9 @@
+import type { PermissionCode } from '@mom/access';
 import type { Router } from 'vue-router';
 
-import { preferences } from '@vben/preferences';
-import { useAccessStore } from '@vben/stores';
-import { startProgress, stopProgress } from '@vben/utils';
-
-import { bootstrapRuntime, runtimeState } from '../runtime';
+import { access, bootstrapRuntime, runtimeState } from '../runtime';
 import {
+  accessIsReady,
   defaultAuthorizedPath,
   resolveAuthorizedRedirect,
   synchronizeAccess,
@@ -24,10 +22,7 @@ async function ensureRuntime(): Promise<void> {
 
 export function createRouterGuard(router: Router): void {
   router.beforeEach(async (to) => {
-    if (preferences.transition.progress) startProgress();
     await ensureRuntime();
-
-    const isCoreRoute = coreRouteNames.has(String(to.name));
 
     if (runtimeState.phase === 'anonymous') {
       if (to.name === 'Login') return true;
@@ -62,12 +57,17 @@ export function createRouterGuard(router: Router): void {
           };
     }
 
+    if (runtimeState.phase === 'error') {
+      return to.name === 'RuntimeError'
+        ? true
+        : { path: '/runtime-error', replace: true };
+    }
+
     if (runtimeState.phase !== 'ready') {
       return to.name === 'Login' ? true : { path: '/auth/login', replace: true };
     }
 
-    const accessStore = useAccessStore();
-    if (!accessStore.isAccessChecked) {
+    if (!accessIsReady()) {
       try {
         await synchronizeAccess();
       }
@@ -80,15 +80,6 @@ export function createRouterGuard(router: Router): void {
           replace: true,
         };
       }
-      if (to.path === '/') {
-        return { path: defaultAuthorizedPath(), replace: true };
-      }
-      return {
-        hash: to.hash,
-        path: to.path,
-        query: to.query,
-        replace: true,
-      };
     }
 
     if (to.name === 'Login' || to.name === 'Authentication') {
@@ -102,13 +93,11 @@ export function createRouterGuard(router: Router): void {
       return { path: defaultAuthorizedPath(), replace: true };
     }
 
+    const isCoreRoute = coreRouteNames.has(String(to.name));
     if (isCoreRoute || to.meta.ignoreAccess) return true;
 
     const permission = to.meta.requiredPermission;
-    if (
-      permission
-      && !accessStore.accessCodes.includes(String(permission))
-    ) {
+    if (permission && !access.hasPermission(permission as PermissionCode)) {
       return {
         path: '/403',
         query: { from: to.fullPath },
@@ -118,11 +107,11 @@ export function createRouterGuard(router: Router): void {
     return true;
   });
 
-  router.afterEach(() => {
-    if (preferences.transition.progress) stopProgress();
-  });
-
-  router.onError(() => {
-    if (preferences.transition.progress) stopProgress();
+  router.onError((error, to) => {
+    runtimeState.error = error instanceof Error ? error.message : String(error);
+    runtimeState.phase = 'error';
+    if (to.name !== 'RuntimeError') {
+      void router.replace({ path: '/runtime-error', replace: true });
+    }
   });
 }

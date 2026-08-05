@@ -1,25 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath } from 'node:url';
-import type { Plugin } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
-
-const tailwindReference = '@reference "@vben/tailwind-config/theme";\n';
-
-function viteTailwindReferencePlugin(): Plugin {
-  return {
-    enforce: 'pre',
-    name: 'vite:tailwind-reference',
-    transform(code, id) {
-      if (!id.includes('.vue') || !id.includes('type=style')) return null;
-      if (code.includes('@reference') || !code.includes('@apply')) return null;
-      return {
-        code: tailwindReference + code,
-        map: null,
-      };
-    },
-  };
-}
 
 const alias = {
   '@mom/auth': fileURLToPath(new URL('../../packages/auth/src/index.ts', import.meta.url)),
@@ -32,7 +14,7 @@ const alias = {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [viteTailwindReferencePlugin(), vue(), tailwindcss()],
+    plugins: [vue(), tailwindcss()],
     resolve: { alias },
     server: {
       port: 5555,

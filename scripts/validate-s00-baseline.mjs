@@ -10,18 +10,22 @@ function requireLiteral(content, literal, context) {
   if (!content.includes(literal)) failures.push(`${context}: missing ${JSON.stringify(literal)}`);
 }
 
-const menuSource = await readText('apps/mom-admin/src/router/menu-source.ts');
+const taskContract = await readText('apps/mom-admin/src/router/task-contract.ts');
 for (const route of baseline.iamNavigation) {
   const pathLiteral = `path: '${route.path}'`;
-  const pathIndex = menuSource.indexOf(pathLiteral);
-  const definitionStart = menuSource.lastIndexOf('{', pathIndex);
-  const definitionEnd = menuSource.indexOf('},', pathIndex);
+  const pathIndex = taskContract.indexOf(pathLiteral);
+  const definitionStart = taskContract.lastIndexOf('{', pathIndex);
+  const definitionEnd = taskContract.indexOf('},', pathIndex);
   if (pathIndex < 0 || definitionStart < 0 || definitionEnd < 0) {
     failures.push(`IAM navigation: missing ${JSON.stringify(pathLiteral)}`);
     continue;
   }
-  const definition = menuSource.slice(definitionStart, definitionEnd);
-  requireLiteral(definition, `permission: '${route.permission}'`, `${route.path} permission`);
+  const definition = taskContract.slice(definitionStart, definitionEnd);
+  requireLiteral(
+    definition,
+    `requiredPermission: '${route.permission}'`,
+    `${route.path} permission`,
+  );
 }
 
 for (const application of baseline.applications) {

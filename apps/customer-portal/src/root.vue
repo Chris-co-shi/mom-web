@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { App as AntApp, ConfigProvider } from 'ant-design-vue';
+import { App, ConfigProvider } from 'ant-design-vue';
 
 import AuthGate from './AuthGate.vue';
 import { momAntdTheme } from './app/theme';
@@ -7,8 +7,8 @@ import { momAntdTheme } from './app/theme';
 
 <template>
   <ConfigProvider :theme="momAntdTheme">
-    <AntApp>
+    <App>
       <AuthGate />
-    </AntApp>
+    </App>
   </ConfigProvider>
 </template>

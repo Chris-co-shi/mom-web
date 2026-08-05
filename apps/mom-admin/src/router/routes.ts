@@ -1,10 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router';
 
-import AuthLayout from '../layouts/auth.vue';
-import ForbiddenView from '../views/fallback/forbidden.vue';
-import MenuErrorView from '../views/fallback/menu-error.vue';
-import LoginView from '../views/auth/login.vue';
-import PasswordChangeView from '../views/auth/password-change.vue';
+import { ADMIN_TASKS } from './registry';
 
 export const coreRouteNames = new Set([
   'Authentication',
@@ -12,13 +8,44 @@ export const coreRouteNames = new Set([
   'PasswordChange',
   'Forbidden',
   'MenuError',
+  'RuntimeError',
+  'CatalogError',
+  'PersonalSettings',
   'NotFound',
 ]);
 
+const taskRoutes: RouteRecordRaw[] = ADMIN_TASKS.map((task) => ({
+  component: task.component,
+  meta: {
+    menuCode: task.menuCode,
+    requiredPermission: task.requiredPermission,
+    routeKey: task.routeKey,
+    section: task.section,
+    taskDomain: task.domain,
+    title: task.titleKey,
+  },
+  name: task.name,
+  path: task.path,
+}));
+
 export const routes: RouteRecordRaw[] = [
   {
-    children: [],
-    component: () => import('../layouts/basic.vue'),
+    children: [
+      ...taskRoutes,
+      {
+        component: () => import('../views/settings/personal-settings.vue'),
+        meta: {
+          hideInBreadcrumb: true,
+          hideInMenu: true,
+          hideInTab: true,
+          ignoreAccess: true,
+          title: 'mom.settings.title',
+        },
+        name: 'PersonalSettings',
+        path: '/settings',
+      },
+    ],
+    component: () => import('../layouts/admin-shell.vue'),
     meta: {
       hideInBreadcrumb: true,
       title: 'mom.appName',
@@ -29,7 +56,7 @@ export const routes: RouteRecordRaw[] = [
   {
     children: [
       {
-        component: LoginView,
+        component: () => import('../views/auth/login.vue'),
         meta: {
           hideInTab: true,
           ignoreAccess: true,
@@ -39,7 +66,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'login',
       },
       {
-        component: PasswordChangeView,
+        component: () => import('../views/auth/password-change.vue'),
         meta: {
           hideInTab: true,
           ignoreAccess: true,
@@ -49,7 +76,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'change-password',
       },
     ],
-    component: AuthLayout,
+    component: () => import('../layouts/auth.vue'),
     meta: {
       hideInTab: true,
       ignoreAccess: true,
@@ -60,7 +87,7 @@ export const routes: RouteRecordRaw[] = [
     redirect: '/auth/login',
   },
   {
-    component: ForbiddenView,
+    component: () => import('../views/fallback/forbidden.vue'),
     meta: {
       hideInBreadcrumb: true,
       hideInMenu: true,
@@ -72,7 +99,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/403',
   },
   {
-    component: MenuErrorView,
+    component: () => import('../views/fallback/menu-error.vue'),
     meta: {
       hideInBreadcrumb: true,
       hideInMenu: true,
@@ -82,6 +109,30 @@ export const routes: RouteRecordRaw[] = [
     },
     name: 'MenuError',
     path: '/menu-error',
+  },
+  {
+    component: () => import('../views/fallback/runtime-error.vue'),
+    meta: {
+      hideInBreadcrumb: true,
+      hideInMenu: true,
+      hideInTab: true,
+      ignoreAccess: true,
+      title: 'mom.fallback.runtimeErrorTitle',
+    },
+    name: 'RuntimeError',
+    path: '/runtime-error',
+  },
+  {
+    component: () => import('../views/fallback/catalog-error.vue'),
+    meta: {
+      hideInBreadcrumb: true,
+      hideInMenu: true,
+      hideInTab: true,
+      ignoreAccess: true,
+      title: 'mom.fallback.catalogErrorTitle',
+    },
+    name: 'CatalogError',
+    path: '/catalog-error',
   },
   {
     component: () => import('../views/fallback/not-found.vue'),

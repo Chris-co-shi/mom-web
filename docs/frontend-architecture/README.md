@@ -2,9 +2,9 @@
 
 > 状态：Accepted · Chris Review 2026-08-03
 >
-> 阶段：MOM Platform P1.6 / S01 Completed
+> 阶段：MOM Platform P1.6 / S04D · Review Pending
 >
-> 当前授权结果：S01 Token 与主题已完成；S02 仍需独立批准。
+> 当前授权结果：Chris 已接受 S04A、S04B、S04C；S04D 已完成实现与全量门禁，等待明确接受。S05 尚未授权。
 
 ## 1. 目的
 
@@ -62,7 +62,7 @@
 - 不通过一个 Role Switch 合并 Admin、Supplier、Customer 渠道。
 - 不并行升级 Vue、Vite、Router、TypeScript 或 Ant Design Vue。
 
-## 6. D01/S00/S01 结果与停止条件
+## 6. D01/S00/S01/S02/S02R 结果与停止条件
 
 D00 首轮结论记录于 [D00 全量架构评审](reviews/D00-architecture-review.md)，修订后的独立结论记录于 [D00R 架构复审](reviews/D00R-architecture-re-review.md)，状态生效证据记录于 [D01 决策生效报告](reviews/D01-decision-activation-report.md)。
 
@@ -73,4 +73,14 @@ D01 已完成以下治理动作：
 3. ADR-011/015 分别取代 ADR-010/006；
 4. 索引、历史说明和开源治理引用同步更新。
 
-Chris 已独立批准并完成 S01，实施证据见 [S01 Token 与主题实施报告](reviews/S01-token-theme-implementation-report.md)。当前停在 S02 前：未经独立批准，不建设 Page/DataState/ActionBar、Lucide Registry 或新 Shell，也不进入 System Runtime、Vben 删除或业务模块拆分。
+Chris 已独立批准并完成 S01 本地实现，实施证据见 [S01 Token 与主题实施报告](reviews/S01-token-theme-implementation-report.md)；2026-08-04 已补齐真实 IAM 登录后的 1024px Light/Dark/Comfortable 视觉证据，Compact 由专项 E2E 与 Token 契约覆盖，用户偏好入口仍留在 S07。
+
+S02 的冻结范围见 [S02 UI 与 Shell 基础前置评审](reviews/S02-ui-shell-preflight-review.md)，实现与验收证据见 [S02 UI 与 Shell 基础实施报告](reviews/S02-ui-shell-implementation-report.md)。S02 已建立语义组件、Auth/Portal Shell、静态 Lucide Registry 和 Portal 按需分包；没有替换 Admin `BasicLayout`、Router 或 Vben Runtime。
+
+S02 完成后的专项页面复核与修订记录于 [S02R UI Review 修订报告](reviews/S02R-ui-review-remediation-report.md)。三应用匿名认证入口已关闭任务标题层级、表单可访问名称、工具按钮名称和 Portal 内部术语暴露问题；Admin 任务导航、全量动态国际化和 Vben 运行时退出仍分别属于 S04/S06、S03/S11、S04/S05，不因 S02R 自动获准实施。
+
+Chris 对已登录用户页的截图复核发现内容安全边距失效、筛选与主操作失联、未选中详情时目录半宽及页面说明暴露实现术语。修订与证据记录于 [S02R2 Admin 用户页视觉修订报告](reviews/S02R2-admin-user-page-visual-remediation-report.md)。S02R2 已通过 Review；页面任务头部、筛选栏、内容容器和主从详情布局必须在 S04 沉淀为统一组件或等价组合契约，而不是继续复制页面私有样式。
+
+[S03 System Runtime Client 前置评审](reviews/S03-system-runtime-client-preflight-review.md)记录了最初的跨仓库阻塞；[S03A 跨仓库契约关闭报告](reviews/S03A-cross-repository-contract-closure-report.md)冻结 Gateway 路由、三渠道 Application/Resource/Namespace、`sessionStorage` 隔离、条件 GET 接口与 E2E 责任；Chris 已接受 [S03 实施报告](reviews/S03-system-runtime-client-implementation-report.md)中的客户端实现、自动化和真实 Preference 读取证据。当前 System 没有已发布的 `runtime` 资源，因此 I18n 200/304 与 Preference 写入/409 仍是显式待补证项，不得宣称生产集成完成。
+
+[S04 Admin Shell、Router 与页面布局前置评审](reviews/S04-admin-shell-router-layout-preflight-review.md)已经 Chris 接受，导航采用“人员与访问 / 安全运营”并删除应用内 Tabbar 的决策已冻结。S04A、[S04B Admin Shell 与任务导航实施报告](reviews/S04B-admin-shell-task-navigation-implementation-report.md)及 [S04C 实施报告](reviews/S04C-admin-runtime-vben-exit-implementation-report.md)均已 Accepted。[S04D 视觉、无障碍、Bundle 与文档收口报告](reviews/S04D-visual-accessibility-bundle-closure-report.md)记录了真实登录复核、响应式修订、完整视觉矩阵、全量 E2E、三应用 Bundle 产品目标及 S05 精确清单，当前等待 Chris Review。未经明确接受，不进入 S05。

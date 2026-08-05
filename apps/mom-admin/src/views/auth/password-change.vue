@@ -2,10 +2,17 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { $t } from '@vben/locales';
+import {
+  Button as AButton,
+  Card as ACard,
+  Form as AForm,
+  FormItem as AFormItem,
+  Input as AInput,
+  InputPassword as AInputPassword,
+  message,
+} from 'ant-design-vue';
 
-import { message } from 'ant-design-vue';
-
+import { $t } from '../../locales';
 import { changeRequiredPassword, runtimeState } from '../../runtime';
 import {
   resolveAuthorizedRedirect,
@@ -69,29 +76,49 @@ async function submit(): Promise<void> {
   <a-card :bordered="false" class="mom-auth-card">
     <h1>{{ $t('mom.auth.changeTitle') }}</h1>
     <a-form :model="form" layout="vertical" @finish="submit">
-      <a-form-item :label="$t('mom.auth.username')" required>
+      <a-form-item
+        html-for="mom-admin-change-username"
+        :label="$t('mom.auth.username')"
+        required
+      >
         <a-input
+          id="mom-admin-change-username"
           v-model:value="form.username"
           autocomplete="username"
           size="large"
         />
       </a-form-item>
-      <a-form-item :label="$t('mom.auth.currentPassword')" required>
+      <a-form-item
+        html-for="mom-admin-current-password"
+        :label="$t('mom.auth.currentPassword')"
+        required
+      >
         <a-input-password
+          id="mom-admin-current-password"
           v-model:value="form.currentPassword"
           autocomplete="current-password"
           size="large"
         />
       </a-form-item>
-      <a-form-item :label="$t('mom.auth.newPassword')" required>
+      <a-form-item
+        html-for="mom-admin-new-password"
+        :label="$t('mom.auth.newPassword')"
+        required
+      >
         <a-input-password
+          id="mom-admin-new-password"
           v-model:value="form.newPassword"
           autocomplete="new-password"
           size="large"
         />
       </a-form-item>
-      <a-form-item :label="$t('mom.auth.confirmation')" required>
+      <a-form-item
+        html-for="mom-admin-confirm-password"
+        :label="$t('mom.auth.confirmation')"
+        required
+      >
         <a-input-password
+          id="mom-admin-confirm-password"
           v-model:value="form.confirmation"
           autocomplete="new-password"
           size="large"

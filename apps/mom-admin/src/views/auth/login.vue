@@ -2,12 +2,19 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { $t } from '@vben/locales';
-
-import { message } from 'ant-design-vue';
+import {
+  Button as AButton,
+  Card as ACard,
+  Form as AForm,
+  FormItem as AFormItem,
+  Input as AInput,
+  InputPassword as AInputPassword,
+  message,
+} from 'ant-design-vue';
 
 import { FirstPartyAuthError } from '@mom/first-party-auth';
 
+import { $t } from '../../locales';
 import { login, runtimeState } from '../../runtime';
 import {
   resolveAuthorizedRedirect,
@@ -67,16 +74,26 @@ async function submit(): Promise<void> {
     <h1>{{ $t('mom.auth.loginTitle') }}</h1>
     <p>{{ $t('mom.auth.loginDescription') }}</p>
     <a-form :model="form" layout="vertical" @finish="submit">
-      <a-form-item :label="$t('mom.auth.username')" required>
+      <a-form-item
+        html-for="mom-admin-login-username"
+        :label="$t('mom.auth.username')"
+        required
+      >
         <a-input
+          id="mom-admin-login-username"
           v-model:value="form.username"
           autocomplete="username"
           :placeholder="$t('mom.auth.usernamePlaceholder')"
           size="large"
         />
       </a-form-item>
-      <a-form-item :label="$t('mom.auth.password')" required>
+      <a-form-item
+        html-for="mom-admin-login-password"
+        :label="$t('mom.auth.password')"
+        required
+      >
         <a-input-password
+          id="mom-admin-login-password"
           v-model:value="form.password"
           autocomplete="current-password"
           :placeholder="$t('mom.auth.passwordPlaceholder')"

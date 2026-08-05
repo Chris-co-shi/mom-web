@@ -10,8 +10,12 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@mom/access": "workspace:*",
+    "@mom/api-client": "workspace:*",
+    "@mom/common-ui": "workspace:*",
     "@mom/design-tokens": "workspace:*",
     "@mom/portal-access": "workspace:*",
+    "@mom/system-client": "workspace:*",
     "ant-design-vue": "catalog:",
     "pinia": "catalog:",
     "vue": "catalog:"

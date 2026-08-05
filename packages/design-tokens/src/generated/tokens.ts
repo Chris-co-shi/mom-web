@@ -201,7 +201,10 @@ export const momDesignTokens = {
       "COMFORTABLE": {
         "font-size-body": "14px",
         "control-height": "36px",
-        "page-gutter": "20px",
+        "header-height": "56px",
+        "page-gutter": "24px",
+        "sidebar-rail-width": "64px",
+        "sidebar-width": "240px",
         "table-cell-block": "12px",
         "table-cell-inline": "16px",
         "touch-target-min": "36px"
@@ -209,7 +212,10 @@ export const momDesignTokens = {
       "COMPACT": {
         "font-size-body": "14px",
         "control-height": "32px",
-        "page-gutter": "16px",
+        "header-height": "56px",
+        "page-gutter": "20px",
+        "sidebar-rail-width": "64px",
+        "sidebar-width": "240px",
         "table-cell-block": "8px",
         "table-cell-inline": "12px",
         "touch-target-min": "32px"

@@ -11,7 +11,12 @@ import {
   describePortalError,
   type PortalErrorView,
 } from '@mom/portal-access';
-import { reactive } from 'vue';
+import {
+  createSystemRuntime,
+  DEFAULT_SYSTEM_PREFERENCE,
+  type SystemRuntimeSnapshot,
+} from '@mom/system-client';
+import { reactive, readonly, shallowRef } from 'vue';
 
 const clientId: WebClientId = 'mom-customer-web';
 const expectedUserType: UserType = 'CUSTOMER';
@@ -27,6 +32,7 @@ export const runtimeState = reactive<{
 export const auth = createFirstPartyAuthRuntime({ clientId, baseUrl: gatewayBase });
 
 let accessRuntime: ReturnType<typeof createAccessRuntime> | undefined;
+let systemRuntimeRef: ReturnType<typeof createSystemRuntime> | undefined;
 export const api = createApiClient({
   baseUrl: gatewayBase,
   getContext: () => ({
@@ -37,10 +43,30 @@ export const api = createApiClient({
   onAuthenticationRequired: async () => {
     auth.clear();
     accessRuntime?.clear();
+    systemRuntimeRef?.clear();
     runtimeState.user = undefined;
     runtimeState.phase = 'anonymous';
   },
 });
+export const systemRuntime = createSystemRuntime({
+  api,
+  applicationCode: 'customer-portal',
+  clientId,
+  defaultPreference: DEFAULT_SYSTEM_PREFERENCE,
+  onPreference: async (preference) => {
+    const { applySystemPreference } = await import('./app/theme');
+    applySystemPreference(preference);
+  },
+});
+systemRuntimeRef = systemRuntime;
+const systemSnapshot = shallowRef<Readonly<SystemRuntimeSnapshot>>(systemRuntime.snapshot());
+systemRuntime.subscribe((snapshot) => {
+  systemSnapshot.value = snapshot;
+  document.documentElement.dataset.momSystemRuntime = snapshot.phase.toLowerCase();
+  document.documentElement.dataset.momSystemPreferenceSource = snapshot.preferenceSource.toLowerCase();
+  document.documentElement.dataset.momSystemI18nSource = snapshot.i18nSource.toLowerCase();
+});
+export const systemRuntimeState = readonly(systemSnapshot);
 export const access = createAccessRuntime({
   expectedClientId: clientId,
   expectedUserType,
@@ -64,7 +90,8 @@ export async function bootstrapRuntime(): Promise<boolean> {
   }
   try {
     if (!auth.hasUsableAccessToken()) await auth.refresh();
-    await access.initialize();
+    const context = await access.initialize();
+    await systemRuntime.activate({ userId: context.userId });
     runtimeState.phase = 'ready';
   }
   catch (error) {
@@ -82,6 +109,7 @@ export async function login(username?: string, password?: string): Promise<void>
   runtimeState.authError = undefined;
   auth.clear();
   access.clear();
+  systemRuntime.clear();
   runtimeState.user = undefined;
   if (!username || !password) {
     runtimeState.phase = 'anonymous';
@@ -90,7 +118,8 @@ export async function login(username?: string, password?: string): Promise<void>
   runtimeState.phase = 'starting';
   try {
     await auth.login({ username, password });
-    await access.initialize();
+    const context = await access.initialize();
+    await systemRuntime.activate({ userId: context.userId });
     runtimeState.phase = 'ready';
   }
   catch (error) {
@@ -118,7 +147,8 @@ export async function changeRequiredPassword(
       newPassword,
       confirmation,
     });
-    await access.initialize();
+    const context = await access.initialize();
+    await systemRuntime.activate({ userId: context.userId });
     runtimeState.phase = 'ready';
   }
   catch (error) {
@@ -142,6 +172,7 @@ export async function refreshAccess(): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
+  systemRuntime.clear();
   access.clear();
   runtimeState.user = undefined;
   try {

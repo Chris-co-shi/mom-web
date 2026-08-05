@@ -201,7 +201,10 @@
       "COMFORTABLE": {
         "font-size-body": "{primitive.font.size-14}",
         "control-height": "36px",
-        "page-gutter": "{primitive.space.5}",
+        "header-height": "56px",
+        "page-gutter": "{primitive.space.6}",
+        "sidebar-rail-width": "64px",
+        "sidebar-width": "240px",
         "table-cell-block": "12px",
         "table-cell-inline": "16px",
         "touch-target-min": "36px"
@@ -209,7 +212,10 @@
       "COMPACT": {
         "font-size-body": "{primitive.font.size-14}",
         "control-height": "32px",
-        "page-gutter": "{primitive.space.4}",
+        "header-height": "56px",
+        "page-gutter": "{primitive.space.5}",
+        "sidebar-rail-width": "64px",
+        "sidebar-width": "240px",
         "table-cell-block": "8px",
         "table-cell-inline": "12px",
         "touch-target-min": "32px"

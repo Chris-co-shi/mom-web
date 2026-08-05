@@ -10,7 +10,7 @@
 
 S01 已建立一个机器可读的 Token 权威源，确定性生成 CSS Variables、Tailwind 4 语义映射、Ant Design Vue Theme Adapter 和 TypeScript 契约；三应用分别拥有独立 Theme Runtime，并支持 `LIGHT / DARK / SYSTEM`。Admin 支持 Comfortable/Compact，Portal 固定 Comfortable 且在 360px 认证入口不再强制桌面宽度。
 
-本结论不表示 System Preference 已接入，也不表示 Bundle 严格产品目标完成。真实 IAM Gateway 未运行，因此认证后的 `/iam/users` 人工视觉检查为 `NOT RUN`；该页面的 Token 迁移、类型、静态 UI 回归和生产构建已通过。
+本结论不表示 System Preference 已接入，也不表示 Bundle 严格产品目标完成。2026-08-04 已通过真实 Gateway/IAM 登录完成 `/iam/users` 的 1024px Light/Dark 人工视觉复核：真实列表、筛选、主要操作和详情空状态均正常，无横向溢出，浏览器控制台无 error。Compact 当前没有用户可操作入口，因此不伪造“人工已测”；其根属性、Antdv Adapter 和 32px 控件契约继续由 Admin 专项 E2E 与 Token 单元测试证明，用户偏好入口仍由 S07 建设。
 
 ## 2. 已完成范围
 
@@ -96,7 +96,8 @@ S01 已建立一个机器可读的 Token 权威源，确定性生成 CSS Variabl
 |Supplier Portal 1280px Dark Auth|PASS|Canvas/Card/Input/文本由同一 Theme Provider 更新|
 |Customer Portal|PASS（E2E 等价契约）|与 Supplier 使用相同 Token/Provider 契约但独立实例|
 |Admin 匿名 Auth|PASS（E2E）|Light/Dark 与 Comfortable/Compact 根契约和 Antdv Input 生效|
-|Admin `/iam/users` 已认证视觉|**NOT RUN**|本机 `127.0.0.1:20000` 无 IAM Gateway；未伪造用户、Token 或业务数据|
+|Admin `/iam/users` 已认证视觉|PASS（Light/Dark + Comfortable）|真实 Gateway/IAM 登录；1024×800；列表、筛选、主要操作和空详情区可见；`scrollWidth = viewportWidth = 1024`；控制台 error 为 0|
+|Admin Compact 密度|PASS（自动契约）|`shell-smoke.spec.ts` 的 Admin 项目验证 Light/Comfortable 切换到 Dark/Compact；Token 测试验证 32px 控件高度。当前无用户可操作入口，人工切换延后到 S07|
 
 ## 6. Bundle 结果
 
@@ -134,13 +135,21 @@ pnpm test:e2e
 pnpm bundle:target
 ```
 
+2026-08-04 的补充验收执行：
+
+```bash
+pnpm exec playwright test tests/e2e/shell-smoke.spec.ts --project=mom-admin-chromium
+```
+
+结果为 2 passed、1 skipped。三项目同跑时，Supplier 项目被本机 5556 端口上已存在的 Admin 实例错误复用而出现渠道断言失败；该运行不作为代码回归通过证据，也未停止或重建用户已有进程。
+
 ## 8. 风险与后续
 
 - Admin 仍存在 Vben Preferences/Styles/Shell，双栈仅由单向桥约束；S04 前不得增加新的 Vben 主题消费者；
 - S01 没有用户偏好持久化。S03 必须以 `clientId + userId` 隔离、版本/ETag 和失败可见语义接入；
 - 两个 Portal 的 Theme/Style 结构仍有重复，S11 才做渠道骨架去重；
 - 一个 Roles 页面 inline style 保留在精确例外台账，S06 必须删除；
-- 真实 IAM 环境可用后，应补 `/iam/users` 的 Light/Dark、Comfortable/Compact 和 1024px 人工/自动视觉回归；
+- `/iam/users` 的 1024px Light/Dark/Comfortable 真实视觉缺口已关闭；Compact 的用户可操作入口仍属于 S07，S02 不得为通过验收而提前建设 Preference；
 - S02 未经 Chris 独立批准不得开始。
 
 完成本报告后停止在 S02 前。

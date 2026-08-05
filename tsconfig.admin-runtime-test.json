@@ -12,6 +12,7 @@
     "declarationMap": false
   },
   "include": [
+    "apps/mom-admin/src/router/task-contract.ts",
     "apps/mom-admin/src/section-navigation.ts",
     "apps/mom-admin/src/section-navigation.test.ts"
   ]

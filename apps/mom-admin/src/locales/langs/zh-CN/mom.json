@@ -19,19 +19,42 @@
     "required": "请完整填写账号和密码",
     "passwordMismatch": "两次输入的新密码不一致"
   },
+  "appearance": {
+    "language": "切换语言",
+    "theme": "切换主题",
+    "light": "亮色",
+    "dark": "暗色",
+    "system": "系统"
+  },
   "menu": {
-    "system": "系统管理",
     "users": "用户与授权",
     "roles": "角色配置",
-    "permissions": "Permission 目录",
-    "sessions": "Session 管理",
+    "permissions": "权限目录",
+    "sessions": "会话处置",
     "audit": "安全审计",
-    "clients": "OAuth Client"
+    "clients": "登录客户端"
+  },
+  "navigation": {
+    "platformGovernance": "平台治理",
+    "peopleAccess": "人员与访问",
+    "securityOperations": "安全运营",
+    "primary": "主要任务导航",
+    "breadcrumb": "当前位置",
+    "expand": "展开侧边栏",
+    "collapse": "收起侧边栏"
+  },
+  "settings": {
+    "open": "显示偏好",
+    "title": "个人偏好",
+    "description": "查看和管理当前账号的显示偏好。",
+    "unavailableTitle": "完整偏好设置将在后续阶段提供",
+    "unavailableDescription": "当前主题、密度和语言继续使用 System Preference；本页不会伪造本地保存结果。"
   },
   "common": {
     "logout": "退出登录",
     "factory": "当前工厂",
     "retry": "重新加载菜单",
+    "reload": "重新加载应用",
     "back": "返回可访问页面",
     "unknown": "未知",
     "required": "必须",
@@ -44,7 +67,11 @@
     "notFoundTitle": "页面不存在",
     "notFoundDescription": "地址无效，或页面已经移动。",
     "menuErrorTitle": "菜单加载失败",
-    "menuErrorDescription": "登录状态已保留。请重试加载权限与菜单，或安全退出。"
+    "menuErrorDescription": "登录状态已保留。请重试加载权限与菜单，或安全退出。",
+    "runtimeErrorTitle": "应用运行异常",
+    "runtimeErrorDescription": "登录状态不会因前端异常被主动清除。请重新加载应用后重试。",
+    "catalogErrorTitle": "应用目录暂不可用",
+    "catalogErrorDescription": "当前阶段尚未启用 System Catalog；该诊断页不会加载远程组件或可执行路由。"
   },
   "defaults": {
     "sessionReason": "管理员主动撤销",
@@ -53,7 +80,7 @@
   "pages": {
     "users": {
       "title": "用户管理",
-      "description": "管理组织成员、账号状态与访问范围；授权聚合继续使用同一个 iam_user version。"
+      "description": "管理组织成员、账号状态与访问范围。"
     },
     "roles": {
       "title": "角色配置",

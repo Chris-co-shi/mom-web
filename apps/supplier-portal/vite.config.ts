@@ -27,6 +27,26 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       manifest: true,
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: 'vendor-vue',
+                priority: 20,
+                test: /node_modules[\\/](?:vue|@vue|pinia)[\\/]/,
+              },
+              {
+                entriesAware: true,
+                maxSize: 450_000,
+                name: 'vendor-antdv',
+                priority: 10,
+                test: /node_modules[\\/]ant-design-vue[\\/]/,
+              },
+            ],
+          },
+        },
+      },
       sourcemap: false,
     },
   };

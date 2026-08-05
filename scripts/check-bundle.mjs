@@ -12,6 +12,15 @@ const budgetFile = profile === 'target'
   ? 'quality/bundle-targets.json'
   : 'quality/bundle-baseline.json';
 const budgets = JSON.parse(await readFile(resolve(root, budgetFile), 'utf8'));
+const applicationFilters = process.argv
+  .filter((argument) => argument.startsWith('--application='))
+  .map((argument) => argument.split('=')[1]);
+const knownApplications = new Set(Object.keys(budgets.applications));
+for (const application of applicationFilters) {
+  if (!knownApplications.has(application)) {
+    throw new Error(`Unknown bundle application: ${application}`);
+  }
+}
 const failures = [];
 
 async function listFiles(directory) {
@@ -41,8 +50,14 @@ function formatKilobytes(bytes) {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-console.info(`Bundle profile: ${profile} (${budgets.measurement.gzip})`);
-for (const [application, budget] of Object.entries(budgets.applications)) {
+const selectedApplications = Object.entries(budgets.applications).filter(
+  ([application]) => applicationFilters.length === 0 || applicationFilters.includes(application),
+);
+
+console.info(
+  `Bundle profile: ${profile} (${budgets.measurement.gzip}); applications: ${selectedApplications.map(([application]) => application).join(', ')}`,
+);
+for (const [application, budget] of selectedApplications) {
   const dist = resolve(root, budget.dist);
   const manifest = JSON.parse(await readFile(join(dist, '.vite/manifest.json'), 'utf8'));
   const initialFiles = [...collectStaticJavaScript(manifest, 'index.html')].sort();

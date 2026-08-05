@@ -1,35 +1,25 @@
 import type { PermissionCode } from '@mom/access';
-import type { RouteRecordRaw } from 'vue-router';
-import type { ComponentRecordType } from '@vben/types';
-
-import { generateAccessible } from '@vben/access';
-import {
-  useAccessStore,
-  useTabbarStore,
-  useUserStore,
-} from '@vben/stores';
 
 import { access, runtimeState } from '../runtime';
-import ForbiddenView from '../views/fallback/forbidden.vue';
+import {
+  defaultCatalogTaskPath,
+  isCatalogRouteActive,
+} from './catalog';
 import { router } from './index';
-import { firstAccessiblePath, loadMenuRoutes } from './menu-source';
+import { findAdminTask } from './registry';
 
 interface SynchronizeOptions {
   reloadContext?: boolean;
 }
 
 let synchronizationFlight: Promise<void> | undefined;
+let accessChecked = false;
 
-const layoutMap: ComponentRecordType = {
-  BasicLayout: () => import('../layouts/basic.vue'),
-};
-
-const pageMap: ComponentRecordType = {
-  '/_core/fallback/not-found.vue': () =>
-    import('../views/fallback/not-found.vue'),
-  '/iam-admin.vue': () => import('../App.vue'),
-};
-
+/**
+ * 同步当前用户的访问上下文。
+ *
+ * 权限只用于过滤导航和守卫静态路由；这里不生成路由、不复制 Store，也不保留 Tab 状态。
+ */
 export function synchronizeAccess(
   options: SynchronizeOptions = {},
 ): Promise<void> {
@@ -41,59 +31,18 @@ export function synchronizeAccess(
 
 async function synchronize(options: SynchronizeOptions): Promise<void> {
   if (options.reloadContext) {
+    accessChecked = false;
     await access.initialize();
   }
 
   const context = access.snapshot();
   if (!context) throw new Error('Access context is not initialized');
+  accessChecked = true;
 
-  if (router.hasRoute('IamManagement')) {
-    router.removeRoute('IamManagement');
-  }
-
-  const accessStore = useAccessStore();
-  const userStore = useUserStore();
-  const tabbarStore = useTabbarStore();
-  const { accessibleMenus, accessibleRoutes } = await generateAccessible(
-    'backend',
-    {
-      fetchMenuListAsync: loadMenuRoutes,
-      forbiddenComponent: ForbiddenView,
-      layoutMap,
-      pageMap,
-      roles: context.roles,
-      router,
-      routes: [] as RouteRecordRaw[],
-    },
-  );
-
-  accessStore.setAccessCodes([...context.permissions]);
-  accessStore.setAccessMenus(accessibleMenus);
-  accessStore.setAccessRoutes(accessibleRoutes);
-  accessStore.setIsAccessChecked(true);
-  userStore.setUserInfo({
-    avatar: '',
-    realName: context.displayName,
-    roles: [...context.roles],
-    userId: context.userId,
-    username: context.username,
-  });
-
-  const accessiblePaths = new Set(
-    accessibleRoutes.flatMap((route) => [
-      route.path,
-      ...(route.children ?? []).map((child) => child.path),
-    ]),
-  );
-  tabbarStore.tabs = tabbarStore.tabs.filter((tab) =>
-    accessiblePaths.has(tab.path),
-  );
-
-  const requiredPermission = router.currentRoute.value.meta
-    .requiredPermission;
+  const requiredPermission = router.currentRoute.value.meta.requiredPermission;
   if (
     requiredPermission
-    && !access.hasPermission(requiredPermission as PermissionCode)
+    && !access.hasPermission(requiredPermission)
     && router.currentRoute.value.path !== '/403'
   ) {
     await router.replace({
@@ -104,22 +53,11 @@ async function synchronize(options: SynchronizeOptions): Promise<void> {
 }
 
 export function resetGeneratedAccess(): void {
-  if (router.hasRoute('IamManagement')) {
-    router.removeRoute('IamManagement');
-  }
-  const accessStore = useAccessStore();
-  const userStore = useUserStore();
-  const tabbarStore = useTabbarStore();
-  accessStore.setAccessCodes([]);
-  accessStore.setAccessMenus([]);
-  accessStore.setAccessRoutes([]);
-  accessStore.setIsAccessChecked(false);
-  userStore.setUserInfo(null);
-  tabbarStore.tabs = [];
+  accessChecked = false;
 }
 
 export function defaultAuthorizedPath(): string {
-  return firstAccessiblePath() ?? '/403';
+  return defaultCatalogTaskPath();
 }
 
 export function isSafeInternalRedirect(value: unknown): value is string {
@@ -140,6 +78,11 @@ export function isSafeInternalRedirect(value: unknown): value is string {
 export function resolveAuthorizedRedirect(value: unknown): string {
   if (!isSafeInternalRedirect(value)) return defaultAuthorizedPath();
   const decoded = decodeURIComponent(value);
+  const task = findAdminTask({ path: decoded.split(/[?#]/u, 1)[0] ?? decoded });
+  if (task && (
+    !access.hasPermission(task.requiredPermission)
+    || !isCatalogRouteActive(task.routeKey)
+  )) return defaultAuthorizedPath();
   const resolved = router.resolve(decoded);
   if (resolved.name === 'NotFound') return defaultAuthorizedPath();
   const permission = resolved.meta.requiredPermission;
@@ -149,6 +92,5 @@ export function resolveAuthorizedRedirect(value: unknown): string {
 }
 
 export function accessIsReady(): boolean {
-  return runtimeState.phase === 'ready'
-    && useAccessStore().isAccessChecked;
+  return runtimeState.phase === 'ready' && accessChecked;
 }

@@ -167,3 +167,54 @@ test('uses only the frozen Gateway request headers and rejects absolute service 
   assert.equal(captured?.has('X-Idempotency-Key'), false);
   await assert.rejects(client.get('http://business-service/api/wms/receipts'), /Gateway-relative/u);
 });
+
+test('conditional GET exposes controlled metadata and accepts 304 without parsing a body', async () => {
+  const seenEtags: Array<string | null> = [];
+  const client = createApiClient({
+    baseUrl: 'https://gateway.example.test',
+    fetcher: async (_input, init) => {
+      const etag = new Headers(init?.headers).get('If-None-Match');
+      seenEtags.push(etag);
+      return etag
+        ? new Response(null, { status: 304, headers: { ETag: '"release-1"' } })
+        : Response.json(
+            { releaseVersion: 1 },
+            {
+              headers: {
+                'ETag': '"release-1"',
+                'X-Correlation-Id': 'corr-response',
+                'X-Internal-Header': 'not-exposed',
+              },
+            },
+          );
+    },
+  });
+
+  const fresh = await client.conditionalGet<{ releaseVersion: number }>('/api/system/i18n');
+  assert.equal(fresh.status, 200);
+  assert.deepEqual(fresh.data, { releaseVersion: 1 });
+  assert.equal(fresh.headers.etag, '"release-1"');
+  assert.equal(fresh.headers['x-correlation-id'], 'corr-response');
+  assert.equal(fresh.headers['x-internal-header'], undefined);
+
+  const unchanged = await client.conditionalGet('/api/system/i18n', {
+    headers: { 'If-None-Match': fresh.headers.etag ?? '' },
+  });
+  assert.equal(unchanged.status, 304);
+  assert.equal(unchanged.data, undefined);
+  assert.deepEqual(seenEtags, [null, '"release-1"']);
+});
+
+test('a caller may consume a 403 locally without invoking the application forbidden handler', async () => {
+  let forbiddenCalls = 0;
+  const client = createApiClient({
+    baseUrl: '',
+    onForbidden: async () => { forbiddenCalls += 1; },
+    fetcher: async () => Response.json({ code: 'forbidden' }, { status: 403 }),
+  });
+  await assert.rejects(client.get('/api/system/preferences/me', {
+    notifyForbidden: false,
+    retryAuthorization: false,
+  }), MomApiError);
+  assert.equal(forbiddenCalls, 0);
+});

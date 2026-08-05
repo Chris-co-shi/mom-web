@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import {
+  Button as AButton,
+  Result as AResult,
+  Space as ASpace,
+} from 'ant-design-vue';
 
-import { $t } from '@vben/locales';
-
+import { $t } from '../../locales';
 import {
   logout,
   retryAccessInitialization,
@@ -14,6 +18,7 @@ import {
   resolveAuthorizedRedirect,
   synchronizeAccess,
 } from '../../router/access';
+import { synchronizeCatalog } from '../../router/catalog';
 
 const route = useRoute();
 const router = useRouter();
@@ -24,7 +29,11 @@ async function retry(): Promise<void> {
   try {
     await retryAccessInitialization();
     await synchronizeAccess();
+    await synchronizeCatalog();
     await router.replace(resolveAuthorizedRedirect(route.query.redirect));
+  }
+  catch {
+    if (runtimeState.phase === 'ready') await router.replace('/catalog-error');
   }
   finally {
     retrying.value = false;

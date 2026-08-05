@@ -19,19 +19,42 @@
     "required": "Enter both username and password",
     "passwordMismatch": "The new passwords do not match"
   },
+  "appearance": {
+    "language": "Switch language",
+    "theme": "Switch theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "menu": {
-    "system": "System Management",
     "users": "Users & Access",
-    "roles": "Roles",
+    "roles": "Role Configuration",
     "permissions": "Permission Catalog",
-    "sessions": "Sessions",
+    "sessions": "Session Response",
     "audit": "Security Audit",
-    "clients": "OAuth Clients"
+    "clients": "Login Clients"
+  },
+  "navigation": {
+    "platformGovernance": "Platform Governance",
+    "peopleAccess": "People & Access",
+    "securityOperations": "Security Operations",
+    "primary": "Primary task navigation",
+    "breadcrumb": "Current location",
+    "expand": "Expand sidebar",
+    "collapse": "Collapse sidebar"
+  },
+  "settings": {
+    "open": "Display preferences",
+    "title": "Personal Preferences",
+    "description": "View and manage display preferences for the current account.",
+    "unavailableTitle": "Full preference settings are planned for a later phase",
+    "unavailableDescription": "Theme, density, and language continue to use System Preference; this page does not pretend that local-only changes were saved."
   },
   "common": {
     "logout": "Sign out",
     "factory": "Current factory",
     "retry": "Reload menus",
+    "reload": "Reload application",
     "back": "Back to an accessible page",
     "unknown": "Unknown",
     "required": "Required",
@@ -44,7 +67,11 @@
     "notFoundTitle": "Page not found",
     "notFoundDescription": "The address is invalid or the page has moved.",
     "menuErrorTitle": "Menus failed to load",
-    "menuErrorDescription": "Your sign-in is still active. Retry permissions and menus, or sign out safely."
+    "menuErrorDescription": "Your sign-in is still active. Retry permissions and menus, or sign out safely.",
+    "runtimeErrorTitle": "Application runtime error",
+    "runtimeErrorDescription": "A frontend error does not clear the sign-in session. Reload the application and try again.",
+    "catalogErrorTitle": "Application catalog unavailable",
+    "catalogErrorDescription": "System Catalog is not active in this phase. This diagnostic page never loads remote components or executable routes."
   },
   "defaults": {
     "sessionReason": "Revoked by administrator",
@@ -53,7 +80,7 @@
   "pages": {
     "users": {
       "title": "User Management",
-      "description": "Manage members, account state, and access scope with one iam_user aggregate version."
+      "description": "Manage members, account status, and access scope."
     },
     "roles": {
       "title": "Role Configuration",

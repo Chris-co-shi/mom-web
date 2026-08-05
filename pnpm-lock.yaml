@@ -231,12 +231,24 @@ importers:
 
   apps/customer-portal:
     dependencies:
+      '@mom/access':
+        specifier: workspace:*
+        version: link:../../packages/access
+      '@mom/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@mom/common-ui':
+        specifier: workspace:*
+        version: link:../../packages/common-ui
       '@mom/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
       '@mom/portal-access':
         specifier: workspace:*
         version: link:../../packages/portal-access
+      '@mom/system-client':
+        specifier: workspace:*
+        version: link:../../packages/system-client
       ant-design-vue:
         specifier: 'catalog:'
         version: 4.2.6(vue@3.5.34(typescript@6.0.3))
@@ -283,60 +295,21 @@ importers:
       '@mom/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@vben/access':
+      '@mom/system-client':
         specifier: workspace:*
-        version: link:../../packages/effects/access
-      '@vben/common-ui':
-        specifier: workspace:*
-        version: link:../../packages/effects/common-ui
-      '@vben/constants':
-        specifier: workspace:*
-        version: link:../../packages/constants
-      '@vben/hooks':
-        specifier: workspace:*
-        version: link:../../packages/effects/hooks
-      '@vben/icons':
-        specifier: workspace:*
-        version: link:../../packages/icons
-      '@vben/layouts':
-        specifier: workspace:*
-        version: link:../../packages/effects/layouts
-      '@vben/locales':
-        specifier: workspace:*
-        version: link:../../packages/locales
-      '@vben/preferences':
-        specifier: workspace:*
-        version: link:../../packages/preferences
-      '@vben/stores':
-        specifier: workspace:*
-        version: link:../../packages/stores
-      '@vben/styles':
-        specifier: workspace:*
-        version: link:../../packages/styles
-      '@vben/tailwind-config':
-        specifier: workspace:*
-        version: link:../../internal/tailwind-config
-      '@vben/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      '@vben/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
-      '@vueuse/core':
-        specifier: 'catalog:'
-        version: 14.3.0(vue@3.5.34(typescript@6.0.3))
+        version: link:../../packages/system-client
       ant-design-vue:
         specifier: 'catalog:'
         version: 4.2.6(vue@3.5.34(typescript@6.0.3))
       dayjs:
         specifier: 'catalog:'
         version: 1.11.21
-      pinia:
-        specifier: ^3.0.4
-        version: 3.0.4(typescript@6.0.3)(vue@3.5.34(typescript@6.0.3))
       vue:
         specifier: 3.5.34
         version: 3.5.34(typescript@6.0.3)
+      vue-i18n:
+        specifier: 'catalog:'
+        version: 11.4.8(vue@3.5.34(typescript@6.0.3))
       vue-router:
         specifier: 'catalog:'
         version: 5.0.7(@vue/compiler-sfc@3.5.34)(pinia@3.0.4(typescript@6.0.3)(vue@3.5.34(typescript@6.0.3)))(vite@8.0.10(@types/node@25.9.5)(jiti@2.7.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.9.0))(vue@3.5.34(typescript@6.0.3))
@@ -362,12 +335,24 @@ importers:
 
   apps/supplier-portal:
     dependencies:
+      '@mom/access':
+        specifier: workspace:*
+        version: link:../../packages/access
+      '@mom/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
+      '@mom/common-ui':
+        specifier: workspace:*
+        version: link:../../packages/common-ui
       '@mom/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
       '@mom/portal-access':
         specifier: workspace:*
         version: link:../../packages/portal-access
+      '@mom/system-client':
+        specifier: workspace:*
+        version: link:../../packages/system-client
       ant-design-vue:
         specifier: 'catalog:'
         version: 4.2.6(vue@3.5.34(typescript@6.0.3))
@@ -736,6 +721,12 @@ importers:
 
   packages/common-ui:
     dependencies:
+      ant-design-vue:
+        specifier: 'catalog:'
+        version: 4.2.6(vue@3.5.34(typescript@6.0.3))
+      lucide-vue-next:
+        specifier: 'catalog:'
+        version: 0.577.0(vue@3.5.34(typescript@6.0.3))
       vue:
         specifier: 3.5.34
         version: 3.5.34(typescript@6.0.3)
@@ -1035,6 +1026,16 @@ importers:
       '@vben-core/design':
         specifier: workspace:*
         version: link:../@core/base/design
+
+  packages/system-client:
+    dependencies:
+      '@mom/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/traceability-graph:
     devDependencies:
@@ -2884,7 +2885,6 @@ packages:
 
   lucide-vue-next@0.577.0:
     resolution: {integrity: sha512-py05bAfv9SHVJqscbiOnjcnLlEmOffA58a+7XhZuFxrs6txe1E8VoR1ngWGTYO+9aVKABAz8l3ee3PqiQN9QPA==}
-    deprecated: Package deprecated. Please use @lucide/vue instead.
     peerDependencies:
       vue: 3.5.34
 

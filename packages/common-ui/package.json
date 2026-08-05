@@ -12,6 +12,8 @@
     "typecheck": "vue-tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "ant-design-vue": "catalog:",
+    "lucide-vue-next": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {

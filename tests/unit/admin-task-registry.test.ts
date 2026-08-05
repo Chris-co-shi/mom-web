@@ -16,6 +16,10 @@ describe('Admin 静态任务注册表', () => {
       'people-access',
       'security-operations',
     ]);
+    expect(ADMIN_TASK_DOMAINS.map(({ routeKey }) => routeKey)).toEqual([
+      'mom-admin.people-access',
+      'mom-admin.security-operations',
+    ]);
     expect(ADMIN_TASKS.map(({ path }) => path)).toEqual([
       '/iam/users',
       '/iam/roles',
@@ -31,7 +35,7 @@ describe('Admin 静态任务注册表', () => {
   it('Permission 只过滤任务，不生成域、名称、顺序或路径', () => {
     const allowed = new Set(['iam:user:read', 'iam:audit:read']);
     const navigation = accessibleTaskNavigation((permission) =>
-      allowed.has(permission),
+      allowed.has(permission), () => true,
     );
 
     expect(navigation.map(({ domain, tasks }) => ({
@@ -47,7 +51,10 @@ describe('Admin 静态任务注册表', () => {
         tasks: [{ name: 'IamAudit', path: '/iam/audit' }],
       },
     ]);
-    expect(firstAccessibleTaskPath((permission) => allowed.has(permission))).toBe('/iam/users');
+    expect(firstAccessibleTaskPath(
+      (permission) => allowed.has(permission),
+      (routeKey) => routeKey.endsWith('.audit'),
+    )).toBe('/iam/audit');
   });
 
   it('当前路由只能解析到本地已知任务', () => {

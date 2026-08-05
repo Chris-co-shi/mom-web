@@ -10,8 +10,10 @@ async function installAdminAuthenticatedFixture(
     'iam:audit:read',
     'iam:client:read',
   ],
-): Promise<string[]> {
+  options: { catalogStatus?: number } = {},
+): Promise<{ catalogEtags: Array<string | undefined>; requestedFactories: string[] }> {
   const requestedFactories: string[] = [];
+  const catalogEtags: Array<string | undefined> = [];
 
   await page.addInitScript(() => {
     const now = Date.now();
@@ -68,11 +70,102 @@ async function installAdminAuthenticatedFixture(
   await page.route('**/api/system/i18n/**', async (route) => {
     await route.fulfill({ json: { code: 'NOT_FOUND' }, status: 404 });
   });
+  await page.route('**/api/system/catalog/applications/mom-admin', async (route) => {
+    const requestEtag = route.request().headers()['if-none-match'];
+    catalogEtags.push(requestEtag);
+    if (options.catalogStatus && options.catalogStatus !== 200) {
+      await route.fulfill({
+        json: { code: 'catalog_unavailable' },
+        status: options.catalogStatus,
+      });
+      return;
+    }
+    const headers = {
+      'Cache-Control': 'private, no-cache',
+      ETag: '"e2e-catalog-1"',
+    };
+    if (requestEtag === '"e2e-catalog-1"') {
+      await route.fulfill({ headers, status: 304 });
+      return;
+    }
+    await route.fulfill({ headers, json: adminCatalogView(permissions) });
+  });
   await page.route('**/api/iam/admin/**', async (route) => {
     await route.fulfill({ json: [] });
   });
 
-  return requestedFactories;
+  return { catalogEtags, requestedFactories };
+}
+
+function adminCatalogView(permissions: readonly string[]) {
+  const allowed = new Set(permissions);
+  const route = (
+    routeKey: string,
+    permissionCode: string,
+    iconKey: string,
+    messageKey: string,
+  ) => ({
+    children: [],
+    i18n: { messageKey, resourceCode: 'runtime' },
+    iconKey,
+    keepAlive: false,
+    permissionCode,
+    routeKey,
+    type: 'ROUTE',
+    visibleInBreadcrumb: true,
+    visibleInMenu: true,
+    visibleInTab: false,
+  });
+  const groups = [
+    {
+      iconKey: 'users',
+      messageKey: 'mom.runtime.navigation.peopleAccess',
+      routeKey: 'mom-admin.people-access',
+      routes: [
+        route('mom-admin.people-access.users', 'iam:user:read', 'users', 'mom.runtime.navigation.users'),
+        route('mom-admin.people-access.roles', 'iam:role:read', 'shield-check', 'mom.runtime.navigation.roles'),
+        route('mom-admin.people-access.permissions', 'iam:permission:read', 'key-round', 'mom.runtime.navigation.permissions'),
+        route('mom-admin.people-access.clients', 'iam:client:read', 'app-window', 'mom.runtime.navigation.clients'),
+      ],
+    },
+    {
+      iconKey: 'shield-check',
+      messageKey: 'mom.runtime.navigation.securityOperations',
+      routeKey: 'mom-admin.security-operations',
+      routes: [
+        route('mom-admin.security-operations.sessions', 'iam:session:read', 'monitor-smartphone', 'mom.runtime.navigation.sessions'),
+        route('mom-admin.security-operations.audit', 'iam:audit:read', 'scroll-text', 'mom.runtime.navigation.audit'),
+      ],
+    },
+  ].map((group) => ({
+    children: group.routes.filter((item) => allowed.has(item.permissionCode)),
+    i18n: { messageKey: group.messageKey, resourceCode: 'runtime' },
+    iconKey: group.iconKey,
+    keepAlive: false,
+    permissionCode: null,
+    routeKey: group.routeKey,
+    type: 'GROUP',
+    visibleInBreadcrumb: true,
+    visibleInMenu: true,
+    visibleInTab: false,
+  })).filter((group) => group.children.length > 0);
+
+  return {
+    applications: [{
+      applicationCode: 'mom-admin',
+      applicationType: 'PLATFORM',
+      catalogVersion: 1,
+      channels: [{ clientChannel: 'WEB', navigation: groups }],
+      i18n: {
+        messageKey: 'mom.runtime.application.admin',
+        resourceCode: 'runtime',
+      },
+      iconKey: 'app-window',
+      routeContractVersion: 1,
+    }],
+    generatedAt: '2026-08-05T08:00:00Z',
+    snapshotSchemaVersion: 1,
+  };
 }
 
 test('匿名入口可以渲染对应应用 Shell', async ({ page }, testInfo) => {
@@ -125,12 +218,18 @@ test('三应用遵守主题和渠道根契约', async ({ page }, testInfo) => {
   )).toBe('rgb(28, 28, 30)');
 });
 
-test('匿名入口不激活或请求用户 System Runtime', async ({ page }) => {
+test('匿名入口不激活或请求用户 System Runtime', async ({ page }, testInfo) => {
   await page.goto('/');
   const root = page.locator('html');
   await expect(root).toHaveAttribute('data-mom-system-runtime', 'idle');
   await expect(root).toHaveAttribute('data-mom-system-preference-source', 'static');
   await expect(root).toHaveAttribute('data-mom-system-i18n-source', 'static');
+  if (testInfo.project.name.includes('mom-admin')) {
+    await expect(root).toHaveAttribute('data-mom-catalog-runtime', 'idle');
+  }
+  else {
+    await expect(root).not.toHaveAttribute('data-mom-catalog-runtime', /.+/u);
+  }
   const requestedSystem = await page.evaluate(() =>
     performance.getEntriesByType('resource').some(
       (entry) => entry.name.includes('/api/system/'),
@@ -257,7 +356,7 @@ test('Admin 匿名外观切换只作用于当前实例', async ({ page }, testIn
   }))).toEqual({ local: 0, session: 0 });
 });
 
-test('Admin 静态深链按权限 fail closed 且 Core Error Route 可达', async ({ page }, testInfo) => {
+test('Admin Catalog 深链按权限 fail closed 且 Core Error Route 可达', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes('mom-admin'), '仅验证 Admin 渠道');
   await installAdminAuthenticatedFixture(page, ['iam:user:read']);
 
@@ -275,7 +374,7 @@ test('Admin 静态深链按权限 fail closed 且 Core Error Route 可达', asyn
 
 test('Admin 登录后使用 MOM 任务 Shell 并保持上下文与响应式契约', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes('mom-admin'), '仅验证 Admin 渠道');
-  const requestedFactories = await installAdminAuthenticatedFixture(page);
+  const { catalogEtags, requestedFactories } = await installAdminAuthenticatedFixture(page);
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto('/iam/users');
 
@@ -293,6 +392,7 @@ test('Admin 登录后使用 MOM 任务 Shell 并保持上下文与响应式契�
   await page.getByRole('link', { name: '角色配置' }).click();
   await expect(page).toHaveURL(/\/iam\/roles$/);
   await expect(page.getByRole('link', { name: '角色配置' })).toHaveAttribute('aria-current', 'page');
+  expect(catalogEtags).toContain('"e2e-catalog-1"');
 
   const factorySelect = page.getByRole('combobox', { name: '当前工厂' });
   await factorySelect.focus();
@@ -313,6 +413,17 @@ test('Admin 登录后使用 MOM 任务 Shell 并保持上下文与响应式契�
   await expect.poll(() => page.evaluate(() => (
     document.documentElement.scrollWidth - document.documentElement.clientWidth
   ))).toBeLessThanOrEqual(0);
+});
+
+test('Admin Catalog 失败时撤销任务并进入静态诊断页', async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.includes('mom-admin'), '仅验证 Admin 渠道');
+  await installAdminAuthenticatedFixture(page, ['iam:user:read'], { catalogStatus: 503 });
+
+  await page.goto('/iam/users');
+
+  await expect(page).toHaveURL(/\/catalog-error/);
+  await expect(page.getByText('应用目录暂不可用', { exact: true })).toBeVisible();
+  await expect(page.locator('.mom-admin-sidebar')).toHaveCount(0);
 });
 
 test('Admin 已认证页面覆盖目标视口、主题、密度、文本缩放与减少动效', async ({ page }, testInfo) => {

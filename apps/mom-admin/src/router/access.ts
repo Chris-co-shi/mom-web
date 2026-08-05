@@ -1,8 +1,12 @@
 import type { PermissionCode } from '@mom/access';
 
 import { access, runtimeState } from '../runtime';
+import {
+  defaultCatalogTaskPath,
+  isCatalogRouteActive,
+} from './catalog';
 import { router } from './index';
-import { firstAccessibleTaskPath } from './registry';
+import { findAdminTask } from './registry';
 
 interface SynchronizeOptions {
   reloadContext?: boolean;
@@ -53,8 +57,7 @@ export function resetGeneratedAccess(): void {
 }
 
 export function defaultAuthorizedPath(): string {
-  return firstAccessibleTaskPath((permission) =>
-    access.hasPermission(permission)) ?? '/403';
+  return defaultCatalogTaskPath();
 }
 
 export function isSafeInternalRedirect(value: unknown): value is string {
@@ -75,6 +78,11 @@ export function isSafeInternalRedirect(value: unknown): value is string {
 export function resolveAuthorizedRedirect(value: unknown): string {
   if (!isSafeInternalRedirect(value)) return defaultAuthorizedPath();
   const decoded = decodeURIComponent(value);
+  const task = findAdminTask({ path: decoded.split(/[?#]/u, 1)[0] ?? decoded });
+  if (task && (
+    !access.hasPermission(task.requiredPermission)
+    || !isCatalogRouteActive(task.routeKey)
+  )) return defaultAuthorizedPath();
   const resolved = router.resolve(decoded);
   if (resolved.name === 'NotFound') return defaultAuthorizedPath();
   const permission = resolved.meta.requiredPermission;

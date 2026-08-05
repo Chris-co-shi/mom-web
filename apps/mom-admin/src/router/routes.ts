@@ -1,7 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router';
 
-import { ADMIN_TASKS } from './registry';
-
 export const coreRouteNames = new Set([
   'Authentication',
   'Login',
@@ -14,24 +12,9 @@ export const coreRouteNames = new Set([
   'NotFound',
 ]);
 
-const taskRoutes: RouteRecordRaw[] = ADMIN_TASKS.map((task) => ({
-  component: task.component,
-  meta: {
-    menuCode: task.menuCode,
-    requiredPermission: task.requiredPermission,
-    routeKey: task.routeKey,
-    section: task.section,
-    taskDomain: task.domain,
-    title: task.titleKey,
-  },
-  name: task.name,
-  path: task.path,
-}));
-
 export const routes: RouteRecordRaw[] = [
   {
     children: [
-      ...taskRoutes,
       {
         component: () => import('../views/settings/personal-settings.vue'),
         meta: {

@@ -25,13 +25,16 @@ export type IamSection =
   | 'users';
 
 export interface AdminTaskDomain {
+  catalogI18nKey: `mom.runtime.${string}`;
   iconKey: AdminTaskIconKey;
   key: AdminTaskDomainKey;
   order: number;
+  routeKey: `mom-admin.${string}`;
   titleKey: string;
 }
 
 export interface AdminTaskContract {
+  catalogI18nKey: `mom.runtime.${string}`;
   domain: AdminTaskDomainKey;
   iconKey: AdminTaskIconKey;
   menuCode: string;
@@ -46,21 +49,26 @@ export interface AdminTaskContract {
 
 export const ADMIN_TASK_DOMAINS = [
   {
+    catalogI18nKey: 'mom.runtime.navigation.peopleAccess',
     iconKey: 'users',
     key: 'people-access',
     order: 10,
+    routeKey: 'mom-admin.people-access',
     titleKey: 'mom.navigation.peopleAccess',
   },
   {
+    catalogI18nKey: 'mom.runtime.navigation.securityOperations',
     iconKey: 'shield-check',
     key: 'security-operations',
     order: 20,
+    routeKey: 'mom-admin.security-operations',
     titleKey: 'mom.navigation.securityOperations',
   },
 ] as const satisfies readonly AdminTaskDomain[];
 
 export const ADMIN_TASK_CONTRACTS = [
   {
+    catalogI18nKey: 'mom.runtime.navigation.users',
     domain: 'people-access',
     iconKey: 'users',
     menuCode: 'iam.users',
@@ -73,6 +81,7 @@ export const ADMIN_TASK_CONTRACTS = [
     titleKey: 'mom.menu.users',
   },
   {
+    catalogI18nKey: 'mom.runtime.navigation.roles',
     domain: 'people-access',
     iconKey: 'shield-check',
     menuCode: 'iam.roles',
@@ -85,6 +94,7 @@ export const ADMIN_TASK_CONTRACTS = [
     titleKey: 'mom.menu.roles',
   },
   {
+    catalogI18nKey: 'mom.runtime.navigation.permissions',
     domain: 'people-access',
     iconKey: 'key-round',
     menuCode: 'iam.permissions',
@@ -97,6 +107,7 @@ export const ADMIN_TASK_CONTRACTS = [
     titleKey: 'mom.menu.permissions',
   },
   {
+    catalogI18nKey: 'mom.runtime.navigation.clients',
     domain: 'people-access',
     iconKey: 'app-window',
     menuCode: 'iam.clients',
@@ -109,6 +120,7 @@ export const ADMIN_TASK_CONTRACTS = [
     titleKey: 'mom.menu.clients',
   },
   {
+    catalogI18nKey: 'mom.runtime.navigation.sessions',
     domain: 'security-operations',
     iconKey: 'monitor-smartphone',
     menuCode: 'iam.sessions',
@@ -121,6 +133,7 @@ export const ADMIN_TASK_CONTRACTS = [
     titleKey: 'mom.menu.sessions',
   },
   {
+    catalogI18nKey: 'mom.runtime.navigation.audit',
     domain: 'security-operations',
     iconKey: 'scroll-text',
     menuCode: 'iam.audit',

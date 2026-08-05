@@ -112,11 +112,13 @@ test('匿名外观控件只修改 MOM 当前运行实例', async () => {
   assert.equal(`${auth}\n${theme}\n${locales}`.includes(legacyPackageScope), false);
 });
 
-test('MOM Admin Shell owns static task navigation without a Vben runtime closure', async () => {
+test('MOM Admin Shell owns Catalog-governed task navigation without a Vben runtime closure', async () => {
   const shell = await read('./layouts/admin-shell.vue');
   const header = await read('./layouts/admin-shell/AdminHeader.vue');
   const sidebar = await read('./layouts/admin-shell/AdminSidebar.vue');
   const access = await read('./router/access.ts');
+  const catalog = await read('./router/catalog.ts');
+  const dynamicRoutes = await read('./router/dynamic-task-routes.ts');
   const routes = await read('./router/routes.ts');
 
   assert.match(shell, /<AdminSidebar\b/);
@@ -129,9 +131,12 @@ test('MOM Admin Shell owns static task navigation without a Vben runtime closure
   assert.match(header, /openPreferences/);
   assert.match(header, /logout/);
   assert.match(sidebar, /aria-current/);
-  assert.match(access, /firstAccessibleTaskPath/);
+  assert.match(access, /defaultCatalogTaskPath/);
   assert.doesNotMatch(access, /generateAccessible|useAccessStore|useTabbarStore|useUserStore/);
-  assert.match(routes, /ADMIN_TASKS\.map/);
+  assert.doesNotMatch(routes, /ADMIN_TASKS\.map/);
+  assert.match(catalog, /synchronizeCatalog/);
+  assert.match(catalog, /routes\.clear\(\)/);
+  assert.match(dynamicRoutes, /router\.addRoute\('Root'/);
   assert.match(routes, /component:\s*\(\) => import\('\.\.\/layouts\/admin-shell\.vue'\)/);
 });
 
@@ -142,7 +147,7 @@ test('MOM task navigation uses two product domains and never restores System Man
 
   assert.match(contract, /key: 'people-access'/);
   assert.match(contract, /key: 'security-operations'/);
-  assert.equal((contract.match(/routeKey: 'mom-admin\./g) ?? []).length, 6);
+  assert.equal((contract.match(/routeKey: 'mom-admin\./g) ?? []).length, 8);
   assert.equal((contract.match(/requiredPermission: 'iam:/g) ?? []).length, 6);
   assert.doesNotMatch(routes, /mom\.menu\.system/);
   assert.doesNotMatch(zh, /系统管理/);

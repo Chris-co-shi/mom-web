@@ -20,6 +20,7 @@ import {
   resolveAuthorizedRedirect,
   synchronizeAccess,
 } from '../../router/access';
+import { synchronizeCatalog } from '../../router/catalog';
 
 const route = useRoute();
 const router = useRouter();
@@ -38,6 +39,7 @@ async function submit(): Promise<void> {
   try {
     await login(form.username.trim(), form.password);
     await synchronizeAccess();
+    await synchronizeCatalog();
     await router.replace(resolveAuthorizedRedirect(route.query.redirect));
   }
   catch (error) {
@@ -57,6 +59,13 @@ async function submit(): Promise<void> {
     if (runtimeState.phase === 'access-error') {
       await router.replace({
         path: '/menu-error',
+        query: { redirect: route.query.redirect },
+      });
+      return;
+    }
+    if (runtimeState.phase === 'ready') {
+      await router.replace({
+        path: '/catalog-error',
         query: { redirect: route.query.redirect },
       });
       return;

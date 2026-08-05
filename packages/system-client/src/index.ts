@@ -17,6 +17,24 @@ export type {
 } from './contracts.js';
 export type { SystemRuntime, SystemRuntimeOptions } from './runtime.js';
 export { createSystemRuntime } from './runtime.js';
+export type {
+  CatalogApplicationCatalog,
+  CatalogApplicationType,
+  CatalogChannelCatalog,
+  CatalogClientChannel,
+  CatalogContract,
+  CatalogI18nReference,
+  CatalogNavigationItem,
+  CatalogNavigationType,
+  CatalogNodeContract,
+  CatalogRuntimeIdentity,
+  CatalogRuntimePhase,
+  CatalogRuntimeSnapshot,
+  CatalogView,
+} from './catalog-contracts.js';
+export type { CatalogRuntime, CatalogRuntimeOptions } from './catalog-runtime.js';
+export { createCatalogRuntime } from './catalog-runtime.js';
+export { CatalogValidationError } from './catalog-validation.js';
 
 import type { ResolvedUserPreference } from './contracts.js';
 

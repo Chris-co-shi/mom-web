@@ -2,7 +2,7 @@
 
 > 状态：Accepted · Chris Review 2026-08-03
 >
-> 当前执行状态：S04A/S04B/S04C 已获 Chris 接受；S04D 已完成实现与全量门禁，等待 Chris Review。
+> 当前执行状态：S04、S05 Preflight、S05A、S05B 已接受；S05C 的 IAM 权限基线修正已实现并等待本地 IAM 重启应用 V11，S05D～S05E 尚未授权。
 
 ## 1. 执行原则
 
@@ -50,8 +50,8 @@
 |S02R UI Review 修订（Completed）|专项复核三应用匿名认证入口；关闭任务标题层级、Form Label、工具按钮可访问名称和 Portal 内部术语暴露；移除登录页颜色/布局调试入口|S02、Chris 明确批准|三应用唯一任务级 `h1`；账号/密码可按标签访问；无空名称按钮；Portal 360px、200% 缩放与内部术语门禁通过|完成证据见 [S02R UI Review 修订报告](reviews/S02R-ui-review-remediation-report.md)；不以本修订替代 S04/S06 导航治理或 S03/S11 国际化|
 |S02R2 Admin 用户页视觉修订（Completed）|修复已登录内容边距；页面主操作、筛选、目录/详情布局和说明文案重排；不重组导航|S02R、Chris 截图 Review|24px 安全边距实际生效；查询与筛选相邻；未选中时目录满宽；主操作位于标题区；后续统一规则已登记|实现与 Review 证据见 [S02R2 Admin 用户页视觉修订报告](reviews/S02R2-admin-user-page-visual-remediation-report.md)；页面布局组件化转为 S04 显式交付物|
 |S03 System Runtime Client（Accepted · Client Completed / Live Integration Pending）|Preference、Dynamic I18n、ETag、契约允许的用户隔离缓存和静态双语回退；三应用独立 Runtime|S00～S02R2 已完成；S03A 契约门禁已关闭|客户端自动化覆盖 200/304、失效、409、服务不可用、跨用户隔离；真实 Preference 读取通过；不包含 Catalog 旧快照降级|Chris 已接受 [S03 实施报告](reviews/S03-system-runtime-client-implementation-report.md)；真实 I18n 200/304 和 Preference 写入/409 补证前不宣称生产集成完成|
-|S04 Admin Shell、Router 与页面布局契约（S04D Review Pending）|按 S04A 页面布局、S04B MOM Shell/任务导航、S04C Router/Runtime 应用级 Vben 退出、S04D 视觉与 Bundle 收口执行|S03 已接受；S04A/S04B/S04C 已获 Chris 接受；[S04D 报告](reviews/S04D-visual-accessibility-bundle-closure-report.md)待 Review|保持 URL、深链、认证、权限和错误行为；Admin 1024/1280/1600 统一布局；Admin 应用 `@vben/*` 直接引用为 0；最大 Chunk 256.0 KB；三应用产品 Bundle 目标通过|S04D 不删除 Workspace Vben；退场仍留在 S05，Portal 兼容输出留在 S11|
-|S05 Catalog 与 Vben 退场|接入 Catalog、`routeKey` Registry、版本校验和受限模式；零引用后删除快照与专用适配|S04、跨仓库契约门禁与全部删除门禁|仅当前 200/经重验证 304 驱动动态路由；失败撤销动态路由；未知键/版本 fail closed；三应用构建与关键 E2E|删除不可逆面较大；删除前保留独立可回滚提交并核对 License/NOTICE|
+|S04 Admin Shell、Router 与页面布局契约（Accepted · Completed）|按 S04A 页面布局、S04B MOM Shell/任务导航、S04C Router/Runtime 应用级 Vben 退出、S04D 视觉与 Bundle 收口执行|S03 已接受；S04A～S04D 均获 Chris 接受|保持 URL、深链、认证、权限和错误行为；Admin 1024/1280/1600 统一布局；Admin 应用 `@vben/*` 直接引用为 0；最大 Chunk 256.0 KB；三应用产品 Bundle 目标通过|完成证据见 [S04D 报告](reviews/S04D-visual-accessibility-bundle-closure-report.md)；S04 未删除 Workspace Vben，退场仍留在 S05，Portal 兼容输出留在 S11|
+|S05 Catalog 与 Vben 退场（S05C Live Migration Pending）|S05A 已完成 Catalog 契约状态机；S05B 已完成 Admin 动态 Router；S05C～E 依次负责真实 E2E、Vben 删除与封口|S04；[S05 前置评审](reviews/S05-catalog-vben-exit-preflight-review.md)已接受；各微切片单独授权|S05A [契约证据](reviews/S05A-catalog-contract-runtime-implementation-report.md)；S05B [Router 证据](reviews/S05B-admin-dynamic-router-implementation-report.md)；S05C [修复与阻塞证据](reviews/S05C-live-catalog-integration-preflight.md)|Flyway V11 已通过 PostgreSQL IT，当前 IAM 重启及新 Token 前不得发布；无获批恢复点不得删除 Vben|
 |S06 Admin 模块化|拆分现有大型 `App.vue`；落地 People & Access、Security Operations|S05|IAM URL、高风险确认、审计原因和错误语义不变|行为漂移；按页面迁移并保留契约测试|
 |S07 Personal Settings|偏好读取、保存、Reset、版本冲突、离线回退和 View Setting|S03、S06|默认值、409、失败可见、隔离缓存|后端契约差异；未确认字段标记 Need Backend Confirmation|
 |S08 Experience Governance|Application Catalog、Navigation Draft、排序、发布、回滚、Release History|S06、对应后端契约|不可编辑可执行 Path/Component/远程代码；审计完整|误发布；发布/回滚权限和确认独立验收|

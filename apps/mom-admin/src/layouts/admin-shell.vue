@@ -10,11 +10,20 @@ import {
   synchronizeAccess,
 } from '../router/access';
 import {
+  isCatalogRouteActive,
+  synchronizeCatalog,
+} from '../router/catalog';
+import {
   accessibleTaskNavigation,
   ADMIN_TASK_DOMAINS,
   findAdminTask,
 } from '../router/registry';
-import { logout, runtimeState, selectFactory } from '../runtime';
+import {
+  catalogRuntimeState,
+  logout,
+  runtimeState,
+  selectFactory,
+} from '../runtime';
 import AdminHeader from './admin-shell/AdminHeader.vue';
 import AdminSidebar from './admin-shell/AdminSidebar.vue';
 import type {
@@ -41,8 +50,13 @@ const user = computed<AdminShellUser | undefined>(() => {
 });
 
 const navigation = computed<readonly AdminShellNavigationGroup[]>(() =>
-  accessibleTaskNavigation((permission) =>
-    runtimeState.user?.permissions.includes(permission) ?? false)
+  accessibleTaskNavigation(
+    (permission) => runtimeState.user?.permissions.includes(permission) ?? false,
+    (routeKey) => {
+      void catalogRuntimeState.value;
+      return isCatalogRouteActive(routeKey);
+    },
+  )
     .map(({ domain, tasks }) => ({
       iconKey: domain.iconKey,
       key: domain.key,
@@ -86,11 +100,22 @@ async function handleFactoryChange(value: unknown): Promise<void> {
   try {
     selectFactory(value);
     await synchronizeAccess({ reloadContext: true });
-    await router.replace(destination);
   }
   catch {
     await router.replace({
       path: '/menu-error',
+      query: { redirect: encodeURIComponent(destination) },
+    });
+    factoryBusy.value = false;
+    return;
+  }
+  try {
+    await synchronizeCatalog();
+    await router.replace(destination);
+  }
+  catch {
+    await router.replace({
+      path: '/catalog-error',
       query: { redirect: encodeURIComponent(destination) },
     });
   }

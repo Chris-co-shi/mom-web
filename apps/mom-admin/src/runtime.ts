@@ -7,13 +7,16 @@ import {
 } from '@mom/first-party-auth';
 import { createIamAdminClient } from '@mom/iam-admin';
 import {
+  createCatalogRuntime,
   createSystemRuntime,
   DEFAULT_SYSTEM_PREFERENCE,
+  type CatalogRuntimeSnapshot,
   type SystemRuntimeSnapshot,
 } from '@mom/system-client';
 import { reactive, readonly, shallowRef } from 'vue';
 
 import { $t } from './locales';
+import { ADMIN_CATALOG_CONTRACT } from './router/catalog-contract';
 
 const clientId: WebClientId = 'mom-admin-web';
 const expectedUserType: UserType = 'INTERNAL';
@@ -46,13 +49,19 @@ export const api = createApiClient({
   }),
   refreshAccessToken: () => auth.refresh(),
   refreshAuthorization: async () => {
-    const { synchronizeAccess } = await import('./router/access');
+    const [{ synchronizeAccess }, { synchronizeCatalog }] = await Promise.all([
+      import('./router/access'),
+      import('./router/catalog'),
+    ]);
     await synchronizeAccess({ reloadContext: true });
+    await synchronizeCatalog();
   },
   onAuthenticationRequired: async () => {
     auth.clear();
     accessRuntime?.clear();
     systemRuntimeRef?.clear();
+    const { resetCatalogAccess } = await import('./router/catalog');
+    resetCatalogAccess();
     runtimeState.user = undefined;
     runtimeState.phase = 'anonymous';
   },
@@ -71,6 +80,18 @@ export const api = createApiClient({
   },
 });
 export const iamAdmin = createIamAdminClient(api);
+
+export const catalogRuntime = createCatalogRuntime({
+  api,
+  clientId,
+  contract: ADMIN_CATALOG_CONTRACT,
+});
+const catalogSnapshot = shallowRef<Readonly<CatalogRuntimeSnapshot>>(catalogRuntime.snapshot());
+catalogRuntime.subscribe((snapshot) => {
+  catalogSnapshot.value = snapshot;
+  document.documentElement.dataset.momCatalogRuntime = snapshot.phase.toLowerCase();
+});
+export const catalogRuntimeState = readonly(catalogSnapshot);
 
 export const systemRuntime = createSystemRuntime({
   api,
@@ -151,6 +172,8 @@ export async function bootstrapRuntime(): Promise<boolean> {
 
 export async function login(username?: string, password?: string): Promise<void> {
   runtimeState.error = undefined;
+  const { resetCatalogAccess } = await import('./router/catalog');
+  resetCatalogAccess();
   auth.clear();
   access.clear();
   systemRuntime.clear();
@@ -232,6 +255,8 @@ export async function retryAccessInitialization(): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
+  const { resetCatalogAccess } = await import('./router/catalog');
+  resetCatalogAccess();
   systemRuntime.clear();
   access.clear();
   runtimeState.user = undefined;

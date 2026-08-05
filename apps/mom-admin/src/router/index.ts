@@ -5,6 +5,7 @@ import {
 } from 'vue-router';
 
 import { createRouterGuard } from './guard';
+import { bindCatalogRouter } from './catalog';
 import { routes } from './routes';
 
 const useHash = import.meta.env.VITE_ROUTER_HISTORY === 'hash';
@@ -15,6 +16,7 @@ const router = createRouter({
     savedPosition ?? { left: 0, top: 0 },
 });
 
+bindCatalogRouter(router);
 createRouterGuard(router);
 
 export { router };

@@ -9,6 +9,7 @@ import RootApp from './root.vue';
 import { appConfig } from './app/config';
 import { $t, currentLocale, setupI18n } from './locales';
 import { router } from './router';
+import { installCatalogForegroundRevalidation } from './router/catalog';
 import './styles.css';
 
 export async function bootstrap(): Promise<void> {
@@ -16,6 +17,7 @@ export async function bootstrap(): Promise<void> {
 
   await setupI18n(app);
   app.use(router);
+  installCatalogForegroundRevalidation();
 
   watchEffect(() => {
     void currentLocale.value;

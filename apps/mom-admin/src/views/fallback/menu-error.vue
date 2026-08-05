@@ -18,6 +18,7 @@ import {
   resolveAuthorizedRedirect,
   synchronizeAccess,
 } from '../../router/access';
+import { synchronizeCatalog } from '../../router/catalog';
 
 const route = useRoute();
 const router = useRouter();
@@ -28,7 +29,11 @@ async function retry(): Promise<void> {
   try {
     await retryAccessInitialization();
     await synchronizeAccess();
+    await synchronizeCatalog();
     await router.replace(resolveAuthorizedRedirect(route.query.redirect));
+  }
+  catch {
+    if (runtimeState.phase === 'ready') await router.replace('/catalog-error');
   }
   finally {
     retrying.value = false;

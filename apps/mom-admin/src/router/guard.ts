@@ -8,6 +8,11 @@ import {
   resolveAuthorizedRedirect,
   synchronizeAccess,
 } from './access';
+import {
+  isCatalogRouteActive,
+  synchronizeCatalog,
+} from './catalog';
+import { findAdminTask } from './registry';
 import { coreRouteNames } from './routes';
 
 let bootstrapFlight: Promise<boolean> | undefined;
@@ -82,6 +87,53 @@ export function createRouterGuard(router: Router): void {
       }
     }
 
+    const catalogRequired = to.path === '/'
+      || to.name === 'Authentication'
+      || to.name === 'Login'
+      || to.name === 'NotFound'
+      || Boolean(findAdminTask(to));
+    if (catalogRequired) {
+      try {
+        await synchronizeCatalog();
+      }
+      catch {
+        return to.name === 'CatalogError'
+          ? true
+          : {
+              path: '/catalog-error',
+              query: to.fullPath === '/' ? {} : {
+                redirect: encodeURIComponent(to.fullPath),
+              },
+              replace: true,
+            };
+      }
+    }
+
+    if (to.name === 'NotFound') {
+      const task = findAdminTask(to);
+      if (!task) return true;
+      if (!access.hasPermission(task.requiredPermission)) {
+        return {
+          path: '/403',
+          query: { from: to.fullPath },
+          replace: true,
+        };
+      }
+      if (!isCatalogRouteActive(task.routeKey)) {
+        return {
+          path: '/catalog-error',
+          query: { redirect: encodeURIComponent(to.fullPath) },
+          replace: true,
+        };
+      }
+      return {
+        hash: to.hash,
+        path: to.path,
+        query: to.query,
+        replace: true,
+      };
+    }
+
     if (to.name === 'Login' || to.name === 'Authentication') {
       return {
         path: resolveAuthorizedRedirect(to.query.redirect),
@@ -101,6 +153,13 @@ export function createRouterGuard(router: Router): void {
       return {
         path: '/403',
         query: { from: to.fullPath },
+        replace: true,
+      };
+    }
+    if (to.meta.routeKey && !isCatalogRouteActive(to.meta.routeKey)) {
+      return {
+        path: '/catalog-error',
+        query: { redirect: encodeURIComponent(to.fullPath) },
         replace: true,
       };
     }

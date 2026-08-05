@@ -1,4 +1,5 @@
 import type { Component } from 'vue';
+import type { RouteRecordRaw } from 'vue-router';
 
 import {
   ADMIN_TASK_CONTRACTS,
@@ -33,12 +34,15 @@ export const ADMIN_TASKS: readonly AdminTaskDefinition[] =
 
 export function accessibleTaskNavigation(
   hasPermission: (permission: AdminTaskPermission) => boolean,
+  isCatalogRouteActive: (routeKey: string) => boolean,
 ): readonly AdminTaskNavigationGroup[] {
   return ADMIN_TASK_DOMAINS
     .map((domain) => ({
       domain,
       tasks: ADMIN_TASKS.filter((task) =>
-        task.domain === domain.key && hasPermission(task.requiredPermission)),
+        task.domain === domain.key
+        && hasPermission(task.requiredPermission)
+        && isCatalogRouteActive(task.routeKey)),
     }))
     .filter(({ tasks }) => tasks.length > 0);
 }
@@ -53,6 +57,25 @@ export function findAdminTask(
 
 export function firstAccessibleTaskPath(
   hasPermission: (permission: AdminTaskPermission) => boolean,
+  isCatalogRouteActive: (routeKey: string) => boolean,
 ): string | undefined {
-  return ADMIN_TASKS.find((task) => hasPermission(task.requiredPermission))?.path;
+  return ADMIN_TASKS.find((task) =>
+    hasPermission(task.requiredPermission)
+    && isCatalogRouteActive(task.routeKey))?.path;
+}
+
+export function createAdminTaskRoute(task: AdminTaskDefinition): RouteRecordRaw {
+  return {
+    component: task.component,
+    meta: {
+      menuCode: task.menuCode,
+      requiredPermission: task.requiredPermission,
+      routeKey: task.routeKey,
+      section: task.section,
+      taskDomain: task.domain,
+      title: task.titleKey,
+    },
+    name: task.name,
+    path: task.path,
+  };
 }

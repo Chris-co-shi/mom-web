@@ -8,6 +8,9 @@ const requiredPaths = [
   'apps/mom-admin/src/section-navigation.ts',
   'apps/mom-admin/src/section-navigation.test.ts',
   'apps/mom-admin/src/router/access.ts',
+  'apps/mom-admin/src/router/catalog.ts',
+  'apps/mom-admin/src/router/catalog-contract.ts',
+  'apps/mom-admin/src/router/dynamic-task-routes.ts',
   'apps/mom-admin/src/router/routes.ts',
   'apps/mom-admin/src/locales/langs/zh-CN/mom.json',
   'apps/mom-admin/src/locales/langs/en-US/mom.json',
@@ -36,6 +39,9 @@ const requiredPaths = [
   'packages/api-client/src/index.test.ts',
   'packages/system-client/package.json',
   'packages/system-client/src/cache.ts',
+  'packages/system-client/src/catalog-contracts.ts',
+  'packages/system-client/src/catalog-runtime.ts',
+  'packages/system-client/src/catalog-validation.ts',
   'packages/system-client/src/contracts.ts',
   'packages/system-client/src/index.ts',
   'packages/system-client/src/runtime.ts',
@@ -62,6 +68,7 @@ const requiredPaths = [
   'packages/domain-components/package.json',
   'packages/shared/package.json',
   'packages/traceability-graph/package.json',
+  'scripts/s05c-live-integration.mjs',
   'tsconfig.admin-runtime-test.json',
   'tsconfig.test.json',
   'docs/prototypes/README.md',
@@ -72,10 +79,30 @@ const requiredPaths = [
   'docs/backlog/iam-user-preferences-backend.md',
   'docs/backlog/iam-menu-internationalization.md',
   'docs/open-source/vben-5.7.0-snapshot.md',
+  'tests/unit/s05c-live-integration.test.ts',
   'packages/stores/src/modules/access.ts',
 ];
 
 for (const path of requiredPaths) await access(path);
+
+const s05cLiveSource = await readFile('scripts/s05c-live-integration.mjs', 'utf8');
+for (const forbidden of ['localStorage', 'sessionStorage', 'indexedDB', 'MOM_S05C_PASSWORD']) {
+  if (s05cLiveSource.includes(forbidden)) {
+    throw new Error(`S05C live integration must not persist credentials through ${forbidden}`);
+  }
+}
+for (const required of [
+  "'/api/iam/auth/login'",
+  "'/api/iam/me'",
+  'promptHidden',
+  'system:i18n:publish',
+  'system:catalog:publish',
+  "'If-None-Match'",
+]) {
+  if (!s05cLiveSource.includes(required)) {
+    throw new Error(`S05C live integration contract is missing: ${required}`);
+  }
+}
 
 const rootPackage = JSON.parse(await readFile('package.json', 'utf8'));
 if (rootPackage.packageManager !== 'pnpm@11.7.0') {
@@ -260,9 +287,12 @@ for (const permission of [
 if (!adminSectionNavigation.includes('ADMIN_TASK_CONTRACTS')) {
   throw new Error('MOM Admin Section navigation must derive from the static task contract');
 }
-if (!adminRoutesSource.includes('ADMIN_TASKS.map')
-  || adminRoutesSource.includes('mom.menu.system')) {
-  throw new Error('MOM Admin static routes must consume the task registry without restoring System Management');
+const adminCatalogSource = await readFile('apps/mom-admin/src/router/catalog.ts', 'utf8');
+const adminDynamicRoutesSource = await readFile('apps/mom-admin/src/router/dynamic-task-routes.ts', 'utf8');
+if (adminRoutesSource.includes('ADMIN_TASKS.map')
+  || adminRoutesSource.includes('mom.menu.system')
+  || !adminDynamicRoutesSource.includes("router.addRoute('Root'")) {
+  throw new Error('MOM Admin tasks must be activated dynamically from the static Registry without restoring System Management');
 }
 const adminShellSource = await readFile('apps/mom-admin/src/layouts/admin-shell.vue', 'utf8');
 const adminAccessSource = await readFile('apps/mom-admin/src/router/access.ts', 'utf8');
@@ -271,8 +301,9 @@ if (/\b(?:BasicLayout|Tabbar|UserDropdown)\b/u.test(adminShellSource)) {
 }
 if (adminAccessSource.includes('generateAccessible')
   || adminAccessSource.includes('useAccessStore')
-  || !adminAccessSource.includes('firstAccessibleTaskPath')) {
-  throw new Error('S04C Access must guard static tasks without dynamic route or Store generation');
+  || !adminAccessSource.includes('defaultCatalogTaskPath')
+  || !adminCatalogSource.includes('routes.clear()')) {
+  throw new Error('S05B Access must use the Catalog task intersection and preserve fail-closed route removal');
 }
 for (const contract of [
   'people-access',
@@ -358,6 +389,21 @@ if (/\bfetch\s*\(/u.test(systemRuntimeSource)) {
 }
 if (systemRuntimeSource.includes('/api/system/catalog')) {
   throw new Error('@mom/system-client S03 must not pull Catalog into the Preference/I18n runtime');
+}
+
+const catalogRuntimeSource = await readFile('packages/system-client/src/catalog-runtime.ts', 'utf8');
+for (const contract of [
+  '/api/system/catalog/applications/${encodeURIComponent(options.contract.applicationCode)}',
+  "phase: 'RESTRICTED'",
+  "'If-None-Match': previous.etag",
+  'retained = undefined',
+]) {
+  if (!catalogRuntimeSource.includes(contract)) {
+    throw new Error(`@mom/system-client must preserve the S05A Catalog fail-closed contract: ${contract}`);
+  }
+}
+if (/\b(?:localStorage|sessionStorage|indexedDB|createApiClient|fetch)\b/u.test(catalogRuntimeSource)) {
+  throw new Error('@mom/system-client Catalog Runtime must remain in-memory and reuse the injected API client');
 }
 
 const systemCacheSource = await readFile('packages/system-client/src/cache.ts', 'utf8');

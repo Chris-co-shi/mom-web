@@ -1,5 +1,5 @@
-import { createApp } from 'vue';
-import App from './App.vue';
+import 'tdesign-vue-next/es/style/index.css';
 import './style.css';
+import { createMomApp } from './app/create-app';
 
-createApp(App).mount('#app');
+createMomApp().mount('#app');

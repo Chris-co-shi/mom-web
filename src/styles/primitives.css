@@ -1,0 +1,63 @@
+:root {
+  /* 原始色阶只在 Semantic Token 中映射，页面与组件不得直接消费。 */
+  --mom-ref-white: #ffffff;
+  --mom-ref-black: #000000;
+  --mom-ref-slate-50: #f3f6f8;
+  --mom-ref-slate-100: #edf2f5;
+  --mom-ref-slate-200: #d5dee4;
+  --mom-ref-slate-300: #aebcc6;
+  --mom-ref-slate-500: #62737e;
+  --mom-ref-slate-600: #51616d;
+  --mom-ref-slate-900: #17242e;
+  --mom-ref-night-950: #0b1318;
+  --mom-ref-night-900: #111c23;
+  --mom-ref-night-800: #17252e;
+  --mom-ref-night-700: #2a3b45;
+  --mom-ref-night-600: #40545f;
+  --mom-ref-night-300: #8ea0aa;
+  --mom-ref-night-200: #b5c3cb;
+  --mom-ref-night-50: #edf4f7;
+  --mom-ref-teal-900: #07343f;
+  --mom-ref-teal-800: #0b4755;
+  --mom-ref-teal-700: #0e5c6d;
+  --mom-ref-teal-600: #126e82;
+  --mom-ref-teal-500: #268899;
+  --mom-ref-teal-400: #0a8f8a;
+  --mom-ref-teal-300: #42b8c6;
+  --mom-ref-teal-200: #66c8d2;
+  --mom-ref-mint-400: #40c9b7;
+  --mom-ref-green-600: #2e7d5b;
+  --mom-ref-green-300: #5fc492;
+  --mom-ref-amber-700: #a66512;
+  --mom-ref-amber-400: #e1a34d;
+  --mom-ref-red-600: #c23b3b;
+  --mom-ref-red-300: #ee7777;
+  --mom-ref-blue-600: #2f6fa3;
+  --mom-ref-blue-300: #72add7;
+  --mom-ref-grey-600: #6b7780;
+  --mom-ref-grey-300: #9aa7af;
+
+  --mom-ref-font-sans: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --mom-ref-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  --mom-ref-size-1: 4px;
+  --mom-ref-size-2: 8px;
+  --mom-ref-size-3: 12px;
+  --mom-ref-size-4: 16px;
+  --mom-ref-size-5: 20px;
+  --mom-ref-size-6: 24px;
+  --mom-ref-size-8: 32px;
+  --mom-ref-size-10: 40px;
+  --mom-ref-size-12: 48px;
+  --mom-ref-size-16: 64px;
+
+  --mom-ref-radius-1: 4px;
+  --mom-ref-radius-2: 8px;
+  --mom-ref-radius-3: 12px;
+  --mom-ref-radius-4: 16px;
+  --mom-ref-radius-round: 999px;
+
+  --mom-ref-motion-fast: 120ms;
+  --mom-ref-motion-base: 180ms;
+  --mom-ref-motion-slow: 240ms;
+}

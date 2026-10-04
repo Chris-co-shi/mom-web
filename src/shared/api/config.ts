@@ -1,8 +1,8 @@
 /** Gateway 对外暴露的 bounded context 路径。 */
 export const API_PATHS = {
   auth: '/auth',
-  system: '/system',
-  mdm: '/mdm',
+  system: '/api/system',
+  mdm: '/api/mdm',
 } as const;
 
 export type ApiContext = keyof typeof API_PATHS;
@@ -34,5 +34,5 @@ export function apiPath(context: ApiContext, path = ''): string {
   if (path && (!path.startsWith('/') || path.startsWith('//'))) {
     throw new TypeError(`模块 API path 必须以单个 / 开头：${path}`);
   }
-  return `'/api'${API_PATHS[context]}${path}`;
+  return `${API_PATHS[context]}${path}`;
 }

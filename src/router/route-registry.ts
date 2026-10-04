@@ -8,6 +8,7 @@ export interface NavigationItem {
   titleKey: MessageKey;
   group: string;
   order: number;
+  permissions: readonly string[];
 }
 
 /**
@@ -28,7 +29,21 @@ export const appRoutes: RouteRecordRaw[] = [
       requiresAuth: true,
       hideInMenu: true,
     },
-    children: foundationRoutes,
+    children: [
+      ...foundationRoutes,
+      {
+        path: 'account',
+        name: ROUTE_NAMES.account,
+        component: () => import('../modules/auth/pages/AccountPage.vue'),
+        meta: {
+          title: '账户设置',
+          titleKey: 'account.title',
+          module: 'auth',
+          requiresAuth: true,
+          hideInMenu: true,
+        },
+      },
+    ],
   },
   {
     path: '/login',
@@ -149,5 +164,6 @@ export const mainNavigation: NavigationItem[] = foundationRoutes
     titleKey: route.meta.titleKey,
     group: route.meta.navigationGroup,
     order: route.meta.navigationOrder,
+    permissions: route.meta.permissions ?? [],
   }))
   .sort((left, right) => left.order - right.order);

@@ -213,6 +213,11 @@ Web-P1 已建立唯一 HTTP Client：
 - 主布局状态；
 - 真实存在且跨模块共享的上下文。
 
+Web-P2 当前认证快照由 `GET /auth/me` 提供，只包含 `userId`、authorities 和 `expiresAt`。前端不解析
+Opaque Token；登录后与页面刷新恢复时各向 Auth 同步一次。路由、菜单和按钮统一调用
+`hasAuthority` / `hasAuthorities`，按钮级内容使用 `AuthorityGuard`；这些能力只改善界面体验，不能替代
+Resource Server 的 `@PreAuthorize`。V1 权限是登录时快照，授权变化后需要重新登录。
+
 表格数据、查询条件和编辑表单默认留在页面或模块内。Web-P1 不因“后台项目通常需要”而直接引入状态库；若 Pinia 的真实需求在认证和全局偏好接线中成立，再单独说明依赖理由并安装。
 
 ## 10. 国际化与格式化

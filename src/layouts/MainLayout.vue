@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { logout } from '../modules/auth/model/auth-session';
+import { hasAuthorities } from '../modules/auth/model/auth-permissions';
+import { logout, useAuthSession } from '../modules/auth/model/auth-session';
 import { mainNavigation } from '../router/route-registry';
 import { ROUTE_NAMES } from '../router/route-names';
 import LocaleSwitcher from '../shared/i18n/LocaleSwitcher.vue';
@@ -14,8 +15,15 @@ const router = useRouter();
 const navigationCollapsed = ref(false);
 const loggingOut = ref(false);
 const { t } = useLocale();
+const { user, authorities } = useAuthSession();
+const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('account.currentUser'));
 
 const currentTitle = computed(() => t(route.meta.titleKey));
+const visibleNavigation = computed(() => {
+  // 读取 authorities 以建立 Vue 响应式依赖；最终权限仍由后端 Resource Server 判定。
+  void authorities.value;
+  return mainNavigation.filter((item) => hasAuthorities(item.permissions));
+});
 
 async function handleLogout(): Promise<void> {
   if (loggingOut.value) return;
@@ -47,7 +55,7 @@ async function handleLogout(): Promise<void> {
       <div class="app-nav__section-label">{{ t('shell.foundationGroup') }}</div>
       <nav class="app-nav">
         <RouterLink
-          v-for="(item, index) in mainNavigation"
+          v-for="(item, index) in visibleNavigation"
           :key="item.name"
           :to="{ name: item.name }"
           :title="navigationCollapsed ? t(item.titleKey) : undefined"
@@ -97,6 +105,10 @@ async function handleLogout(): Promise<void> {
           <span class="app-header__divider" aria-hidden="true"></span>
           <LocaleSwitcher />
           <ThemeSwitcher />
+          <RouterLink class="app-current-identity" :to="{ name: ROUTE_NAMES.account }" :title="t('account.title')">
+            <small>{{ t('account.title') }}</small>
+            <strong>{{ accountName }}</strong>
+          </RouterLink>
           <button class="app-session-button" type="button" :disabled="loggingOut" @click="handleLogout">
             {{ loggingOut ? t('auth.logout.submitting') : t('auth.logout.action') }}
           </button>

@@ -266,6 +266,35 @@
   gap: var(--mom-space-4);
 }
 
+.app-current-identity {
+  display: grid;
+  max-width: 172px;
+  gap: 1px;
+  padding: 4px 10px;
+  border: 1px solid var(--mom-color-border);
+  border-radius: var(--mom-radius-round);
+  background: color-mix(in srgb, var(--mom-color-brand) 5%, var(--mom-color-bg-surface));
+}
+
+.app-current-identity small,
+.app-current-identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-current-identity small {
+  color: var(--mom-color-text-muted);
+  font-size: 9px;
+}
+
+.app-current-identity strong {
+  color: var(--mom-color-text-secondary);
+  font-family: var(--mom-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+}
+
 .app-icon-button {
   display: grid;
   width: 34px;

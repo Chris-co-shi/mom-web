@@ -154,6 +154,17 @@ Web-P1 已完成，但不等于 IAM 完成。当前只提供真实可复用的�
 - 已实现 sessionStorage、刷新恢复、认证路由守卫、统一 401 清理和退出入口；
 - Gateway → Auth → Redis Token Store → Resource Server 真实闭环验证通过。
 
+### P2-S02：IAM 契约审计与当前会话决策
+
+状态：**已完成（2026-10-04）**。实现与验证结论见
+[Web-P2-S02 IAM 管理与当前会话契约审计](validation/web-p2-s02-iam-contract-audit.md)。
+
+- 已核对 Gateway `/auth/**`、Auth Controller、Request/Response、Application 事务与权限码；
+- 已确认用户、角色、Permission 和关系分配 API 足以支撑真实管理页面；
+- 已新增真实 `GET /auth/me` Token 快照契约，不扩展 Token、不查询用户表；
+- 已完成登录后及刷新时的权限恢复、权限路由、菜单过滤和 `AuthorityGuard`；
+- 已验证 401、403、服务不可用、刷新恢复与注销失效语义，不硬编码管理员权限。
+
 ### 实施顺序
 
 1. 登录、Token 保存、刷新恢复策略与登出；
@@ -259,7 +270,7 @@ MDM 完成后再按照用户确认的业务 Slice 推进 WMS、QMS、MES 等模�
 | 风险 | 影响 | 处理阶段 |
 |---|---|---|
 | Locale/TDesign Provider 是当前最大的共享 Chunk | 后续 Locale 或 UI 能力增加可能影响首屏与缓存 | 持续记录 |
-| Mini Auth 当前用户展示与刷新恢复契约需核对 | 可能影响登录后恢复和用户菜单 | Web-P2 |
+| Mini Auth `/me` 只返回用户 ID 与 Token 权限快照 | 当前不展示 displayName，权限变化需重新登录 | V1 明确接受 |
 | System 历史文档能力多于当前 V1 | 容易误建页面 | 以 ADR-043 为唯一当前范围 |
 | System 后端已存在 User Preference，但 Web-P3 当前明确不做 | Locale/时区/Theme 服务端同步范围尚未决策 | Web-P3 前确认 |
 | 用户工作区已有未提交依赖变更 | 后续安装需避免覆盖来源 | 每个修改依赖的 Slice |

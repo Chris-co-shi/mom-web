@@ -34,5 +34,5 @@ export function apiPath(context: ApiContext, path = ''): string {
   if (path && (!path.startsWith('/') || path.startsWith('//'))) {
     throw new TypeError(`模块 API path 必须以单个 / 开头：${path}`);
   }
-  return `'/api'${API_PATHS[context]}${path}`;
+  return `/api${API_PATHS[context]}${path}`;
 }

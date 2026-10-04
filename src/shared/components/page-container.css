@@ -1,0 +1,5 @@
+.mom-page-container {
+  width: 100%;
+  max-width: var(--mom-layout-content-max-width);
+  margin: 0 auto;
+}

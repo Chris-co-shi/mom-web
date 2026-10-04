@@ -1,0 +1,63 @@
+:root,
+:root[theme-mode='light'] {
+  --mom-control-height-compact: 28px;
+  --mom-control-height-default: 34px;
+  --mom-control-height-comfortable: 40px;
+  --mom-layout-sidebar-width: 232px;
+  --mom-layout-sidebar-collapsed-width: 76px;
+  --mom-layout-header-height: 68px;
+  --mom-layout-page-gutter: 28px;
+  --mom-layout-page-gutter-compact: 20px;
+  --mom-layout-content-max-width: 1500px;
+
+  --td-brand-color-1: #e8f5f6;
+  --td-brand-color-2: #cce8eb;
+  --td-brand-color-3: #a4d5db;
+  --td-brand-color-4: #78bec7;
+  --td-brand-color-5: #49a4b1;
+  --td-brand-color-6: #268899;
+  --td-brand-color-7: #126e82;
+  --td-brand-color-8: #0e5c6d;
+  --td-brand-color-9: #0b4755;
+  --td-brand-color-10: #07343f;
+  --td-brand-color: var(--td-brand-color-7);
+  --td-brand-color-hover: var(--td-brand-color-6);
+  --td-brand-color-focus: var(--td-brand-color-2);
+  --td-brand-color-active: var(--td-brand-color-8);
+  --td-text-color-primary: var(--mom-color-text-primary);
+  --td-text-color-secondary: var(--mom-color-text-secondary);
+  --td-text-color-placeholder: var(--mom-color-text-muted);
+  --td-bg-color-page: var(--mom-color-bg-canvas);
+  --td-bg-color-container: var(--mom-color-bg-surface);
+  --td-bg-color-secondarycontainer: var(--mom-color-bg-subtle);
+  --td-component-border: var(--mom-color-border);
+  --td-radius-small: var(--mom-ref-radius-1);
+  --td-radius-default: var(--mom-radius-control);
+  --td-radius-medium: var(--mom-radius-surface);
+  --td-radius-large: var(--mom-radius-overlay);
+  --td-radius-extraLarge: 20px;
+  --td-radius-round: var(--mom-radius-round);
+}
+
+:root[theme-mode='dark'] {
+  --td-brand-color-1: #10292f;
+  --td-brand-color-2: #123740;
+  --td-brand-color-3: #164853;
+  --td-brand-color-4: #1a5b68;
+  --td-brand-color-5: #217180;
+  --td-brand-color-6: #2d8d9b;
+  --td-brand-color-7: #38a6b4;
+  --td-brand-color-8: #42b8c6;
+  --td-brand-color-9: #66c8d2;
+  --td-brand-color-10: #91dbe1;
+  --td-brand-color: var(--td-brand-color-8);
+  --td-brand-color-hover: var(--td-brand-color-7);
+  --td-brand-color-focus: var(--td-brand-color-2);
+  --td-brand-color-active: var(--td-brand-color-9);
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --mom-layout-page-gutter: var(--mom-layout-page-gutter-compact);
+  }
+}

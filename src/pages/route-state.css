@@ -1,0 +1,84 @@
+.route-state {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  overflow: hidden;
+  place-items: center;
+  padding: 64px;
+  background:
+    radial-gradient(circle at 68% 42%, color-mix(in srgb, var(--mom-color-accent) 14%, transparent), transparent 28%),
+    var(--mom-color-bg-canvas);
+}
+
+.route-state__grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--mom-color-border) 24%, transparent) 1px, transparent 1px) 0 0 / 64px 64px,
+    linear-gradient(color-mix(in srgb, var(--mom-color-border) 20%, transparent) 1px, transparent 1px) 0 0 / 64px 64px;
+  mask-image: linear-gradient(to bottom, transparent, #000 24%, #000 72%, transparent);
+}
+
+.route-state__content {
+  position: relative;
+  width: min(100%, 680px);
+  padding-left: 30px;
+  border-left: 2px solid var(--mom-color-accent);
+}
+
+.route-state__eyebrow,
+.route-state__code {
+  display: block;
+  font-family: var(--mom-font-family-mono);
+  letter-spacing: 0.1em;
+}
+
+.route-state__eyebrow {
+  color: var(--mom-color-brand);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.route-state__code {
+  margin-top: 22px;
+  color: color-mix(in srgb, var(--mom-color-brand) 78%, var(--mom-color-text-primary));
+  font-size: clamp(72px, 12vw, 152px);
+  font-weight: 500;
+  letter-spacing: -0.08em;
+  line-height: 0.9;
+}
+
+.route-state h1 {
+  margin: 26px 0 12px;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.route-state p {
+  max-width: 580px;
+  margin: 0;
+  color: var(--mom-color-text-secondary);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.route-state__link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 9px;
+  margin-top: 28px;
+  padding: 0 18px;
+  border: 1px solid var(--mom-color-brand);
+  border-radius: var(--mom-radius-round);
+  color: var(--mom-color-brand);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.route-state__link:hover {
+  color: var(--mom-color-text-inverse);
+  background: var(--mom-color-brand);
+}

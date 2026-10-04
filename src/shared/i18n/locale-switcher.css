@@ -1,0 +1,37 @@
+.locale-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--mom-color-border);
+  border-radius: var(--mom-radius-round);
+  background: color-mix(in srgb, var(--mom-color-bg-subtle) 72%, transparent);
+}
+
+.locale-switcher__option {
+  min-width: 42px;
+  height: var(--mom-control-height-compact);
+  padding: 0 var(--mom-space-2);
+  border: 0;
+  border-radius: var(--mom-radius-round);
+  color: var(--mom-color-text-muted);
+  background: transparent;
+  font-size: var(--mom-font-size-xs);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color var(--mom-motion-fast),
+    background-color var(--mom-motion-fast),
+    box-shadow var(--mom-motion-fast);
+}
+
+.locale-switcher__option:hover {
+  color: var(--mom-color-text-primary);
+}
+
+.locale-switcher__option[aria-checked='true'] {
+  color: var(--mom-color-brand);
+  background: var(--mom-color-bg-surface);
+  box-shadow: var(--mom-shadow-surface);
+  font-weight: 600;
+}

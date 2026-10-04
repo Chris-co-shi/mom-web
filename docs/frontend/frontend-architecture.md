@@ -8,14 +8,14 @@
 | 框架 | Vue 3.5.34 | 保持 |
 | 语言 | TypeScript 6，`strict: true` | 保持严格模式 |
 | 构建 | Vite 8.0.10 | 保持 |
-| 包管理器 | pnpm 11 | 保持 |
-| Router | 用户工作区已加入 `vue-router` | Web-P1 验证后正式接线 |
-| UI 组件库 | 尚未安装 | 首选验证 TDesign Vue Next |
-| 状态管理 | 尚未安装 | Web-P1 只在全局状态需求明确后决定 |
-| 请求层 | 尚未建立 | Web-P1 建立唯一入口 |
-| 国际化 | 尚未建立 | 静态 `zh-CN`/`en-US`，按域组织 |
-| 测试 | 尚未建立 | Web-P1 补最小单元/组件测试基线 |
-| 样式 | 单个 `src/style.css` | Web-P1 迁移为 Token/Theme/Base 分层 |
+| 包管理器 | pnpm 11.7.0 | 保持锁定版本与 frozen lockfile |
+| Router | `vue-router` 已正式接线，具备静态路由、元数据与 Auth Guard | 保持源码持有路由，不引入动态路由平台 |
+| UI 组件库 | TDesign Vue Next 1.20.9 已完成薄验证并锁定 | 保持单一 UI 库，升级需重新验证 |
+| 状态管理 | 未引入 Pinia 等全局状态库 | 真实跨模块状态需求出现后再决定 |
+| 请求层 | `src/shared/api` 已建立唯一 HTTP Client | 页面和模块 API 不重复处理 Token、超时与错误协议 |
+| 国际化 | `zh-CN/en-US` 静态资源、Locale 状态与 TDesign Locale 已接线 | Web 持有静态文案，按域渐进扩展 |
+| 测试 | Vitest、Vue Test Utils、jsdom 与 `pnpm verify` 已建立 | 业务 Slice 继续覆盖权限、失败和协议边界 |
+| 样式 | `src/styles` 已建立 Token / Theme / Base 分层并适配 TDesign | 保持单一 Semantic Token 体系 |
 
 ## 2. 架构目标
 
@@ -257,6 +257,8 @@ Web-P1-S06 已建立统一命令：
 - `pnpm test`：Vitest + Vue Test Utils + jsdom；
 - `pnpm build`：类型检查与生产构建；
 - `pnpm verify`：按 Lint → Type → Test → Build 顺序执行完整前端门禁。
+
+GitHub Actions 在 `push main` 与 Pull Request 上执行 `pnpm install --frozen-lockfile` 和 `pnpm verify`，保证远程仓库与本地质量门禁使用同一条验证链。
 
 组件验证页只在开发模式登记路由，不进入生产菜单和构建产物。生产验收结果与已知限制见 `validation/web-p1-quality-gate.md`。真实业务模块进入后，测试继续优先覆盖权限、失败行为、并发冲突和未知写结果，不堆砌 getter 或静态快照。
 

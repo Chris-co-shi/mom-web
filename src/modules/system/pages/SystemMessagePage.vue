@@ -16,7 +16,6 @@ import { i18nManagementApi } from '../../../shared/i18n/i18n-management-api';
 import type { I18nMessage } from '../../../shared/i18n/models';
 import { i18nOwner, i18nOwners } from '../../../shared/i18n/i18n-owner-registry';
 import { i18nRuntimeApi, type I18nOwner } from '../../../shared/i18n/runtime-api';
-import { systemApi } from '../api/system-api';
 import { placeholderSet, systemFeedback, validDisplayText, validMessageKey, validMessageText, validNamespace, type SystemFeedback } from '../model/system-feedback';
 import { useSystemList } from '../model/use-system-list';
 import './system-pages.css';
@@ -39,7 +38,7 @@ const pages = computed(() => Math.max(1, Math.ceil(filtered.value.length / pageS
 const visible = computed(() => filtered.value.slice((pageNo.value - 1) * pageSize.value, pageNo.value * pageSize.value));
 const translationRows = computed<TranslationRow[]>(() => locales.rows.value.map(row => {
   const translation = translations.rows.value.find(entry => entry.localeCode === row.localeCode);
-  return { id: row.id, localeCode: row.localeCode, displayName: row.displayName, messageText: translation?.messageText ?? '', version: translation?.version ?? null };
+  return { id: row.localeCode, localeCode: row.localeCode, displayName: row.displayName, messageText: translation?.messageText ?? '', version: translation?.version ?? null };
 }));
 const columns = computed<MomColumn[]>(() => [
   { key: 'localeCode', title: t('system.locales.code'), minWidth: 130 },

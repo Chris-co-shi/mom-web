@@ -14,7 +14,7 @@ import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
 import { i18nManagementApi } from '../../../shared/i18n/i18n-management-api';
 import { i18nOwner, i18nOwners } from '../../../shared/i18n/i18n-owner-registry';
-import type { I18nOwner } from '../../../shared/i18n/runtime-api';
+import { i18nRuntimeApi, type I18nOwner } from '../../../shared/i18n/runtime-api';
 import { systemApi, type SystemMessage } from '../api/system-api';
 import { placeholderSet, systemFeedback, validDisplayText, validMessageKey, validMessageText, validNamespace, type SystemFeedback } from '../model/system-feedback';
 import { useSystemList } from '../model/use-system-list';
@@ -28,7 +28,7 @@ const availableOwners = computed(() => i18nOwners.filter((item) => hasAuthority(
 const writeAuthority = computed(() => i18nOwner(activeOwner.value).writeAuthority);
 const namespaceInput = ref('system.web'); const activeNamespace = ref('system.web');
 const messages = useSystemList(signal => i18nManagementApi.listMessages(activeOwner.value, activeNamespace.value, signal));
-const locales = useSystemList(systemApi.listLocales);
+const locales = useSystemList(i18nRuntimeApi.locales);
 const selectedId = ref<string | null>(null);
 const selected = computed(() => messages.rows.value.find(row => row.id === selectedId.value) ?? null);
 const translations = useSystemList(signal => selectedId.value ? i18nManagementApi.listTranslations(activeOwner.value, selectedId.value, signal) : Promise.resolve([]));

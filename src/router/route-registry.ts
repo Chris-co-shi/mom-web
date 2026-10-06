@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
+import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
 import { foundationRoutes } from '../modules/foundation/routes';
 import { iamRoutes } from '../modules/iam';
 import { systemRoutes } from '../modules/system/routes';
@@ -11,6 +12,7 @@ export interface NavigationItem {
   group: string;
   order: number;
   permissions: readonly string[];
+  permissionMode: AuthorityMatchMode;
 }
 
 /**
@@ -169,5 +171,6 @@ export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRout
     group: route.meta.navigationGroup,
     order: route.meta.navigationOrder,
     permissions: route.meta.permissions ?? [],
+    permissionMode: route.meta.permissionMode ?? 'all',
   }))
   .sort((left, right) => left.order - right.order);

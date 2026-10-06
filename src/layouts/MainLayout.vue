@@ -33,7 +33,7 @@ const currentTitle = computed(() => t(route.meta.titleKey));
 const visibleNavigation = computed(() => {
   // 读取 authorities 以建立 Vue 响应式依赖；最终权限仍由后端 Resource Server 判定。
   void authorities.value;
-  return mainNavigation.filter((item) => hasAuthorities(item.permissions));
+  return mainNavigation.filter((item) => hasAuthorities(item.permissions, item.permissionMode));
 });
 const navigationGroups = computed(() => [
   { id: 'iam', title: t('iam.navigation'), items: visibleNavigation.value.filter((item) => item.group === 'iam') },

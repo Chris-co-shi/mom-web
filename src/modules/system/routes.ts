@@ -10,5 +10,6 @@ export const systemRoutes: RouteRecordRaw[] = [
       permissions: ['system:i18n:read'], navigationGroup: 'system', navigationOrder: 20 } },
   { path: 'system/messages', name: ROUTE_NAMES.systemMessages, component: () => import('./pages/SystemMessagePage.vue'),
     meta: { title: '国际化管理', titleKey: 'system.messages.title', module: 'system', requiresAuth: true,
-      permissions: ['system:i18n:read'], navigationGroup: 'system', navigationOrder: 30 } },
+      permissions: ['system:i18n:read', 'auth:i18n:read', 'mdm:i18n:read'], permissionMode: 'any',
+      navigationGroup: 'system', navigationOrder: 30 } },
 ];

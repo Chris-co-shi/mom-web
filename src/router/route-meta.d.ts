@@ -1,5 +1,6 @@
 import 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
+import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
 
 export type MomRouteModule = 'auth' | 'iam' | 'system' | 'foundation' | 'shell';
 
@@ -21,6 +22,8 @@ declare module 'vue-router' {
     navigationOrder?: number;
     /** 后续 IAM Slice 使用的权限码；前端过滤不替代服务端授权。 */
     permissions?: readonly string[];
+    /** 权限集合匹配方式；默认 all，跨 Owner 管理入口可显式使用 any。 */
+    permissionMode?: AuthorityMatchMode;
   }
 }
 

@@ -42,8 +42,9 @@ export async function resolveAuthNavigation(to: RouteLocationNormalized): Promis
     }
   }
 
-  const requiredAuthorities = to.matched.flatMap((record) => record.meta.permissions ?? []);
-  if (requiresAuth && !hasAuthorities(requiredAuthorities)) {
+  const deniedByPermissions = to.matched.some((record) =>
+    !hasAuthorities(record.meta.permissions, record.meta.permissionMode ?? 'all'));
+  if (requiresAuth && deniedByPermissions) {
     return { name: ROUTE_NAMES.forbidden };
   }
   if (to.name === ROUTE_NAMES.login && getAccessToken()) {

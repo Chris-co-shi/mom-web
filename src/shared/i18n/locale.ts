@@ -156,17 +156,24 @@ function resolveNamespaceForKey(locale: string, key: string): string | undefined
   return matches.length === 1 ? matches[0] : undefined;
 }
 
-/** 将既有页面 Key 映射到唯一 namespace；重复 Key 不再发生静默覆盖。 */
-export function translate(key: MessageKey, params: MessageParams = {}): string {
+/** 显式按 namespace + key 翻译；用于合法重复 Key 或需要严格绑定 Owner 的调用点。 */
+export function translateInNamespace(namespace: string, key: MessageKey, params: MessageParams = {}): string {
   const locale = useLocaleStore().currentLocale;
-  const namespace = resolveNamespaceForKey(locale, key);
-  if (!namespace) return key;
+  const messages = useLocaleStore().messagesByLocale[locale]?.[namespace];
+  if (!messages || !Object.prototype.hasOwnProperty.call(messages, key)) return key;
   const runtimeKey = `${namespaceToken(namespace)}.${key}`;
   const names = messageParameterOrder[key];
   const value = names
     ? i18n.global.t(runtimeKey, names.map((name) => params[name] ?? ''))
     : i18n.global.t(runtimeKey);
   return value === runtimeKey ? key : value;
+}
+
+/** 将既有页面 Key 映射到唯一 namespace；重复 Key 不再发生静默覆盖。 */
+export function translate(key: MessageKey, params: MessageParams = {}): string {
+  const locale = useLocaleStore().currentLocale;
+  const namespace = resolveNamespaceForKey(locale, key);
+  return namespace ? translateInNamespace(namespace, key, params) : key;
 }
 
 /** 加载失败时只提供极小应急文本，不回退整份静态业务词典。 */

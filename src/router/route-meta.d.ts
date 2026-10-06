@@ -24,6 +24,8 @@ declare module 'vue-router' {
     permissions?: readonly string[];
     /** 权限集合匹配方式；默认 all，跨 Owner 管理入口可显式使用 any。 */
     permissionMode?: AuthorityMatchMode;
+    /** 当前路由进入前必须可用的动态国际化 namespace。 */
+    i18nNamespaces?: readonly string[];
   }
 }
 

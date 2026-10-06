@@ -29,7 +29,7 @@ export function resolveApiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
-/** 在已登记的 context path 下构造模块端点。 */
+/** 构造浏览器端 /api 路径；开发代理仅对 Auth 等旧路由去掉 /api，System 保留该前缀。 */
 export function apiPath(context: ApiContext, path = ''): string {
   if (path && (!path.startsWith('/') || path.startsWith('//'))) {
     throw new TypeError(`模块 API path 必须以单个 / 开头：${path}`);

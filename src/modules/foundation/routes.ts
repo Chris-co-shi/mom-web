@@ -19,17 +19,4 @@ export const foundationRoutes: RouteRecordRaw[] = [
       navigationOrder: 10,
     },
   },
-  ...(import.meta.env.DEV ? [{
-    path: 'foundation/components',
-    name: ROUTE_NAMES.foundationComponents,
-    component: () => import('../../validation/TDesignValidation.vue'),
-    meta: {
-      title: '组件基线验证',
-      titleKey: 'foundation.components.title',
-      module: 'foundation',
-      requiresAuth: false,
-      navigationGroup: 'foundation',
-      navigationOrder: 20,
-    },
-  } satisfies RouteRecordRaw] : []),
 ];

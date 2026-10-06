@@ -1,5 +1,9 @@
 # Web-P2-S02 IAM 管理与当前会话契约审计
 
+> 2026-10-04 契约修订：本文记录首次 S02 的历史决策。下文“只返回 Token 快照”、不查用户表、
+> 保存权限到 sessionStorage、顶部展示 userId 的描述均已被用户否决并替换。
+> 当前有效契约与验证结果以[账户自助收口记录](web-p2-account-self-service.md)为准；管理 API 审计仍有效。
+
 - 日期：2026-10-04
 - 状态：**已完成**
 - 审计范围：Gateway、Mini Auth V1 Controller、Request/Response、Application、Security 与分页协议

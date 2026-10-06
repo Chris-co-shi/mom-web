@@ -10,7 +10,7 @@
 .account-section h2 { margin: 10px 0; font-size: 18px; font-weight: 600; }
 .account-form { display: grid; gap: 20px; max-width: 460px; width: 100%; }
 .account-form label { display: grid; gap: 8px; font-size: 13px; }
-.account-form .t-input { min-height: 40px; }
+.account-form .mom-ui-input { min-height: 40px; }
 .account-form small, .account-session-note { color: var(--mom-color-text-secondary); font-size: 12px; line-height: 1.7; }
 .account-session-note { margin: 0; }
 .account-feedback { padding: 14px 18px; border-radius: var(--mom-radius-control); border: 1px solid currentColor; color: var(--mom-color-danger); line-height: 1.7; }

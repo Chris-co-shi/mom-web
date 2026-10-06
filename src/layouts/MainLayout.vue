@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
+import { Blocks, BookOpenText, Languages, KeyRound, LayoutDashboard, ListTree, PanelLeftClose, PanelLeftOpen, ShieldCheck, UsersRound } from '@lucide/vue';
 import { hasAuthorities } from '../modules/auth/model/auth-permissions';
 import { logout, useAuthSession } from '../modules/auth/model/auth-session';
 import { mainNavigation } from '../router/route-registry';
-import { ROUTE_NAMES } from '../router/route-names';
+import { ROUTE_NAMES, type MomRouteName } from '../router/route-names';
 import LocaleSwitcher from '../shared/i18n/LocaleSwitcher.vue';
 import { useLocale } from '../shared/i18n/locale';
 import ThemeSwitcher from '../shared/theme/ThemeSwitcher.vue';
+import MomButton from '../shared/ui/MomButton.vue';
 import './layouts.css';
 
 const route = useRoute();
@@ -17,6 +19,15 @@ const loggingOut = ref(false);
 const { t } = useLocale();
 const { user, authorities } = useAuthSession();
 const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('account.currentUser'));
+const navigationIcons = {
+  [ROUTE_NAMES.iamUsers]: UsersRound,
+  [ROUTE_NAMES.iamRoles]: ShieldCheck,
+  [ROUTE_NAMES.iamPermissions]: KeyRound,
+  [ROUTE_NAMES.foundationOverview]: LayoutDashboard,
+  [ROUTE_NAMES.systemDictionaries]: ListTree,
+  [ROUTE_NAMES.systemLocales]: Languages,
+  [ROUTE_NAMES.systemMessages]: BookOpenText,
+} satisfies Partial<Record<MomRouteName, typeof UsersRound>>;
 
 const currentTitle = computed(() => t(route.meta.titleKey));
 const visibleNavigation = computed(() => {
@@ -24,6 +35,11 @@ const visibleNavigation = computed(() => {
   void authorities.value;
   return mainNavigation.filter((item) => hasAuthorities(item.permissions));
 });
+const navigationGroups = computed(() => [
+  { id: 'iam', title: t('iam.navigation'), items: visibleNavigation.value.filter((item) => item.group === 'iam') },
+  { id: 'system', title: t('system.navigation'), items: visibleNavigation.value.filter((item) => item.group === 'system') },
+  { id: 'foundation', title: t('shell.foundationGroup'), items: visibleNavigation.value.filter((item) => item.group === 'foundation') },
+].filter((group) => group.items.length > 0));
 
 async function handleLogout(): Promise<void> {
   if (loggingOut.value) return;
@@ -44,30 +60,30 @@ async function handleLogout(): Promise<void> {
     <a class="skip-link" href="#main-content">{{ t('shell.skipToContent') }}</a>
 
     <aside class="app-sidebar" :aria-label="t('shell.mainNavigation')">
-      <div class="app-brand" aria-label="GEO Manufacturing Platform">
+      <div class="app-brand" aria-label="MOM">
         <span class="app-brand__mark" aria-hidden="true"><span></span></span>
         <span class="app-brand__copy">
-          <strong>GEO MOM</strong>
+          <strong>MOM</strong>
           <small>MANUFACTURING OS</small>
         </span>
       </div>
 
-      <div class="app-nav__section-label">{{ t('shell.foundationGroup') }}</div>
-      <nav class="app-nav">
-        <RouterLink
-          v-for="(item, index) in visibleNavigation"
-          :key="item.name"
-          :to="{ name: item.name }"
-          :title="navigationCollapsed ? t(item.titleKey) : undefined"
-          class="app-nav__link"
-          :aria-current="route.name === item.name ? 'page' : undefined"
-        >
-          <span class="app-nav__index" aria-hidden="true">
-            {{ String(index + 1).padStart(2, '0') }}
-          </span>
-          <span class="app-nav__label">{{ t(item.titleKey) }}</span>
-        </RouterLink>
-      </nav>
+      <template v-for="group in navigationGroups" :key="group.id">
+        <div class="app-nav__section-label">{{ group.title }}</div>
+        <nav class="app-nav" :aria-label="group.title">
+          <RouterLink
+            v-for="item in group.items"
+            :key="item.name"
+            :to="{ name: item.name }"
+            :title="navigationCollapsed ? t(item.titleKey) : undefined"
+            class="app-nav__link"
+            :aria-current="route.name === item.name ? 'page' : undefined"
+          >
+            <component :is="navigationIcons[item.name as keyof typeof navigationIcons] ?? Blocks" class="app-nav__icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
+            <span class="app-nav__label">{{ t(item.titleKey) }}</span>
+          </RouterLink>
+        </nav>
+      </template>
 
       <div class="app-sidebar__footer">
         <span class="app-status-dot" aria-hidden="true"></span>
@@ -81,15 +97,17 @@ async function handleLogout(): Promise<void> {
     <section class="app-workspace">
       <header class="app-header">
         <div class="app-header__leading">
-          <button
+          <MomButton
             class="app-icon-button"
-            type="button"
+            variant="outline"
+            size="icon"
             :aria-label="navigationCollapsed ? t('shell.expandNavigation') : t('shell.collapseNavigation')"
             :aria-expanded="!navigationCollapsed"
             @click="navigationCollapsed = !navigationCollapsed"
           >
-            <span aria-hidden="true">{{ navigationCollapsed ? '»' : '«' }}</span>
-          </button>
+            <PanelLeftOpen v-if="navigationCollapsed" :size="18" aria-hidden="true" />
+            <PanelLeftClose v-else :size="18" aria-hidden="true" />
+          </MomButton>
           <span class="app-header__divider" aria-hidden="true"></span>
           <div>
             <span class="app-header__eyebrow">PC WEB FOUNDATION</span>
@@ -109,9 +127,9 @@ async function handleLogout(): Promise<void> {
             <small>{{ t('account.title') }}</small>
             <strong>{{ accountName }}</strong>
           </RouterLink>
-          <button class="app-session-button" type="button" :disabled="loggingOut" @click="handleLogout">
+          <MomButton class="app-session-button" variant="outline" :disabled="loggingOut" @click="handleLogout">
             {{ loggingOut ? t('auth.logout.submitting') : t('auth.logout.action') }}
-          </button>
+          </MomButton>
         </div>
       </header>
 

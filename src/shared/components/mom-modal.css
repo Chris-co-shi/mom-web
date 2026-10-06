@@ -1,0 +1,7 @@
+.mom-modal__overlay { position: fixed; inset: 0; z-index: 1000; background: rgb(13 23 31 / 54%); backdrop-filter: blur(5px); }
+.mom-modal { position: fixed; top: 50%; left: 50%; z-index: 1001; display: flex; flex-direction: column; width: min(var(--mom-modal-width), calc(100vw - 48px)); max-height: min(88vh, 920px); overflow: hidden; transform: translate(-50%, -50%); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-overlay); background: var(--mom-color-bg-surface); color: var(--mom-color-text-primary); box-shadow: var(--mom-shadow-overlay); }
+.mom-modal__header { position: relative; display: flex; align-items: center; justify-content: space-between; gap: var(--mom-space-4); min-height: 68px; padding: var(--mom-space-4) var(--mom-space-6); border-bottom: 1px solid var(--mom-color-border); }
+.mom-modal__title { margin: 0; color: var(--mom-color-text-primary); font-size: var(--mom-font-size-lg); font-weight: 700; line-height: 1.25; }
+.mom-modal__close { flex: 0 0 auto; }
+.mom-modal__content { position: relative; min-height: 0; overflow-y: auto; padding: var(--mom-space-6); }
+.mom-modal__loading { position: absolute; }

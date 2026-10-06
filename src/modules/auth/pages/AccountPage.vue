@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import Button from 'tdesign-vue-next/es/button';
-import Input from 'tdesign-vue-next/es/input';
+import { MomButton as Button, MomInput as Input } from '../../../shared/ui';
 import type { MessageKey } from '../../../locales/zh-CN';
 import { isApiError } from '../../../shared/api/errors';
 import PageContainer from '../../../shared/components/PageContainer.vue';

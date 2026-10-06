@@ -1,19 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
-import type { Directive } from 'vue';
-import Button from 'tdesign-vue-next/es/button';
-import Input from 'tdesign-vue-next/es/input';
+import { MomButton as Button, MomInput as Input } from '../../../shared/ui';
 import { useRoute, useRouter } from 'vue-router';
 import { resolveLoginRedirect } from '../../../router/auth-guard';
 import { ApiError, isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { login } from '../model/auth-session';
 import './auth-entry.css';
-
-interface NativeInputBinding {
-  id: string;
-  describedBy?: string;
-}
 
 const route = useRoute();
 const router = useRouter();
@@ -24,19 +17,6 @@ const form = reactive({ username: '', password: '' });
 const fieldErrors = reactive({ username: '', password: '' });
 
 const logoutIncomplete = computed(() => route.query.reason === 'logout-incomplete');
-
-function bindNativeInput(element: HTMLElement, binding: NativeInputBinding): void {
-  const input = element.querySelector('input');
-  input?.setAttribute('id', binding.id);
-  if (binding.describedBy) input?.setAttribute('aria-describedby', binding.describedBy);
-  else input?.removeAttribute('aria-describedby');
-}
-
-/** TDesign Input 当前不稳定透传原生 id，因此在模块内补齐 label 和错误提示关联。 */
-const vNativeInput: Directive<HTMLElement, NativeInputBinding> = {
-  mounted: (element, binding) => bindNativeInput(element, binding.value),
-  updated: (element, binding) => bindNativeInput(element, binding.value),
-};
 
 function validate(): boolean {
   fieldErrors.username = '';
@@ -114,7 +94,8 @@ async function handleSubmit(): Promise<void> {
         <label for="login-username">{{ t('auth.login.username') }}</label>
         <Input
           v-model="form.username"
-          v-native-input="{ id: 'login-username', describedBy: fieldErrors.username ? 'login-username-error' : undefined }"
+          id="login-username"
+          :aria-describedby="fieldErrors.username ? 'login-username-error' : undefined"
           name="username"
           autocomplete="username"
           :placeholder="t('auth.login.usernamePlaceholder')"
@@ -134,7 +115,8 @@ async function handleSubmit(): Promise<void> {
         </div>
         <Input
           v-model="form.password"
-          v-native-input="{ id: 'login-password', describedBy: fieldErrors.password ? 'login-password-error' : undefined }"
+          id="login-password"
+          :aria-describedby="fieldErrors.password ? 'login-password-error' : undefined"
           name="password"
           type="password"
           autocomplete="current-password"

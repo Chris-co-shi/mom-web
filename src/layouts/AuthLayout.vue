@@ -20,10 +20,10 @@ const { t } = useLocale();
         <span class="auth-layout__orbit-ring auth-layout__orbit-ring--inner"></span>
         <span class="auth-layout__orbit-core"></span>
       </div>
-      <div class="app-brand app-brand--auth" aria-label="GEO Manufacturing Platform">
+      <div class="app-brand app-brand--auth" aria-label="MOM">
         <span class="app-brand__mark" aria-hidden="true"><span></span></span>
         <span class="app-brand__copy">
-          <strong>GEO MOM</strong>
+          <strong>MOM</strong>
           <small>MANUFACTURING OS</small>
         </span>
       </div>

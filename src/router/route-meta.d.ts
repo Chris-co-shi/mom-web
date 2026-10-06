@@ -1,7 +1,7 @@
 import 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
 
-export type MomRouteModule = 'auth' | 'foundation' | 'shell';
+export type MomRouteModule = 'auth' | 'iam' | 'system' | 'foundation' | 'shell';
 
 declare module 'vue-router' {
   interface RouteMeta {

@@ -15,7 +15,7 @@ describe('authApi', () => {
     vi.stubGlobal('fetch', fetchMock);
     await updateOwnProfile({ displayName: 'Name', version: 3 });
     await changeOwnPassword({ currentPassword: ' old secret ', newPassword: ' new secret ', version: 4 });
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/me/profile', '/auth/me/password']);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/api/auth/me/profile', '/api/auth/me/password']);
     expect(fetchMock.mock.calls.every((call) => (call[1] as RequestInit).method === 'PUT')).toBe(true);
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ currentPassword: ' old secret ', newPassword: ' new secret ', version: 4 });
   });
@@ -34,7 +34,7 @@ describe('authApi', () => {
     await login({ username: ' Admin ', password: ' Password With Spaces ' });
 
     const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('/auth/login');
+    expect(url).toBe('/api/auth/login');
     expect(request.method).toBe('POST');
     expect(JSON.parse(request.body as string)).toEqual({
       username: ' Admin ',
@@ -49,7 +49,7 @@ describe('authApi', () => {
     await logout();
 
     const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('/auth/logout');
+    expect(url).toBe('/api/auth/logout');
     expect(request.method).toBe('POST');
     expect(new Headers(request.headers).get('Authorization')).toBe('Bearer opaque-token');
   });
@@ -65,7 +65,7 @@ describe('authApi', () => {
     await getCurrentSession();
 
     const [url, request] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('/auth/me');
+    expect(url).toBe('/api/auth/me');
     expect(request.method).toBe('GET');
     expect(new Headers(request.headers).get('Authorization')).toBe('Bearer opaque-token');
   });

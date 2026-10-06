@@ -1,0 +1,30 @@
+.mom-management-header { display: flex; justify-content: space-between; align-items: end; gap: var(--mom-space-6); padding: var(--mom-space-2) 0 var(--mom-space-8); }
+.mom-management-header h1 { margin: 0 0 var(--mom-space-2); font-size: var(--mom-font-size-display); line-height: var(--mom-line-height-display); letter-spacing: -.025em; }
+.mom-management-header p { margin: 0; color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.mom-management-header__actions { display: flex; flex-wrap: wrap; gap: var(--mom-space-2); padding-bottom: var(--mom-space-1); }
+.mom-list-surface { position: relative; overflow: hidden; border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-overlay); background: var(--mom-color-bg-surface); box-shadow: 0 12px 36px color-mix(in srgb, var(--mom-color-text-primary) 4%, transparent); }
+.mom-list-surface--embedded { border: 0; border-radius: 0; box-shadow: none; }
+.mom-list-surface--embedded .mom-list-surface__toolbar { flex-wrap: wrap; }
+.mom-list-surface__toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--mom-space-4); padding: var(--mom-space-5) var(--mom-space-6); border-bottom: 1px solid var(--mom-color-border); }
+.mom-list-surface__identity { display: flex; min-width: 0; align-items: center; gap: var(--mom-space-3); }
+.mom-list-surface__mark { width: 4px; height: 32px; flex: none; border-radius: var(--mom-radius-round); background: var(--mom-color-brand); }
+.mom-list-surface__copy { min-width: 0; }
+.mom-list-surface__copy strong { display: block; font-size: var(--mom-font-size-md); line-height: var(--mom-line-height-md); }
+.mom-list-surface__copy span { display: block; margin: 0; color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.mom-list-surface__table-wrap { overflow-x: auto; }
+.mom-management-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--mom-space-3); }
+.mom-management-scope { color: var(--mom-color-text-muted); font-size: var(--mom-font-size-xs); white-space: nowrap; }
+.mom-management-count { padding: 5px 10px; border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-round); color: var(--mom-color-text-secondary); background: var(--mom-color-bg-subtle); font-family: var(--mom-font-family-mono); font-size: var(--mom-font-size-xs); white-space: nowrap; }
+.mom-management-density.mom-ui-button { min-height: 34px; padding: 0 10px; border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-control); background: var(--mom-color-bg-surface); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); }
+.mom-management-density.mom-ui-button:hover, .mom-management-density[aria-pressed='true'] { color: var(--mom-color-brand); border-color: var(--mom-color-brand); background: var(--mom-color-bg-subtle); }
+.mom-management-row-actions { display: flex; align-items: center; gap: var(--mom-space-1); white-space: nowrap; }
+.mom-management-status, .iam-role-status, .iam-permission-status { display: inline-flex; align-items: center; gap: var(--mom-space-2); padding: 3px 9px; border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-round); background: var(--mom-color-bg-subtle); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); font-weight: 600; }
+:is(.mom-management-status--enabled, .iam-role-status--enabled, .iam-permission-status--enabled) { border-color: color-mix(in srgb, var(--mom-color-success) 25%, var(--mom-color-border)); background: color-mix(in srgb, var(--mom-color-success) 9%, var(--mom-color-bg-surface)); color: var(--mom-color-success); }
+:is(.mom-management-status__dot, .iam-role-status__dot, .iam-permission-status__dot) { display: inline-block; width: 6px; height: 6px; flex: none; border-radius: 50%; background: currentColor; }
+:is(.mom-management-status--button, .iam-role-status--button, .iam-permission-status--button).mom-ui-button { min-height: 30px; padding: 3px 9px; background: var(--mom-color-bg-subtle); color: var(--mom-color-text-secondary); }
+:is(.mom-management-status--button, .iam-role-status--button, .iam-permission-status--button):is(.mom-management-status--enabled, .iam-role-status--enabled, .iam-permission-status--enabled).mom-ui-button { color: var(--mom-color-success); background: color-mix(in srgb, var(--mom-color-success) 9%, var(--mom-color-bg-surface)); }
+:is(.mom-management-status--button, .iam-role-status--button, .iam-permission-status--button).mom-ui-button:hover:not(:disabled) { border-color: currentColor; transform: none; }
+.mom-management-button--secondary.mom-ui-button, .iam-button--secondary.mom-ui-button, .iam-role-button--secondary.mom-ui-button, .iam-permission-button--secondary.mom-ui-button { border-color: var(--mom-color-border); background: var(--mom-color-bg-surface); color: var(--mom-color-text-primary); }
+.mom-management-button--secondary.mom-ui-button:hover:not(:disabled), .iam-button--secondary.mom-ui-button:hover:not(:disabled), .iam-role-button--secondary.mom-ui-button:hover:not(:disabled), .iam-permission-button--secondary.mom-ui-button:hover:not(:disabled) { border-color: var(--mom-color-brand); background: var(--mom-color-bg-subtle); }
+:is(.iam-button--danger, .iam-role-button--danger, .iam-permission-button--danger).mom-ui-button { background: var(--mom-color-danger); color: var(--mom-ref-white); }
+@media (max-width: 1100px) { .mom-management-header, .mom-list-surface__toolbar { align-items: flex-start; flex-direction: column; } }

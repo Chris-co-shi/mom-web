@@ -92,7 +92,7 @@
   font-size: 11px;
 }
 
-.auth-field .t-input {
+.auth-field .mom-ui-input {
   height: 46px;
   border-radius: 14px;
   background: color-mix(in srgb, var(--mom-color-bg-subtle) 58%, var(--mom-color-bg-surface));
@@ -100,17 +100,17 @@
   transition: border-color var(--mom-motion-fast), box-shadow var(--mom-motion-fast), background var(--mom-motion-fast);
 }
 
-.auth-field .t-input:hover {
+.auth-field .mom-ui-input:hover {
   border-color: var(--mom-color-border-strong);
 }
 
-.auth-field .t-input--focused {
+.auth-field .mom-ui-input:focus-visible {
   border-color: var(--mom-color-brand);
   background: var(--mom-color-bg-surface);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--mom-color-brand) 11%, transparent);
 }
 
-.auth-field--error .t-input {
+.auth-field--error .mom-ui-input {
   border-color: var(--mom-color-danger);
 }
 
@@ -119,7 +119,7 @@
   font-size: 12px;
 }
 
-.auth-entry__submit.t-button {
+.auth-entry__submit.mom-ui-button {
   height: 48px;
   margin-top: 4px;
   border-radius: 15px;
@@ -128,7 +128,7 @@
   box-shadow: 0 12px 28px color-mix(in srgb, var(--mom-color-brand) 24%, transparent);
 }
 
-.auth-entry__submit.t-button:hover:not(:disabled) {
+.auth-entry__submit.mom-ui-button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 

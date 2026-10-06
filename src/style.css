@@ -1,4 +1,45 @@
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css' layer(utilities);
 @import './styles/primitives.css';
 @import './styles/semantic.css';
 @import './styles/components.css';
 @import './styles/base.css';
+
+@theme inline {
+  --color-background: var(--mom-color-bg-canvas);
+  --color-foreground: var(--mom-color-text-primary);
+  --color-card: var(--mom-color-bg-surface);
+  --color-card-foreground: var(--mom-color-text-primary);
+  --color-popover: var(--mom-color-bg-elevated);
+  --color-popover-foreground: var(--mom-color-text-primary);
+  --color-primary: var(--mom-color-brand);
+  --color-primary-foreground: var(--mom-color-text-inverse);
+  --color-secondary: var(--mom-color-bg-subtle);
+  --color-secondary-foreground: var(--mom-color-text-primary);
+  --color-muted: var(--mom-color-bg-subtle);
+  --color-muted-foreground: var(--mom-color-text-secondary);
+  --color-accent: var(--mom-color-bg-subtle);
+  --color-accent-foreground: var(--mom-color-text-primary);
+  --color-destructive: var(--mom-color-danger);
+  --color-destructive-foreground: var(--mom-ref-white);
+  --color-border: var(--mom-color-border);
+  --color-input: var(--mom-color-border);
+  --color-ring: var(--mom-color-brand);
+  --radius-sm: var(--mom-radius-control);
+  --radius-md: var(--mom-radius-control);
+  --radius-lg: var(--mom-radius-surface);
+  --radius-xl: var(--mom-radius-overlay);
+  --color-mom-canvas: var(--mom-color-bg-canvas);
+  --color-mom-surface: var(--mom-color-bg-surface);
+  --color-mom-subtle: var(--mom-color-bg-subtle);
+  --color-mom-border: var(--mom-color-border);
+  --color-mom-primary: var(--mom-color-text-primary);
+  --color-mom-secondary: var(--mom-color-text-secondary);
+  --color-mom-brand: var(--mom-color-brand);
+  --font-mom-ui: var(--mom-font-family-ui);
+  --font-mom-mono: var(--mom-font-family-mono);
+}
+
+@custom-variant dark (&:where([theme-mode='dark'], [theme-mode='dark'] *));

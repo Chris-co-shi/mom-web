@@ -1,0 +1,13 @@
+.mom-data-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; color: var(--mom-color-text-primary); font-size: var(--mom-font-size-sm); }
+.mom-data-table th, .mom-data-table td { position: relative; max-width: 0; padding: var(--mom-space-3) var(--mom-space-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 1px solid var(--mom-color-border); text-align: left; }
+.mom-data-table th { height: 46px; background: var(--mom-color-bg-subtle); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); font-weight: 700; letter-spacing: .03em; }
+.mom-data-table td { height: 56px; background: var(--mom-color-bg-surface); }
+.mom-data-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--mom-color-bg-subtle) 40%, var(--mom-color-bg-surface)); }
+.mom-data-table tbody tr:hover td { background: color-mix(in srgb, var(--mom-color-brand) 7%, var(--mom-color-bg-surface)); }
+.mom-data-table--compact td { height: 42px; padding-block: var(--mom-space-2); }
+.mom-data-table .mom-data-table__pinned { position: sticky; right: 0; z-index: 2; box-shadow: -1px 0 var(--mom-color-border), -9px 0 14px -12px rgb(0 0 0 / 24%); }
+.mom-data-table thead .mom-data-table__pinned { z-index: 3; }
+.mom-data-table th:first-child, .mom-data-table td:first-child { padding-left: var(--mom-space-6); }
+.mom-data-table__resizer { position: absolute; top: 9px; right: 0; bottom: 9px; width: 7px; cursor: col-resize; touch-action: none; }
+.mom-data-table__resizer:hover, .mom-data-table__resizer:active { border-right: 2px solid var(--mom-color-brand); }
+.mom-data-table .mom-data-table__empty { max-width: none; height: 120px; color: var(--mom-color-text-secondary); text-align: center; }

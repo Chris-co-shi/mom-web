@@ -28,12 +28,12 @@ Component Token（表格、表单、菜单、弹窗、图表）
 
 - 页面只能消费 Semantic 或 Component Token；
 - Primitive Token 不直接散落到业务页面；
-- TDesign 主题变量集中映射到 MOM Semantic Token；
+- shadcn-vue 与 Tailwind 的主题变量集中映射到 MOM Semantic Token；
 - 业务模块不得各自覆盖全局组件库变量。
 
 ## 3. 色彩系统
 
-以下数值是 Web-P1 的实现基线；薄技术验证允许为满足对比度和 TDesign 映射做小幅调整，但必须回写本文。
+以下数值是 MOM 当前视觉基线；组件迁移为满足对比度做的调整必须回写本文。
 
 ### 3.1 亮色主题
 
@@ -147,11 +147,15 @@ Mono："JetBrains Mono", "SFMono-Regular", Consolas, monospace
 | 弹窗 | `z-modal` | 2100 |
 | Toast/通知 | `z-notification` | 3000 |
 
-最终值需与 TDesign 的层级体系集中映射，不在页面使用随机大数。
+最终值需与 MOM 浮层层级体系集中映射，不在页面使用随机大数。
 
 ## 6. 组件视觉规则
 
+新页面的弹窗、输入、按钮等交互控件优先复用 MOM 共享层和 shadcn-vue / Reka UI，再通过 MOM Token 映射统一视觉；不要把 Tailwind 或原生 HTML 当作交互组件库。语义结构标签仍用 HTML。相似实现超过三个使用处后按[前端工程架构](frontend-architecture.md)评估公共组件，不以重复次数自动生成抽象。
+
 ### 6.1 表格
+
+数据表格使用共享 `MomDataTable` 与 TanStack Table v9，具体边界按 [ADR-003](decisions/ADR-003-ui-foundation-migration.md)。Tailwind 工具类不得成为新的设计 Token 来源。
 
 - 表头与主体使用轻微背景层级，不使用粗重网格线；
 - 数量、金额、比例右对齐，编码和标识可使用等宽字体；
@@ -160,6 +164,16 @@ Mono："JetBrains Mono", "SFMono-Regular", Consolas, monospace
 - 列配置、密度和排序只有真实需求时才持久化；
 - 空数据、筛选无结果、加载失败必须分别呈现。
 
+### 6.1.1 PC 管理页验收基线（IAM 用户管理）
+
+后续 IAM、System 及业务模块的 PC 管理页以用户管理页为首个设计参照，复用布局和视觉语言，不复制其业务规则：
+
+- 页面标题与说明位于主内容顶部，刷新和创建等页面级操作在同一行右侧；筛选、数量与密度属于表格工具区，不挤进弹窗。
+- 表格采用 TanStack Table、轻量表头与柔和分隔；登录名等关键识别信息优先可读，操作列只保留高频入口，其他动作进入“更多”。
+- 状态同时用文字与颜色表达。只有经业务确认属于独立、可逆、允许即时写入的状态，才在状态列提供按钮；只读权限显示状态标签。按钮须有明确动作名称、键盘焦点、保存中禁用、失败反馈和版本冲突处理。删除、密码重置等高影响动作仍须确认，不将“状态列可点击”推广为通用业务规则。
+- 列表写入成功后以服务端响应更新该行与版本；结果未知或版本冲突时不得乐观翻转、盲目重试，须刷新核对。
+- 首次读取、刷新、翻页、修改每页数量及写入后的重新读取都属于列表加载：列表区域须显示带文案的遮罩，阻止遮罩下的重复点击；加载成功或失败都须解除。弹窗保存期间须有局部遮罩、禁关与防重复提交；遮罩是反馈层，不能替代用例状态中的并发和幂等防护。
+
 ### 6.2 表单
 
 - 标签默认置于控件上方，密集查询条件可使用行内布局；
@@ -167,6 +181,8 @@ Mono："JetBrains Mono", "SFMono-Regular", Consolas, monospace
 - 长表单按业务语义分区，不用纯视觉卡片无限切割；
 - 保存、取消位置稳定，危险操作与保存区隔离；
 - 版本冲突必须引导重新读取，不能静默覆盖。
+- 弹窗统一使用 `shared/components/MomModal`（底层为 VXE Modal）；使用组件库原生标题区及右侧操作位放关闭按钮，业务组件不得通过 `header` 插槽或自绘 `div` 再造一层弹窗框架。正文只承载本次编辑字段与必要上下文，底部右对齐取消/提交。不要在编辑表单重复放置已由表格状态列独立保存的操作。
+- 弹窗需约束焦点、支持 Esc、关闭后恢复焦点；保存中禁止关闭。宽度、圆角、留白和亮暗主题由 MOM Token 与统一组件映射控制。
 
 ### 6.3 卡片
 
@@ -178,7 +194,7 @@ Mono："JetBrains Mono", "SFMono-Regular", Consolas, monospace
 
 ### 6.5 图标
 
-- 首选 TDesign Icons；
+- 页面首选 `@lucide/vue`，统一使用 16–18px 线性图标；
 - 同一语义只保留一个图标；
 - 装饰图标对屏幕阅读器隐藏；
 - 图标按钮提供 `aria-label` 和 Tooltip；
@@ -234,7 +250,7 @@ src/styles/primitives.css   原始色阶、尺寸、字体、圆角和动效参�
         ↓
 src/styles/semantic.css     亮暗主题、语义颜色、排版、间距和层级
         ↓
-src/styles/components.css   布局尺寸、控件密度和 TDesign Token 映射
+src/styles/components.css   布局尺寸、控件密度和 MOM Token 映射
         ↓
 src/styles/base.css         全局基础样式、焦点与减少动画
 ```

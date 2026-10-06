@@ -1,6 +1,8 @@
 import type { RouteRecordRaw } from 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
 import { foundationRoutes } from '../modules/foundation/routes';
+import { iamRoutes } from '../modules/iam';
+import { systemRoutes } from '../modules/system/routes';
 import { ROUTE_NAMES, type MomRouteName } from './route-names';
 
 export interface NavigationItem {
@@ -31,6 +33,8 @@ export const appRoutes: RouteRecordRaw[] = [
     },
     children: [
       ...foundationRoutes,
+      ...iamRoutes,
+      ...systemRoutes,
       {
         path: 'account',
         name: ROUTE_NAMES.account,
@@ -157,7 +161,7 @@ function isNavigationRoute(route: RouteRecordRaw): route is RouteRecordRaw & {
 }
 
 /** 主导航直接由已注册路由派生，避免路由与菜单维护两份显示配置。 */
-export const mainNavigation: NavigationItem[] = foundationRoutes
+export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes]
   .filter(isNavigationRoute)
   .map((route) => ({
     name: route.name,

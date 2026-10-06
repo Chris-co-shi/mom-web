@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from './errors';
 import { httpClient, setHttpRequestContextProvider, setHttpUnauthorizedHandler } from './http-client';
-import { setLocale } from '../i18n/locale';
+import { createPinia, setActivePinia } from 'pinia';
+import { useLocaleStore } from '../i18n/locale';
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
@@ -11,7 +12,8 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 
 describe('httpClient', () => {
   beforeEach(() => {
-    setLocale('zh-CN');
+    setActivePinia(createPinia());
+    useLocaleStore().currentLocale = 'zh-CN';
     setHttpRequestContextProvider(() => ({ locale: 'zh-CN', accessToken: 'opaque-token' }));
     setHttpUnauthorizedHandler(() => undefined);
   });

@@ -150,12 +150,9 @@
   content: '';
 }
 
-.app-nav__index {
-  width: 22px;
-  flex: 0 0 22px;
-  font-family: var(--mom-font-family-mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
+.app-nav__icon {
+  flex: 0 0 18px;
+  color: currentColor;
 }
 
 .app-nav__label {

@@ -13,7 +13,7 @@
 - 视觉气质：专业、克制、现代、精确，具有适度科技感和智能感；
 - 信息密度：中高密度，优先保障制造管理任务的扫描与操作效率；
 - 实施顺序：`整体设计 → 全局骨架 → IAM → System → MDM → 业务模块`；
-- UI 组件库：TDesign Vue Next 作为 Web-P1 的首选验证基线，只做一次薄技术验证；
+- UI 基线：Reka UI + shadcn-vue + Tailwind CSS 4 + TanStack Table v9；先复用 MOM 共享组件；
 - 主题：亮色、暗色、跟随系统三种模式；
 - 国际化：静态资源由 Web 持有，初始支持 `zh-CN` 与 `en-US`；
 - 权限：前端只做可见性与体验控制，后端始终是最终授权边界；
@@ -29,6 +29,8 @@
 6. [TDesign Vue Next 1.20.9 验证报告](validation/tdesign-vue-next-1.20.9.md)
 7. [Web-P1 质量门禁与骨架收口报告](validation/web-p1-quality-gate.md)
 8. [Web-P2-S01 登录与认证闭环验证记录](validation/web-p2-s01-auth-login.md)
+9. [CRUD 管理页项目级交互标准](standards/crud-management-page-standard.md)
+10. [ADR-003：全站 UI 基线迁移](decisions/ADR-003-ui-foundation-migration.md)
 
 ## 4. 权威关系
 
@@ -46,4 +48,4 @@
 - 修改全局视觉语言、模块边界、认证模型、UI 组件库或国际化所有权时，必须更新本目录和对应 ADR；
 - 新业务模块只能复用全局骨架，不得自建第二套路由、请求、权限、主题或组件库；
 - 文档中的“计划”不能描述为“已实现”；
-- TDesign 已通过 Web-P1-S01 基础兼容性验证；无障碍适配与路由分包约束以验证报告为准。
+- ADR-001 与 ADR-002 以及 Web-P1 验证报告保留历史证据；当前生产 UI 以 ADR-003 为准。

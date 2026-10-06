@@ -5,7 +5,7 @@ import { clearAuthSession, getAccessToken, initializeAuthSession } from '../modu
 import { installLocaleTitleWatcher, router } from '../router';
 import { ROUTE_NAMES } from '../router/route-names';
 import { setHttpRequestContextProvider, setHttpUnauthorizedHandler } from '../shared/api/http-client';
-import { connectI18nEvents, i18n, initializeLocale, useLocale } from '../shared/i18n/locale';
+import { i18n, initializeLocale, useLocale } from '../shared/i18n/locale';
 import { initializeTheme } from '../shared/theme/theme';
 
 /**
@@ -35,7 +35,5 @@ export async function createMomApp() {
   });
   await initializeLocale();
   installLocaleTitleWatcher();
-  connectI18nEvents('system');
-  connectI18nEvents('auth');
   return createApp(App).use(pinia).use(i18n).use(router);
 }

@@ -28,7 +28,7 @@ export const useLocaleStore = defineStore('mom-locale', {
     currentLocale: DEFAULT_LOCALE,
     loadedNamespaces: {} as Record<string, string[]>,
     loadingNamespaces: {} as Record<string, string[]>,
-    messagesByLocale: {} as Record<string, Record<string, string>>,
+    messagesByLocale: {} as Record<string, Record<string, Record<string, string>>>,
     ready: false,
   }),
 });
@@ -57,9 +57,19 @@ function nestedMessages(flat: Record<string, string>): Record<string, unknown> {
   return root;
 }
 
+function namespaceToken(namespace: string): string {
+  return `__mom_ns_${namespace.replaceAll('.', '__dot__')}`;
+}
+
 function publishMessages(locale: string): void {
   const store = useLocaleStore();
-  i18n.global.setLocaleMessage(locale, nestedMessages(store.messagesByLocale[locale] ?? {}));
+  const namespaced = Object.fromEntries(
+    Object.entries(store.messagesByLocale[locale] ?? {}).map(([namespace, messages]) => [
+      namespaceToken(namespace),
+      nestedMessages(messages),
+    ]),
+  );
+  i18n.global.setLocaleMessage(locale, namespaced);
 }
 
 async function loadOne(namespace: string, locale: string, force: boolean): Promise<void> {
@@ -73,14 +83,10 @@ async function loadOne(namespace: string, locale: string, force: boolean): Promi
     try {
       const result = await i18nRuntimeApi.bundle(ownerOf(namespace), locale, [namespace]);
       const fresh = result.bundles[namespace] ?? {};
-      const previous = { ...(store.messagesByLocale[locale] ?? {}) };
-      for (const oldKey of Object.keys(previous)) {
-        if (oldKey in (store.messagesByLocale[locale] ?? {}) &&
-            store.loadedNamespaces[locale]?.includes(namespace) &&
-            oldKey in (namespaceKeys.get(`${locale}:${namespace}`) ?? new Set())) delete previous[oldKey];
-      }
-      namespaceKeys.set(key, new Set(Object.keys(fresh)));
-      store.messagesByLocale[locale] = { ...previous, ...fresh };
+      store.messagesByLocale[locale] = {
+        ...(store.messagesByLocale[locale] ?? {}),
+        [namespace]: { ...fresh },
+      };
       store.loadedNamespaces[locale] = [...new Set([...(store.loadedNamespaces[locale] ?? []), namespace])];
       publishMessages(locale);
     } finally {
@@ -91,7 +97,6 @@ async function loadOne(namespace: string, locale: string, force: boolean): Promi
   try { await work; } finally { pending.delete(key); }
 }
 
-const namespaceKeys = new Map<string, Set<string>>();
 
 /** 按 Locale + namespace 去重加载；强制刷新只更新对应 namespace，不抹去其他 Owner。 */
 export async function ensureNamespaces(namespaces: readonly string[], locale?: string, force = false): Promise<void> {
@@ -141,13 +146,25 @@ export async function setLocale(nextLocale: SupportedLocale): Promise<void> {
   try { window.localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale); } catch { /* 当前标签页仍已切换。 */ }
 }
 
-/** 将既有页面 Key 映射为 Vue I18n 词条；数字占位符顺序属于代码契约。 */
+function resolveNamespaceForKey(locale: string, key: string): string | undefined {
+  const store = useLocaleStore();
+  const matches = Object.entries(store.messagesByLocale[locale] ?? {})
+    .filter(([, messages]) => Object.prototype.hasOwnProperty.call(messages, key))
+    .map(([namespace]) => namespace);
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+/** 将既有页面 Key 映射到唯一 namespace；重复 Key 不再发生静默覆盖。 */
 export function translate(key: MessageKey, params: MessageParams = {}): string {
+  const locale = useLocaleStore().currentLocale;
+  const namespace = resolveNamespaceForKey(locale, key);
+  if (!namespace) return key;
+  const runtimeKey = `${namespaceToken(namespace)}.${key}`;
   const names = messageParameterOrder[key];
   const value = names
-    ? i18n.global.t(key, names.map((name) => params[name] ?? ''))
-    : i18n.global.t(key);
-  return value === key ? key : value;
+    ? i18n.global.t(runtimeKey, names.map((name) => params[name] ?? ''))
+    : i18n.global.t(runtimeKey);
+  return value === runtimeKey ? key : value;
 }
 
 /** 加载失败时只提供极小应急文本，不回退整份静态业务词典。 */

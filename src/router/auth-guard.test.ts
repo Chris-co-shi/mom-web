@@ -72,6 +72,32 @@ describe('authGuard', () => {
     expect(navigation).toEqual({ name: 'forbidden' });
   });
 
+  it('跨 Owner 页面 permissionMode=any 时任一权限即可进入', async () => {
+    window.sessionStorage.setItem('mom.auth.session', JSON.stringify({
+      accessToken: 'restored-token',
+      tokenType: 'Bearer',
+      expiresAt: '2099-01-01T00:00:00Z',
+    }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resultResponse({
+      user: { userId: '1900000000000000001', username: 'test-user', displayName: '测试用户', version: 3 },
+      authorization: { authorities: ['auth:i18n:read'] },
+      session: { expiresAt: '2099-01-01T00:00:00Z' },
+    })));
+    const authSession = await import('../modules/auth/model/auth-session');
+    setHttpRequestContextProvider(() => ({ accessToken: authSession.getAccessToken(), locale: 'zh-CN' }));
+    const { resolveAuthNavigation } = await import('./auth-guard');
+
+    const navigation = await resolveAuthNavigation(route({
+      matched: [{ meta: {
+        requiresAuth: true,
+        permissions: ['system:i18n:read', 'auth:i18n:read', 'mdm:i18n:read'],
+        permissionMode: 'any',
+      } }] as unknown as RouteLocationNormalized['matched'],
+    }));
+
+    expect(navigation).toBeUndefined();
+  });
+
   it('当前会话服务不可用时进入离线状态且保留本地 Token', async () => {
     window.sessionStorage.setItem('mom.auth.session', JSON.stringify({
       accessToken: 'restored-token',

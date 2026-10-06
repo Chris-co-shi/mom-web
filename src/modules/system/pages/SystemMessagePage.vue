@@ -13,9 +13,10 @@ import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
 import { i18nManagementApi } from '../../../shared/i18n/i18n-management-api';
+import type { I18nMessage } from '../../../shared/i18n/models';
 import { i18nOwner, i18nOwners } from '../../../shared/i18n/i18n-owner-registry';
 import { i18nRuntimeApi, type I18nOwner } from '../../../shared/i18n/runtime-api';
-import { systemApi, type SystemMessage } from '../api/system-api';
+import { systemApi } from '../api/system-api';
 import { placeholderSet, systemFeedback, validDisplayText, validMessageKey, validMessageText, validNamespace, type SystemFeedback } from '../model/system-feedback';
 import { useSystemList } from '../model/use-system-list';
 import './system-pages.css';
@@ -46,7 +47,7 @@ const columns = computed<MomColumn[]>(() => [
   { key: 'messageText', title: t('system.messages.text'), minWidth: 280 },
   { key: 'actions', title: t('system.common.actions'), width: 150, fixed: 'right', resizable: false },
 ]);
-const action = ref<Action | null>(null); const target = ref<SystemMessage | null>(null); const targetTranslation = ref<TranslationRow | null>(null);
+const action = ref<Action | null>(null); const target = ref<I18nMessage | null>(null); const targetTranslation = ref<TranslationRow | null>(null);
 const form = reactive({ messageKey: '', description: '', messageText: '', enabled: true });
 const saving = ref(false); const blocked = ref(false); const feedback = ref<SystemFeedback | null>(null); const notice = ref(false);
 watch([search, pageSize], () => { pageNo.value = 1; });
@@ -80,7 +81,7 @@ async function switchOwner(value: string | number): Promise<void> {
   selectedId.value = null; messages.clear(); translations.clear(); pageNo.value = 1;
   await reloadMessages();
 }
-function open(next: Action, row?: SystemMessage, translation?: TranslationRow): void {
+function open(next: Action, row?: I18nMessage, translation?: TranslationRow): void {
   if (saving.value || blocked.value) return;
   notice.value = false; action.value = next; target.value = row ?? selected.value; targetTranslation.value = translation ?? null;
   feedback.value = null;

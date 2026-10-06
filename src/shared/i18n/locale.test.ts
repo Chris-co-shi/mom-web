@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LocaleSwitcher from './LocaleSwitcher.vue';
-import { initializeLocale, translate, useLocale, useLocaleStore } from './locale';
+import { initializeLocale, translate, translateInNamespace, useLocale, useLocaleStore } from './locale';
 import { i18nRuntimeApi } from './runtime-api';
 
 const locales = [
@@ -34,6 +34,25 @@ describe('locale service', () => {
     window.localStorage.setItem('mom.locale.preference', 'en');
     await initializeLocale();
     expect(useLocale().locale.value).toBe('en-US');
+  });
+
+
+  it('不同 namespace 的同名 key 必须隔离，显式 namespace 可精确读取', async () => {
+    vi.spyOn(i18nRuntimeApi, 'bundle').mockImplementation(async (_owner, locale, namespaces) => ({
+      requestedLocale: locale,
+      effectiveLocale: locale,
+      bundles: Object.fromEntries(namespaces.map((namespace) => [namespace, {
+        'shell.main.title': namespace === 'system.web' ? 'System title' : 'Auth title',
+      }])),
+    }));
+
+    await initializeLocale();
+
+    expect(useLocaleStore().messagesByLocale['zh-CN']?.['system.web']?.['shell.main.title']).toBe('System title');
+    expect(useLocaleStore().messagesByLocale['zh-CN']?.['auth.login']?.['shell.main.title']).toBe('Auth title');
+    expect(translate('shell.main.title')).toBe('shell.main.title');
+    expect(translateInNamespace('system.web', 'shell.main.title')).toBe('System title');
+    expect(translateInNamespace('auth.login', 'shell.main.title')).toBe('Auth title');
   });
 
   it('先加载目标语言再切换 HTML、Vue I18n 和浏览器偏好', async () => {

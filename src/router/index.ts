@@ -13,8 +13,9 @@ export const router = createRouter({
 router.beforeEach(async (to) => {
   const redirect = await resolveAuthNavigation(to);
   if (redirect) return redirect;
-  if (to.matched.some((record) => record.meta.requiresAuth)) {
-    try { await ensureNamespaces(['auth.navigation', 'system.navigation', 'auth.iam', 'auth.account']); }
+  const namespaces = [...new Set(to.matched.flatMap((record) => record.meta.i18nNamespaces ?? []))];
+  if (namespaces.length > 0) {
+    try { await ensureNamespaces(namespaces); }
     catch { return { name: 'offline' }; }
   }
   return undefined;

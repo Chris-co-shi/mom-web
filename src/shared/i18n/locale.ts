@@ -81,7 +81,9 @@ async function loadOne(namespace: string, locale: string, force: boolean): Promi
   const work = (async () => {
     store.loadingNamespaces[locale] = [...new Set([...(store.loadingNamespaces[locale] ?? []), namespace])];
     try {
-      const result = await i18nRuntimeApi.bundle(ownerOf(namespace), locale, [namespace]);
+      const owner = ownerOf(namespace);
+      connectI18nEvents(owner);
+      const result = await i18nRuntimeApi.bundle(owner, locale, [namespace]);
       const fresh = result.bundles[namespace] ?? {};
       store.messagesByLocale[locale] = {
         ...(store.messagesByLocale[locale] ?? {}),

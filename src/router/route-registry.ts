@@ -150,6 +150,7 @@ export const appRoutes: RouteRecordRaw[] = [
       titleKey: 'shell.notFound.title',
       module: 'shell',
       requiresAuth: false,
+      i18nNamespaces: ['system.web'],
       hideInMenu: true,
     },
   },

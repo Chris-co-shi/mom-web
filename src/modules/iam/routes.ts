@@ -7,8 +7,8 @@ export const iamRoutes: RouteRecordRaw[] = [
     name: ROUTE_NAMES.iamUsers,
     component: () => import('./pages/UserManagementPage.vue'),
     meta: {
-      title: '用户管理', titleKey: 'iam.users.title', module: 'iam', requiresAuth: true,
-      permissions: ['auth:user:read'], i18nNamespaces: ['auth.navigation', 'auth.iam'], navigationGroup: 'iam', navigationOrder: 10,
+      title: '用户管理', titleKey: 'navigation.users', module: 'iam', requiresAuth: true,
+      permissions: ['auth:user:read'], i18nNamespaces: ['auth.iam'], navigationGroup: 'iam', navigationOrder: 10,
     },
   },
   {
@@ -16,8 +16,8 @@ export const iamRoutes: RouteRecordRaw[] = [
     name: ROUTE_NAMES.iamRoles,
     component: () => import('./pages/RoleManagementPage.vue'),
     meta: {
-      title: '角色管理', titleKey: 'iam.roles.title', module: 'iam', requiresAuth: true,
-      permissions: ['auth:role:read'], i18nNamespaces: ['auth.navigation', 'auth.iam'], navigationGroup: 'iam', navigationOrder: 20,
+      title: '角色管理', titleKey: 'navigation.roles', module: 'iam', requiresAuth: true,
+      permissions: ['auth:role:read'], i18nNamespaces: ['auth.iam'], navigationGroup: 'iam', navigationOrder: 20,
     },
   },
   {
@@ -25,8 +25,8 @@ export const iamRoutes: RouteRecordRaw[] = [
     name: ROUTE_NAMES.iamPermissions,
     component: () => import('./pages/PermissionResourcePage.vue'),
     meta: {
-      title: '权限管理', titleKey: 'iam.permissions.title', module: 'iam', requiresAuth: true,
-      permissions: ['auth:permission:read'], i18nNamespaces: ['auth.navigation', 'auth.iam'], navigationGroup: 'iam', navigationOrder: 30,
+      title: '权限管理', titleKey: 'navigation.permissions', module: 'iam', requiresAuth: true,
+      permissions: ['auth:permission:read'], i18nNamespaces: ['auth.iam'], navigationGroup: 'iam', navigationOrder: 30,
     },
   },
   {
@@ -34,7 +34,7 @@ export const iamRoutes: RouteRecordRaw[] = [
     name: ROUTE_NAMES.iamPermissionResources,
     redirect: { name: ROUTE_NAMES.iamPermissions },
     meta: {
-      title: '权限管理', titleKey: 'iam.permissions.title', module: 'iam', requiresAuth: true,
+      title: '权限管理', titleKey: 'navigation.permissions', module: 'iam', requiresAuth: true,
       permissions: ['auth:permission:read'], i18nNamespaces: ['auth.iam'], hideInMenu: true,
     },
   },

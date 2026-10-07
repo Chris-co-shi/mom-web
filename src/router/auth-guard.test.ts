@@ -113,7 +113,7 @@ describe('authGuard', () => {
       matched: [{ meta: { requiresAuth: true } }] as RouteLocationNormalized['matched'],
     }));
 
-    expect(navigation).toEqual({ name: 'offline' });
+    expect(navigation).toEqual({ name: 'offline', query: { redirect: '/foundation/overview' } });
     expect(authSession.getAccessToken()).toBe('restored-token');
   });
 });

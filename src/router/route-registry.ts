@@ -31,6 +31,7 @@ export const appRoutes: RouteRecordRaw[] = [
       titleKey: 'shell.main.title',
       module: 'shell',
       requiresAuth: true,
+      i18nNamespaces: ['system.web', 'system.navigation', 'auth.navigation'],
       hideInMenu: true,
     },
     children: [
@@ -43,7 +44,7 @@ export const appRoutes: RouteRecordRaw[] = [
         component: () => import('../modules/auth/pages/AccountPage.vue'),
         meta: {
           title: '账户设置',
-          titleKey: 'account.title',
+          titleKey: 'navigation.account',
           module: 'auth',
           requiresAuth: true,
           i18nNamespaces: ['auth.account'],
@@ -100,19 +101,16 @@ export const appRoutes: RouteRecordRaw[] = [
   {
     path: '/offline',
     name: ROUTE_NAMES.offline,
-    component: () => import('../pages/RouteStatePage.vue'),
-    props: {
-      code: 'OFF',
-      eyebrowKey: 'state.offline.eyebrow',
-      titleKey: 'state.offline.title',
-      descriptionKey: 'state.offline.description',
-    },
+    component: () => import('../shared/components/MomUnavailableState.vue'),
+    props: (route) => ({
+      mode: 'route',
+      returnTo: typeof route.query.redirect === 'string' ? route.query.redirect : undefined,
+    }),
     meta: {
       title: '服务离线',
       titleKey: 'shell.offline.title',
       module: 'shell',
       requiresAuth: false,
-      i18nNamespaces: ['system.web'],
       hideInMenu: true,
     },
   },

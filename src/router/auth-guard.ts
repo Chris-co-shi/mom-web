@@ -35,7 +35,7 @@ export async function resolveAuthNavigation(to: RouteLocationNormalized): Promis
         }
         if (error.kind === 'forbidden') return { name: ROUTE_NAMES.forbidden };
         if (['network', 'timeout', 'server', 'rate_limited'].includes(error.kind)) {
-          return { name: ROUTE_NAMES.offline };
+          return { name: ROUTE_NAMES.offline, query: { redirect: to.fullPath } };
         }
       }
       return { name: ROUTE_NAMES.error };

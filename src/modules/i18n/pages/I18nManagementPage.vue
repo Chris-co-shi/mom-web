@@ -16,9 +16,10 @@ import { i18nManagementApi } from '../../../shared/i18n/i18n-management-api';
 import type { I18nMessage } from '../../../shared/i18n/models';
 import { i18nOwner, i18nOwners } from '../../../shared/i18n/i18n-owner-registry';
 import { i18nRuntimeApi, type I18nOwner } from '../../../shared/i18n/runtime-api';
-import { placeholderSet, systemFeedback, validDisplayText, validMessageKey, validMessageText, validNamespace, type SystemFeedback } from '../model/system-feedback';
-import { useSystemList } from '../model/use-system-list';
-import './system-pages.css';
+import { managementFeedback as systemFeedback, validDisplayText, type ManagementFeedback as SystemFeedback } from '../../../shared/management/management-feedback';
+import { useManagementList as useSystemList } from '../../../shared/management/use-management-list';
+import { placeholderSet, validMessageKey, validMessageText, validNamespace } from '../model/i18n-validation';
+import '../../system/pages/system-pages.css';
 
 type Action = 'create' | 'edit' | 'detail' | 'status' | 'translation';
 interface TranslationRow { id: string; localeCode: string; displayName: string; messageText: string; version: number | null; }

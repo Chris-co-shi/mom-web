@@ -18,7 +18,7 @@ const navigationCollapsed = ref(false);
 const loggingOut = ref(false);
 const { t } = useLocale();
 const { user, authorities } = useAuthSession();
-const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('account.currentUser'));
+const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('navigation.currentUser'));
 const navigationIcons = {
   [ROUTE_NAMES.iamUsers]: UsersRound,
   [ROUTE_NAMES.iamRoles]: ShieldCheck,
@@ -36,7 +36,7 @@ const visibleNavigation = computed(() => {
   return mainNavigation.filter((item) => hasAuthorities(item.permissions, item.permissionMode));
 });
 const navigationGroups = computed(() => [
-  { id: 'iam', title: t('iam.navigation'), items: visibleNavigation.value.filter((item) => item.group === 'iam') },
+  { id: 'iam', title: t('navigation.iam'), items: visibleNavigation.value.filter((item) => item.group === 'iam') },
   { id: 'system', title: t('system.navigation'), items: visibleNavigation.value.filter((item) => item.group === 'system') },
   { id: 'foundation', title: t('shell.foundationGroup'), items: visibleNavigation.value.filter((item) => item.group === 'foundation') },
 ].filter((group) => group.items.length > 0));
@@ -123,8 +123,8 @@ async function handleLogout(): Promise<void> {
           <span class="app-header__divider" aria-hidden="true"></span>
           <LocaleSwitcher />
           <ThemeSwitcher />
-          <RouterLink class="app-current-identity" :to="{ name: ROUTE_NAMES.account }" :title="t('account.title')">
-            <small>{{ t('account.title') }}</small>
+          <RouterLink class="app-current-identity" :to="{ name: ROUTE_NAMES.account }" :title="t('navigation.account')">
+            <small>{{ t('navigation.account') }}</small>
             <strong>{{ accountName }}</strong>
           </RouterLink>
           <MomButton class="app-session-button" variant="outline" :disabled="loggingOut" @click="handleLogout">

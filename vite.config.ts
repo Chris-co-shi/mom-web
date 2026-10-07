@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           // Gateway 统一接受 /api/auth、/api/system、/api/mdm；开发和生产保持同一路径。
-          rewrite: (path) => path,
+          rewrite: (path) => path.replace(/^\/api/, ''),
           target: gatewayTarget,
         },
       },

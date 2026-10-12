@@ -55,3 +55,31 @@
   gap: var(--mom-space-2);
   padding-top: var(--mom-space-5);
 }
+
+.mdm-struct__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--mom-space-3);
+  margin-bottom: var(--mom-space-4);
+}
+.mdm-struct__filters label {
+  display: grid;
+  gap: var(--mom-space-2);
+  min-width: 185px;
+  color: var(--mom-color-text-secondary);
+  font-size: var(--mom-font-size-sm);
+}
+.mdm-struct__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--mom-space-2);
+  color: var(--mom-color-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.mdm-struct__link:focus-visible {
+  outline: 2px solid var(--mom-color-brand);
+  outline-offset: 2px;
+}

@@ -6,7 +6,7 @@ import { searchMaterialCategories, createMaterialCategory, updateMaterialCategor
 describe('MDM 物料与分类 API 契约', () => {
   const fetchMock = vi.fn();
   beforeEach(() => {
-    fetchMock.mockReset().mockResolvedValue(new Response(JSON.stringify({ code:'0', message:'ok',
+    fetchMock.mockReset().mockImplementation(() => new Response(JSON.stringify({ code:'0', message:'ok',
       data:{ records:[], pageNo:1, pageSize:20, total:0, totalPages:0 } }), {
       headers:{ 'Content-Type':'application/json' } }));
     vi.stubGlobal('fetch', fetchMock);

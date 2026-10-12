@@ -1,25 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { API_PATHS, apiPath, resolveApiUrl } from './config';
 
-describe('API path contract', () => {
-  it('集中登记 Gateway bounded context path', () => {
-    expect(API_PATHS).toEqual({
-      auth: '/auth',
-      system: '/system',
-      mdm: '/mdm',
-    });
-    expect(apiPath('auth', '/login')).toBe('/api/auth/login');
-    expect(apiPath('system', '/i18n/locales')).toBe('/api/system/i18n/locales');
-    expect(apiPath('mdm', '/materials/search')).toBe('/api/mdm/materials/search');
-    expect(apiPath('auth')).toBe('/api/auth');
+describe('Gateway module path contract', () => {
+  it('浏览器到 Gateway 不包含 /api 前缀', () => {
+    expect(API_PATHS).toEqual({ auth: '/auth', system: '/system', mdm: '/mdm' });
+    expect(apiPath('auth', '/login')).toBe('/auth/login');
+    expect(apiPath('system', '/i18n/locales')).toBe('/system/i18n/locales');
+    expect(apiPath('mdm', '/materials/search')).toBe('/mdm/materials/search');
+    expect(apiPath('auth')).toBe('/auth');
   });
 
-  it.each(['login', '//outside.example/api'])('拒绝绕过统一边界的路径：%s', (path) => {
+  it.each(['login', '//outside.example/api'])('拒绝不合法的路径：%s', (path) => {
     expect(() => resolveApiUrl(path)).toThrow(TypeError);
     expect(() => apiPath('auth', path)).toThrow(TypeError);
   });
 
-  it.each(['/api', '/api/auth/login'])('拒绝把浏览器 /api 前缀作为模块内部路径重复传入：%s', (path) => {
-    expect(() => apiPath('auth', path)).toThrow(TypeError);
+  it.each(['/api', '/api/mdm/materials/search', '/mdm/materials/search'])('阻止重复注入模块或者 /api 前缀：%s', (path) => {
+    expect(() => apiPath('mdm', path)).toThrow(TypeError);
   });
 });

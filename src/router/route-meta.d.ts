@@ -2,7 +2,7 @@ import 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
 import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
 
-export type MomRouteModule = 'auth' | 'iam' | 'system' | 'foundation' | 'shell';
+export type MomRouteModule = 'auth' | 'iam' | 'system' | 'mdm' | 'foundation' | 'shell';
 
 declare module 'vue-router' {
   interface RouteMeta {

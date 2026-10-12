@@ -88,4 +88,11 @@ export const mdmRoutes: RouteRecordRaw[] = [
       navigationGroup: 'mdm', navigationOrder: 80,
     },
   },
+  {
+    path: 'mdm/uom', name: ROUTE_NAMES.mdmUom,
+    component: () => import('./pages/UomManagementPage.vue'),
+    meta: { title: '计量单位', titleKey: 'navigation.mdmUom', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:uom:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 90 },
+  },
 ];

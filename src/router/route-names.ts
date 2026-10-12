@@ -1,4 +1,5 @@
 export const ROUTE_NAMES = {
+  mdmPlants: 'mdm-plants',
   iamUsers: 'iam-users',
   iamRoles: 'iam-roles',
   iamPermissions: 'iam-permissions',

@@ -5,7 +5,7 @@ import * as factory from './factory-api';
 describe('MDM Plant API contract', () => {
   const fetchMock = vi.fn();
   beforeEach(() => {
-    fetchMock.mockReset().mockResolvedValue(new Response(JSON.stringify({
+    fetchMock.mockReset().mockImplementation(() => new Response(JSON.stringify({
       code: '0', message: 'ok', data: { records: [], pageNo: 1, pageSize: 20, total: 0, totalPages: 0 },
     }), { headers: { 'Content-Type': 'application/json' } }));
     vi.stubGlobal('fetch', fetchMock);

@@ -18,4 +18,74 @@ export const mdmRoutes: RouteRecordRaw[] = [
       navigationOrder: 10,
     },
   },
+  {
+    path: 'mdm/workshops', name: ROUTE_NAMES.mdmWorkshops,
+    component: () => import('./pages/StructureManagementPage.vue'),
+    props: { kind: 'workshops' },
+    meta: {
+      title: 'workshops', titleKey: 'mdm.struct.workshops', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 20,
+    },
+  },
+  {
+    path: 'mdm/production-lines', name: ROUTE_NAMES.mdmProductionLines,
+    component: () => import('./pages/StructureManagementPage.vue'),
+    props: { kind: 'production-lines' },
+    meta: {
+      title: 'production-lines', titleKey: 'mdm.struct.productionLines', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 30,
+    },
+  },
+  {
+    path: 'mdm/workstations', name: ROUTE_NAMES.mdmWorkstations,
+    component: () => import('./pages/StructureManagementPage.vue'),
+    props: { kind: 'workstations' },
+    meta: {
+      title: 'workstations', titleKey: 'mdm.struct.workstations', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 40,
+    },
+  },
+  {
+    path: 'mdm/warehouses', name: ROUTE_NAMES.mdmWarehouses,
+    component: () => import('./pages/StructureManagementPage.vue'),
+    props: { kind: 'warehouses' },
+    meta: {
+      title: 'warehouses', titleKey: 'mdm.struct.warehouses', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:warehouse:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 50,
+    },
+  },
+  {
+    path: 'mdm/warehouse-areas', name: ROUTE_NAMES.mdmWarehouseAreas,
+    component: () => import('./pages/StructureManagementPage.vue'),
+    props: { kind: 'warehouse-areas' },
+    meta: {
+      title: 'warehouse-areas', titleKey: 'mdm.struct.warehouseAreas', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:warehouse:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 60,
+    },
+  },
+  {
+    path: 'mdm/location-types', name: ROUTE_NAMES.mdmLocationTypes,
+    component: () => import('./pages/StructureManagementPage.vue'),
+    props: { kind: 'location-types' },
+    meta: {
+      title: 'location-types', titleKey: 'mdm.struct.locationTypes', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:location:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 70,
+    },
+  },
+  {
+    path: 'mdm/locations', name: ROUTE_NAMES.mdmLocations,
+    component: () => import('./pages/StructureManagementPage.vue'),
+    props: { kind: 'locations' },
+    meta: {
+      title: 'locations', titleKey: 'mdm.struct.locations', module: 'mdm', requiresAuth: true,
+      permissions: ['mdm:location:read'], i18nNamespaces: ['mdm.web'],
+      navigationGroup: 'mdm', navigationOrder: 80,
+    },
+  },
 ];

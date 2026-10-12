@@ -58,6 +58,19 @@ describe('locale service', () => {
     expect(translateInNamespace('auth.login', 'shell.main.title')).toBe('Auth title');
   });
 
+  it('管理页的数字占位符说明保留可复制的字面示例', async () => {
+    vi.spyOn(i18nRuntimeApi, 'bundle').mockImplementation(async (_owner, locale, namespaces) => ({
+      requestedLocale: locale,
+      effectiveLocale: locale,
+      bundles: Object.fromEntries(namespaces.map((namespace): [string, Record<string, string>] => [namespace,
+        namespace === 'system.web' ? { 'system.messages.textHint': '仅纯文本和 {0}、{1} 等数字占位符' } : {}])),
+    }));
+    await initializeLocale();
+
+    expect(translate('system.messages.textHint', { exampleZero: '{0}', exampleOne: '{1}' }))
+      .toBe('仅纯文本和 {0}、{1} 等数字占位符');
+  });
+
   it('先加载目标语言再切换 HTML、Vue I18n 和浏览器偏好', async () => {
     await initializeLocale();
     const wrapper = mount(LocaleSwitcher);

@@ -9,13 +9,13 @@
 | 语言 | TypeScript 6，`strict: true` | 保持严格模式 |
 | 构建 | Vite 8.0.10 | 保持 |
 | 包管理器 | pnpm 11 | 保持 |
-| Router | 用户工作区已加入 `vue-router` | Web-P1 验证后正式接线 |
+| Router | Vue Router 5 已接线 | Route Registry 同时派生路由与菜单 |
 | UI 组件库 | 已安装 | Reka UI + shadcn-vue；表格采用 TanStack Table v9 |
-| 状态管理 | 尚未安装 | Web-P1 只在全局状态需求明确后决定 |
-| 请求层 | 尚未建立 | Web-P1 建立唯一入口 |
-| 国际化 | 尚未建立 | 静态 `zh-CN`/`en-US`，按域组织 |
-| 测试 | 尚未建立 | Web-P1 补最小单元/组件测试基线 |
-| 样式 | 单个 `src/style.css` | Web-P1 迁移为 Token/Theme/Base 分层 |
+| 状态管理 | Pinia 4 已接线 | 只保存认证、Locale 等真实跨页面状态 |
+| 请求层 | 已建立唯一 HTTP Client | 统一认证、Locale、取消、超时和错误语义 |
+| 国际化 | Vue I18n + Runtime Namespace | `zh-CN`/`en-US`，静态 Key 与服务端 Bundle 分工 |
+| 测试 | Vitest + Vue Test Utils + jsdom | 优先覆盖权限、协议与失败行为 |
+| 样式 | Tailwind 4 + MOM 分层 Token | Primitive → Semantic → Component → Base |
 
 ## 2. 架构目标
 
@@ -101,7 +101,7 @@ Vue / 已选 UI 组件库 / browser platform
 4. 模块私有组件；
 5. 页面局部结构。
 
-现有可复用管理页组合件：`MomManagementHeader` 负责页面标题/说明/操作插槽，`MomListSurface` 负责目录表面、工具栏插槽、表格/页脚插槽和 VXE 加载遮罩；`MomCrudSearch`、`MomCrudPagination`、`MomCrudRowMenu`、`MomModal` 分别负责基础交互。新 CRUD 页面须先复用这些稳定结构，不再复制 IAM 的页面外壳或按钮样式。它们不接管 API、权限、状态写入或表单字段；具体规则仍由模块实现。
+现有可复用管理页组合件：`MomManagementHeader` 负责页面标题/说明/操作插槽，`MomListSurface` 负责目录表面、工具栏插槽、表格/页脚插槽和 MOM 加载遮罩；`MomCrudSearch`、`MomCrudPagination`、`MomCrudRowMenu`、`MomModal` 分别负责基础交互。新 CRUD 页面须先复用这些稳定结构，不再复制 IAM 的页面外壳或按钮样式。它们不接管 API、权限、状态写入或表单字段；具体规则仍由模块实现。
 
 首批候选项目组件只在真实使用时创建：
 
@@ -114,7 +114,7 @@ Vue / 已选 UI 组件库 / browser platform
 
 交互性基础控件（弹窗/抽屉、输入、按钮、下拉、选择、提示等）优先使用已选组件库；不得在业务页面用原生标签、Teleport 和手写键盘/遮罩/滚动锁重复实现现成组件。`form`、`label`、`dl`、标题等语义 HTML 仍应保留。组件库无法满足需求时，先记录能力缺口、替代方案和无障碍/主题/测试影响，再批准局部实现。
 
-业务弹窗使用 `shared/components/MomModal` 统一承接 VXE Modal 的标题/右侧关闭位、尺寸、主题、焦点及保存遮罩；业务层只填写内容，不复制弹窗外壳或覆盖组件库 `header` 结构。该公共组件解决跨页面的视觉和无障碍不变量，不承载业务表单、权限或 API。
+业务弹窗使用 `shared/components/MomModal` 统一承接 Reka UI Dialog 的标题、关闭按钮、尺寸、主题、焦点及保存遮罩；业务层只填写内容，不复制弹窗外壳或覆盖组件结构。该公共组件解决跨页面的视觉和无障碍不变量，不承载业务表单、权限或 API。
 
 同一或相似的业务 UI 实现在**超过三个使用处（第 4 处起）**时，必须评估是否抽象为模块内或 `shared/components` 公共组件；评估依据是语义、交互、样式和变化方向是否稳定一致，有复用收益才抽象，不机械套用。涉及统一权限、安全、无障碍等跨页面不变量时可提前抽象。禁止万能表格和万能表单。
 
@@ -288,7 +288,7 @@ Web-P1-S06 已建立统一命令：
 Web-P1 验证阶段记录而非提前承诺绝对值：
 
 - 首屏主包与样式体积；
-- TDesign 按需引入是否有效；
+- 共享 UI 与 Runtime Locale Chunk 的体积变化；
 - IAM 首屏路由分包；
 - 低端办公设备上的导航、表格和弹窗交互；
 - 大数据表必须使用服务端分页，虚拟滚动只在真实数据量证明需要时引入。

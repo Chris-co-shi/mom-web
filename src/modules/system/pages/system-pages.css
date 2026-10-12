@@ -24,6 +24,10 @@
 .system-page__rail-item.mom-ui-button:hover, .system-page__rail-item--active.mom-ui-button { border-color: var(--mom-color-brand); background: color-mix(in srgb, var(--mom-color-brand) 7%, var(--mom-color-bg-surface)); }
 .system-page__rail-item--active.mom-ui-button { box-shadow: inset 3px 0 0 var(--mom-color-brand); }
 .system-page__rail-item small { color: var(--mom-color-text-secondary); font-family: var(--mom-font-family-mono); overflow-wrap: anywhere; }
+.system-page--i18n .system-page__rail-list { gap: var(--mom-space-1); }
+.system-page--i18n .system-page__rail-item.mom-ui-button { display: flex; align-items: center; justify-content: space-between; gap: var(--mom-space-2); min-height: 44px; padding: var(--mom-space-1) var(--mom-space-3); }
+.system-page--i18n .system-page__rail-item strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.system-page--i18n .system-page__rail-item small { flex: none; font-family: inherit; }
 .system-page__rail-footer { display: flex; justify-content: space-between; align-items: center; gap: var(--mom-space-2); padding-top: var(--mom-space-2); border-top: 1px solid var(--mom-color-border); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); }
 .system-page__detail { min-width: 0; overflow: hidden; border: 1px solid var(--mom-color-border-strong); border-radius: var(--mom-radius-overlay); background: var(--mom-color-bg-surface); }
 .system-page__detail-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--mom-space-3); padding: var(--mom-space-5) var(--mom-space-6); border-bottom: 1px solid var(--mom-color-border); }

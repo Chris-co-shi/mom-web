@@ -5,7 +5,8 @@
 本目录是 `mom-web` 的 PC 管理端前端基线，适用于 IAM、System、MDM 以及后续 WMS、QMS、MES 等业务模块。
 它不是 MDM 专属设计，也不包含供应商门户、客户门户或 PDA 设计。
 
-当前 **Web-P0、Web-P1 与 Web-P2-S01 登录认证闭环均已完成**，下一步继续 IAM 权限和管理能力。当前仍不通过演示数据伪造业务联调结果。
+当前代码已经包含 IAM、System 的真实管理页与对应基础能力；各业务 Slice 的验收状态以其独立记录为准。
+**MOM Web Foundation V1 已于 2026-10-12 完成收口**，当前仍不通过演示数据伪造业务联调结果。
 
 ## 2. 已冻结的方向
 
@@ -31,6 +32,7 @@
 8. [Web-P2-S01 登录与认证闭环验证记录](validation/web-p2-s01-auth-login.md)
 9. [CRUD 管理页项目级交互标准](standards/crud-management-page-standard.md)
 10. [ADR-003：全站 UI 基线迁移](decisions/ADR-003-ui-foundation-migration.md)
+11. [MOM Web Foundation V1 审计与验收报告](validation/web-foundation-v1.md)
 
 ## 4. 权威关系
 

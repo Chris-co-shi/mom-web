@@ -602,4 +602,5 @@ export const messageParameterOrder: Readonly<Record<string, readonly string[]>> 
   'iam.users.total': ['total', 'visible'],
   'system.common.count': ['total', 'visible'],
   'system.common.page': ['current', 'pages'],
+  'system.messages.textHint': ['exampleZero', 'exampleOne'],
 };

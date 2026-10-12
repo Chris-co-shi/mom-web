@@ -9,5 +9,6 @@
 .mom-data-table thead .mom-data-table__pinned { z-index: 3; }
 .mom-data-table th:first-child, .mom-data-table td:first-child { padding-left: var(--mom-space-6); }
 .mom-data-table__resizer { position: absolute; top: 9px; right: 0; bottom: 9px; width: 7px; cursor: col-resize; touch-action: none; }
-.mom-data-table__resizer:hover, .mom-data-table__resizer:active { border-right: 2px solid var(--mom-color-brand); }
+.mom-data-table__resizer:hover, .mom-data-table__resizer:active, .mom-data-table__resizer:focus-visible { border-right: var(--mom-focus-ring-width) solid var(--mom-color-brand); }
+.mom-data-table__resizer:focus-visible { outline: none; }
 .mom-data-table .mom-data-table__empty { max-width: none; height: 120px; color: var(--mom-color-text-secondary); text-align: center; }

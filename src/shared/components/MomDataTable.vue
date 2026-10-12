@@ -37,6 +37,20 @@ const table = useTable({
   columnResizeMode: 'onChange',
 });
 const totalWidth = computed(() => table.getTotalSize());
+
+/**
+ * 为列宽分隔器提供键盘等价操作。
+ *
+ * 每次按键使用固定 8px 步长，并遵守列定义的最小/最大宽度；该交互只更新 TanStack Table
+ * 的本地列宽状态，不持久化、不影响服务端数据，也不会改变鼠标和触摸拖拽语义。
+ */
+function resizeColumn(columnId: string, currentSize: number, minSize: number, maxSize: number | undefined, event: KeyboardEvent): void {
+  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+  if (direction === 0) return;
+  event.preventDefault();
+  const nextSize = Math.min(maxSize ?? Number.MAX_SAFE_INTEGER, Math.max(minSize, currentSize + direction * 8));
+  table.setColumnSizing((current) => ({ ...current, [columnId]: nextSize }));
+}
 </script>
 
 <template>
@@ -45,8 +59,11 @@ const totalWidth = computed(() => table.getTotalSize());
       <TableHead v-for="header in group.headers" :key="header.id" scope="col" :class="{ 'mom-data-table__pinned': columns.find(c => c.key === header.column.id)?.fixed === 'right' }"
         :style="{ width: `${header.getSize()}px`, minWidth: `${header.column.columnDef.minSize ?? 90}px` }" :title="String(header.column.columnDef.header ?? '')">
         <span>{{ header.column.columnDef.header }}</span>
-        <span v-if="header.column.getCanResize()" class="mom-data-table__resizer" role="separator" aria-orientation="vertical"
-          :aria-label="`${header.column.columnDef.header} column resize`" @mousedown="header.getResizeHandler()($event)" @touchstart="header.getResizeHandler()($event)"></span>
+        <span v-if="header.column.getCanResize()" class="mom-data-table__resizer" role="separator" tabindex="0" aria-orientation="vertical"
+          :aria-label="String(header.column.columnDef.header ?? '')" :aria-valuemin="header.column.columnDef.minSize"
+          :aria-valuemax="header.column.columnDef.maxSize" :aria-valuenow="header.getSize()"
+          @keydown="resizeColumn(header.column.id, header.getSize(), header.column.columnDef.minSize ?? 20, header.column.columnDef.maxSize, $event)"
+          @mousedown="header.getResizeHandler()($event)" @touchstart="header.getResizeHandler()($event)"></span>
       </TableHead>
     </TableRow></TableHeader>
     <TableBody>

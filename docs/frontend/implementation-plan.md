@@ -144,6 +144,12 @@ Web-P1 必须拆成可独立验证的小 Slice，不一次性生成所有基础�
 
 Web-P1 已完成，但不等于 IAM 完成。当前只提供真实可复用的地基，下一阶段进入 Web-P2。
 
+### Foundation V1 全站基础收口
+
+状态：**已完成（2026-10-12）**。在不更换 ADR-003 技术栈、不新增业务页面和生产依赖的前提下，完成 Design Token 迁移残留清理、共享组件边界复核、表格键盘列宽、弹窗无障碍告警修复、现行文档纠偏及 1024/1280/1440/1920px 浏览器验收。证据见 [MOM Web Foundation V1 审计与验收报告](validation/web-foundation-v1.md)。
+
+该收口允许后续 MDM Slice 复用基础设施，但不预先决定 MDM 领域模型、页面范围或 API 语义。
+
 ## 4. Web-P2：IAM
 
 ### P2-S01：登录与认证闭环
@@ -289,7 +295,7 @@ MDM 完成后再按照用户确认的业务 Slice 推进 WMS、QMS、MES 等模�
 
 | 风险 | 影响 | 处理阶段 |
 |---|---|---|
-| Locale/TDesign Provider 是当前最大的共享 Chunk | 后续 Locale 或 UI 能力增加可能影响首屏与缓存 | 持续记录 |
+| Reka UI、TanStack Table 与运行时 Locale 属于共享基础能力 | 后续继续关注首屏 Chunk 与缓存，不为优化指标重新引入旧 UI 栈 | 持续记录 |
 | Mini Auth `/me` 的用户资料实时读取，权限仍为 Token 快照 | 资料修改即时展示；权限变化需重新登录，密码修改不撤销旧 Token | V1 明确接受 |
 | System 历史文档能力多于当前 V1 | 容易误建页面 | 以 ADR-043 为唯一当前范围 |
 | System 后端已存在 User Preference，但 Web-P3 当前明确不做 | Locale/时区/Theme 服务端同步范围尚未决策 | Web-P3 前确认 |

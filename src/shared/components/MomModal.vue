@@ -22,7 +22,8 @@ function requestClose(): void { if (!props.busy) emit('close'); }
     <DialogPortal>
       <DialogOverlay class="mom-modal__overlay" />
       <DialogContent class="mom-modal" :style="{ '--mom-modal-width': typeof width === 'number' ? `${width}px` : width }"
-        :aria-busy="busy" @escape-key-down="event => { if (busy) event.preventDefault(); }"
+        :aria-busy="busy" :aria-describedby="undefined"
+        @escape-key-down="event => { if (busy) event.preventDefault(); }"
         @interact-outside="event => event.preventDefault()">
         <header class="mom-modal__header">
           <DialogTitle class="mom-modal__title">{{ title }}</DialogTitle>

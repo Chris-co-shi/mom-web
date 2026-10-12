@@ -83,3 +83,18 @@
   outline: 2px solid var(--mom-color-brand);
   outline-offset: 2px;
 }
+
+.mdm-struct__tabs { display: flex; flex-wrap: wrap; gap: var(--mom-space-2); margin-bottom: var(--mom-space-4); }
+.mdm-struct__tabs .mom-ui-button[aria-selected="true"] {
+  border-color: var(--mom-color-brand);
+  color: var(--mom-color-brand);
+  background: var(--mom-color-bg-subtle);
+}
+.mdm-struct__form-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: var(--mom-space-4); }
+.mdm-struct__history { display: grid; gap: var(--mom-space-2); max-height: 300px; overflow: auto; }
+.mdm-struct__history > div:not(.mdm-plants__footer) {
+  border-bottom: 1px solid var(--mom-color-border);
+  padding: var(--mom-space-2) 0;
+  font-family: var(--mom-font-family-mono);
+  font-size: var(--mom-font-size-sm);
+}

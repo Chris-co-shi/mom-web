@@ -12,7 +12,7 @@ describe('用户 API 契约', () => {
 
   it('只发送真实分页字段且沿用当前统一 URL', async () => {
     await users.searchUsers(2, 20);
-    expect(fetchMock.mock.calls[0]![0]).toBe('/api/auth/users/search');
+    expect(fetchMock.mock.calls[0]![0]).toBe('/auth/users/search');
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ params: {}, pageNo: 2, pageSize: 20 });
     expect(fetchMock.mock.calls[0]![1].method).toBe('POST');
   });
@@ -20,7 +20,7 @@ describe('用户 API 契约', () => {
   it('ID 不转数字，路径编码，读请求接受取消信号', async () => {
     const controller = new AbortController();
     await users.getUser('2106626945701810177/a', controller.signal);
-    expect(fetchMock.mock.calls[0]![0]).toBe('/api/auth/users/2106626945701810177%2Fa');
+    expect(fetchMock.mock.calls[0]![0]).toBe('/auth/users/2106626945701810177%2Fa');
     expect(new Headers(fetchMock.mock.calls[0]![1].headers).get('Authorization')).toBe('Bearer test-token');
   });
 
@@ -28,7 +28,7 @@ describe('用户 API 契约', () => {
     await users.createUser({ username: ' Name ', password: ' Password@123 ', displayName: 'Name', enabled: true });
     await users.resetUserPassword('123', ' NewPassword@123 ', 4);
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body).password).toBe(' Password@123 ');
-    expect(fetchMock.mock.calls[1]![0]).toBe('/api/auth/users/123/password');
+    expect(fetchMock.mock.calls[1]![0]).toBe('/auth/users/123/password');
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ newPassword: ' NewPassword@123 ', version: 4 });
   });
 
@@ -37,7 +37,7 @@ describe('用户 API 契约', () => {
     await users.setUserEnabled('123', true, 3);
     await users.setUserEnabled('123', false, 4);
     await users.deleteUser('123');
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/api/auth/users/123', '/api/auth/users/123/enable', '/api/auth/users/123/disable', '/api/auth/users/123']);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/users/123', '/auth/users/123/enable', '/auth/users/123/disable', '/auth/users/123']);
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ version: 3 });
     expect(fetchMock.mock.calls[3]![1]).toMatchObject({ method: 'DELETE', body: undefined });
   });

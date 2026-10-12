@@ -149,7 +149,7 @@ function options(kind: CatalogKind, includeEmpty: boolean): { label: string; val
 function initializeFilters(): void {
   for (const key of Object.keys(filters)) delete filters[key];
   for (const f of meta.value.references) {
-    if (f.filterable) filters[f.field] = typeof route.query[f.field] === 'string' ? route.query[f.field] : '';
+    if (f.filterable) { const raw = route.query[f.field]; filters[f.field] = typeof raw === 'string' ? raw : ''; }
   }
 }
 async function readTarget(id: string): Promise<void> {

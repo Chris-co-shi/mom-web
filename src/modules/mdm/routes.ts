@@ -95,4 +95,18 @@ export const mdmRoutes: RouteRecordRaw[] = [
       permissions: ['mdm:uom:read'], i18nNamespaces: ['mdm.web'],
       navigationGroup: 'mdm', navigationOrder: 90 },
   },
+  {
+    path: 'mdm/material-categories', name: ROUTE_NAMES.mdmCategories,
+    component: () => import('./pages/MaterialCategoryPage.vue'),
+    meta: { title: '物料分类', titleKey: 'navigation.mdmCategories', module: 'mdm',
+      requiresAuth: true, permissions: ['mdm:material:read'],
+      i18nNamespaces: ['mdm.web'], navigationGroup: 'mdm', navigationOrder: 100 },
+  },
+  {
+    path: 'mdm/materials', name: ROUTE_NAMES.mdmMaterials,
+    component: () => import('./pages/MaterialManagementPage.vue'),
+    meta: { title: '物料管理', titleKey: 'navigation.mdmMaterials', module: 'mdm',
+      requiresAuth: true, permissions: ['mdm:material:read'],
+      i18nNamespaces: ['mdm.web'], navigationGroup: 'mdm', navigationOrder: 110 },
+  },
 ];

@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       proxy: Object.fromEntries(browserGatewayContexts.map((prefix) => [
         prefix,
         { target: gatewayTarget },
-      ])),,
+      ])),
     },
   };
 });

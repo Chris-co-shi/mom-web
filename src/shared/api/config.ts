@@ -29,10 +29,10 @@ export function resolveApiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
-/** 构造浏览器端 /api/{module} 路径；代理只负责移除最前面的浏览器 `/api` 前缀。 */
+/** 浏览器与 Gateway 均使用 /{module}/**；不添加 /api 或重复模块前缀。 */
 export function apiPath(context: ApiContext, path = ''): string {
-  if (path && (!path.startsWith('/') || path.startsWith('//') || path === '/api' || path.startsWith('/api/'))) {
+  if (path && (!path.startsWith('/') || path.startsWith('//') || path === '/api' || path.startsWith('/api/') || path === API_PATHS[context] || path.startsWith(`${API_PATHS[context]}/`))) {
     throw new TypeError(`模块 API path 必须以单个 / 开头：${path}`);
   }
-  return `/api${API_PATHS[context]}${path}`;
+  return `${API_PATHS[context]}${path}`;
 }

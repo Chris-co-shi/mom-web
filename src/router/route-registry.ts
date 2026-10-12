@@ -3,6 +3,7 @@ import type { MessageKey } from '../locales/zh-CN';
 import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
 import { foundationRoutes } from '../modules/foundation/routes';
 import { iamRoutes } from '../modules/iam';
+import { mdmRoutes } from '../modules/mdm/routes';
 import { systemRoutes } from '../modules/system/routes';
 import { ROUTE_NAMES, type MomRouteName } from './route-names';
 
@@ -38,6 +39,7 @@ export const appRoutes: RouteRecordRaw[] = [
       ...foundationRoutes,
       ...iamRoutes,
       ...systemRoutes,
+      ...mdmRoutes,
       {
         path: 'account',
         name: ROUTE_NAMES.account,
@@ -167,7 +169,7 @@ function isNavigationRoute(route: RouteRecordRaw): route is RouteRecordRaw & {
 }
 
 /** 主导航直接由已注册路由派生，避免路由与菜单维护两份显示配置。 */
-export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes]
+export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes, ...mdmRoutes]
   .filter(isNavigationRoute)
   .map((route) => ({
     name: route.name,

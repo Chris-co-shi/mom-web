@@ -187,18 +187,19 @@ Web-P1 已建立唯一 HTTP Client：
 - 写请求默认不自动重试；
 - 页面 API 文件不直接操作 Token，也不重复实现错误提示。
 
-### 8.1 Gateway URL 与 Path 基线
+### 8.1 Browser → Gateway URL 与 Path 基线
 
-| bounded context | Web 统一路径 | Gateway 现状 | 备注 |
+| bounded context | 浏览器 URL 与 Gateway Predicate | Gateway 转发到 Server | 说明 |
 |---|---|---|---|
-| IAM/Auth | `/auth/**` | 已路由 | Gateway `StripPrefix=1`，例如外部 `/auth/login` 到 Auth `/login` |
-| System | `/api/system/**` | 已路由 | Gateway 保留完整路径 |
-| MDM | `/api/mdm/**` | 待接入 | MDM Controller 已使用该路径，但 Gateway 当前没有对应 Route |
+| IAM/Auth | `/auth/**` | `/**` | Gateway `StripPrefix=1` |
+| System | `/system/**` | `/**` | Gateway `StripPrefix=1` |
+| MDM | `/mdm/**` | `/api/mdm/**` | Gateway `PrefixPath=/api`，保留 MDM 已有内部 Controller 路径 |
 
-- 浏览器只面向 Gateway，不直接配置各业务服务地址；
-- 本地开发由 Vite 将 `/auth`、`/api` 代理到 `MOM_GATEWAY_DEV_TARGET`，默认 `http://127.0.0.1:20000`；
-- 生产默认使用同源相对路径，可通过 `VITE_MOM_API_BASE_URL` 显式覆盖；
-- `API_PATHS` 是 bounded context path 的唯一代码登记点，MDM 标记为契约预留，不代表已具备 Gateway 联调条件。
+- **冻结约束：Browser → Gateway 不含 `/api`，后端模块可以各自保留不同的内部 Controller Path。**
+- 浏览器只面向 Gateway，不能直接访问 Auth/System/MDM Server。
+- Vite 开发代理原样转发 `/auth`、`/system`、`/mdm`，不增加或删除 `/api`；目标 `MOM_GATEWAY_DEV_TARGET` 默认为 `http://127.0.0.1:20000`。
+- 生产默认同源；可通过 `VITE_MOM_API_BASE_URL` 配置 Gateway 基地址。
+- `API_PATHS` 只登记 Browser/Gateway 的模块前缀。MDM 内部 /api 路径不应泄露到 Web。
 
 ### 8.2 当前响应兼容策略
 

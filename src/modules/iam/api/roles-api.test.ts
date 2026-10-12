@@ -12,13 +12,13 @@ describe('角色 API 契约', () => {
 
   it('分页只发送后端支持的空 params 和页码', async () => {
     await roles.searchRoles(2, 20);
-    expect(fetchMock.mock.calls[0]![0]).toBe('/api/auth/roles/search');
+    expect(fetchMock.mock.calls[0]![0]).toBe('/auth/roles/search');
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ params: {}, pageNo: 2, pageSize: 20 });
   });
 
   it('技术 ID 按字符串编码，读取通过统一认证请求层', async () => {
     await roles.getRole('2106626945701810177/a', new AbortController().signal);
-    expect(fetchMock.mock.calls[0]![0]).toBe('/api/auth/roles/2106626945701810177%2Fa');
+    expect(fetchMock.mock.calls[0]![0]).toBe('/auth/roles/2106626945701810177%2Fa');
     expect(new Headers(fetchMock.mock.calls[0]![1].headers).get('Authorization')).toBe('Bearer test-token');
   });
 
@@ -27,7 +27,7 @@ describe('角色 API 契约', () => {
     await roles.updateRole('123', { name: 'New', description: 'note', enabled: true, version: 2 });
     await roles.setRoleEnabled('123', false, 3);
     await roles.setRoleEnabled('123', true, 4);
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/api/auth/roles', '/api/auth/roles/123', '/api/auth/roles/123/disable', '/api/auth/roles/123/enable']);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/roles', '/auth/roles/123', '/auth/roles/123/disable', '/auth/roles/123/enable']);
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ code: 'OPS', name: 'Operator', description: null, enabled: true });
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ name: 'New', description: 'note', enabled: true, version: 2 });
     expect(JSON.parse(fetchMock.mock.calls[2]![1].body)).toEqual({ version: 3 });
@@ -43,7 +43,7 @@ describe('角色 API 契约', () => {
   it('角色赋权读取和整体替换使用 Gateway 契约与字符串 ID', async () => {
     await roles.getRolePermissions('123/a');
     await roles.replaceRolePermissions('123/a', ['101', '202']);
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/api/auth/roles/123%2Fa/permissions', '/api/auth/roles/123%2Fa/permissions']);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/roles/123%2Fa/permissions', '/auth/roles/123%2Fa/permissions']);
     expect(fetchMock.mock.calls[0]![1].method).toBe('GET');
     expect(fetchMock.mock.calls[1]![1].method).toBe('PUT');
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ permissionIds: ['101', '202'] });

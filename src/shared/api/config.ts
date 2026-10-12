@@ -29,9 +29,9 @@ export function resolveApiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
-/** 构造浏览器端 /api 路径；开发代理仅对 Auth 等旧路由去掉 /api，System 保留该前缀。 */
+/** 构造浏览器端 /api/{module} 路径；代理只负责移除最前面的浏览器 `/api` 前缀。 */
 export function apiPath(context: ApiContext, path = ''): string {
-  if (path && (!path.startsWith('/') || path.startsWith('//'))) {
+  if (path && (!path.startsWith('/') || path.startsWith('//') || path === '/api' || path.startsWith('/api/'))) {
     throw new TypeError(`模块 API path 必须以单个 / 开头：${path}`);
   }
   return `/api${API_PATHS[context]}${path}`;

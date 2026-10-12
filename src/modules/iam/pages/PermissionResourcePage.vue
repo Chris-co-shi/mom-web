@@ -11,6 +11,7 @@ import { useLocale } from '../../../shared/i18n/locale';
 import { AuthorityGuard } from '../../auth';
 import * as api from '../api/permission-resources-api';
 import { permissionFeedback, type PermissionFeedback } from '../model/permission-feedback';
+import { groupPermissionResources } from '../model/permission-resource-directory';
 import PermissionManagementPage from './PermissionManagementPage.vue';
 import './permission-management.css';
 
@@ -29,12 +30,15 @@ const target = ref<api.PermissionResourceResponse>();
 const selectedResource = ref<api.PermissionResourceResponse>();
 const resourceSearchDraft = ref('');
 const resourceKeyword = ref('');
+const resourceDomainDraft = ref('');
+const resourceDomain = ref('');
 const blocked = ref(false);
 const form = reactive({ domainCode: '', resourceCode: '', name: '', description: '', sortOrder: 0 });
 let controller: AbortController | undefined;
 let sequence = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 const pages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
+const resourceGroups = computed(() => groupPermissionResources(rows.value));
 const selectedOutsidePage = computed(() => !!selectedResource.value && !rows.value.some((item) => item.id === selectedResource.value?.id));
 const title = computed(() => t(`iam.resources.${action.value ?? 'title'}` as 'iam.resources.title'));
 
@@ -46,7 +50,7 @@ async function loadPage(nextPage = pageNo.value, nextSize = pageSize.value): Pro
   error.value = undefined;
   try {
     const result = await api.searchResources(nextPage, nextSize,
-      { keyword: resourceKeyword.value || undefined }, controller.signal);
+      { domainCode: resourceDomain.value || undefined, keyword: resourceKeyword.value || undefined }, controller.signal);
     if (current !== sequence) return;
     if (nextPage > 1 && result.records.length === 0) { await loadPage(Math.max(1, nextPage - 1), nextSize); return; }
     rows.value = result.records;
@@ -83,10 +87,24 @@ function openPermissions(row: api.PermissionResourceResponse): void {
   selectedResource.value = row;
 }
 
+function scheduleResourceSearch(): void {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    resourceKeyword.value = resourceSearchDraft.value.trim();
+    resourceDomain.value = resourceDomainDraft.value.trim();
+    selectedResource.value = undefined;
+    void loadPage(1);
+  }, 300);
+}
+
 function searchResources(keyword: string): void {
   resourceSearchDraft.value = keyword;
-  if (searchTimer) clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { resourceKeyword.value = keyword.trim(); void loadPage(1); }, 300);
+  scheduleResourceSearch();
+}
+
+function filterResourceDomain(domainCode: string): void {
+  resourceDomainDraft.value = domainCode;
+  scheduleResourceSearch();
 }
 
 async function submit(): Promise<void> {
@@ -145,21 +163,28 @@ onUnmounted(() => { controller?.abort(); if (searchTimer) clearTimeout(searchTim
             <div><strong>{{ t('iam.resources.directory') }}</strong><small>{{ t('iam.resources.count', { total }) }}</small></div>
             <MomButton class="iam-permission-workspace__refresh" type="button" :aria-label="t('iam.permissions.refresh')" :disabled="loading || saving" @click="loadPage()"><RefreshCw :size="16" aria-hidden="true" /></MomButton>
           </div>
-          <MomInput class="iam-permission-workspace__search" type="search" :model-value="resourceSearchDraft"
-            :placeholder="t('iam.resources.search')" :aria-label="t('iam.resources.search')" :disabled="loading" @update:model-value="searchResources(String($event))" />
+          <div class="iam-permission-workspace__filters">
+            <MomInput type="search" :model-value="resourceSearchDraft"
+              :placeholder="t('iam.resources.search')" :aria-label="t('iam.resources.search')" :disabled="loading" @update:model-value="searchResources(String($event))" />
+            <MomInput :model-value="resourceDomainDraft" :placeholder="t('iam.permissions.domain')"
+              :aria-label="t('iam.permissions.domain')" :disabled="loading" :max-length="32" @update:model-value="filterResourceDomain(String($event))" />
+          </div>
           <p v-if="selectedOutsidePage" class="iam-permission-workspace__current" role="status">{{ t('iam.resources.currentOutsidePage', { name: selectedResource?.name ?? '' }) }}</p>
           <p v-if="error" class="iam-permission-feedback" role="alert">{{ t(error.key) }}</p>
           <div v-else class="iam-permission-workspace__resource-list">
-            <p v-if="!rows.length && !loading" class="iam-permission-workspace__empty">{{ t(resourceKeyword ? 'iam.resources.noMatches' : 'iam.resources.empty') }}</p>
-            <MomButton v-for="row in rows" :key="row.id" class="iam-permission-workspace__resource"
-              :class="{ 'iam-permission-workspace__resource--active': selectedResource?.id === row.id }"
-              type="button" :title="`${row.name} · ${row.domainCode} / ${row.resourceCode}`" :aria-pressed="selectedResource?.id === row.id" :disabled="loading" @click="openPermissions(row)">
-              <span class="iam-permission-workspace__resource-name">{{ row.name }}</span>
-              <span class="iam-permission-workspace__resource-code">{{ row.domainCode }} / {{ row.resourceCode }}</span>
-              <span class="iam-permission-workspace__resource-state" :class="{ 'iam-permission-workspace__resource-state--disabled': !row.enabled }">
-                <span class="iam-permission-status__dot" aria-hidden="true"></span>{{ t(row.enabled ? 'iam.permissions.enabled' : 'iam.permissions.disabled') }}
-              </span>
-            </MomButton>
+            <p v-if="!rows.length && !loading" class="iam-permission-workspace__empty">{{ t(resourceKeyword || resourceDomain ? 'iam.resources.noMatches' : 'iam.resources.empty') }}</p>
+            <section v-for="group in resourceGroups" :key="group.domainCode" class="iam-permission-workspace__domain" :aria-labelledby="`resource-domain-${group.domainCode}`">
+              <h3 :id="`resource-domain-${group.domainCode}`">{{ group.domainCode }}</h3>
+              <MomButton v-for="row in group.resources" :key="row.id" class="iam-permission-workspace__resource"
+                :class="{ 'iam-permission-workspace__resource--active': selectedResource?.id === row.id }"
+                type="button" :title="`${row.name} · ${row.domainCode} / ${row.resourceCode}`" :aria-pressed="selectedResource?.id === row.id" :disabled="loading" @click="openPermissions(row)">
+                <span class="iam-permission-workspace__resource-name">{{ row.name }}</span>
+                <span class="iam-permission-workspace__resource-code">{{ row.resourceCode }}</span>
+                <span class="iam-permission-workspace__resource-state" :class="{ 'iam-permission-workspace__resource-state--disabled': !row.enabled }">
+                  <span class="iam-permission-status__dot" aria-hidden="true"></span>{{ t(row.enabled ? 'iam.permissions.enabled' : 'iam.permissions.disabled') }}
+                </span>
+              </MomButton>
+            </section>
           </div>
           <div class="iam-permission-workspace__rail-footer">
             <span>{{ t('iam.resources.pageCount', { current: pageNo, pages }) }}</span>

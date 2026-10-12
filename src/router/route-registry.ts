@@ -31,7 +31,7 @@ export const appRoutes: RouteRecordRaw[] = [
       titleKey: 'shell.main.title',
       module: 'shell',
       requiresAuth: true,
-      i18nNamespaces: ['system.web', 'system.navigation', 'auth.navigation'],
+      i18nNamespaces: ['system.web', 'system.navigation', 'auth.navigation', 'auth.account'],
       hideInMenu: true,
     },
     children: [

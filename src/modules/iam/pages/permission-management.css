@@ -7,18 +7,21 @@
 .iam-permission-workspace__rail-head strong { font-size: var(--mom-font-size-md); }
 .iam-permission-workspace__rail-head small, .iam-permission-workspace__rail-footer { color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); }
 .iam-permission-workspace__refresh.mom-ui-button, .iam-permission-workspace__rail-footer .mom-ui-button { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0; border-radius: var(--mom-radius-control); }
-.iam-permission-workspace__search { width: 100%; }
+.iam-permission-workspace__filters { display: grid; gap: var(--mom-space-2); }
+.iam-permission-workspace__filters .mom-ui-input { width: 100%; }
 .iam-permission-workspace__current { margin: 0; padding: var(--mom-space-2) var(--mom-space-3); border-radius: var(--mom-radius-control); background: var(--mom-color-bg-subtle); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); overflow-wrap: anywhere; }
-.iam-permission-workspace__resource-list { display: grid; align-content: start; gap: var(--mom-space-1); min-height: 120px; max-height: min(58vh, 640px); overflow-y: auto; }
-.iam-permission-workspace__resource.mom-ui-button { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) auto; align-items: center; gap: var(--mom-space-2); width: 100%; min-width: 0; height: 44px; min-height: 44px; margin: 0; padding: 0 var(--mom-space-2); border: 1px solid var(--mom-color-border-strong); border-radius: var(--mom-radius-control); background: var(--mom-color-bg-surface); text-align: left; white-space: nowrap; }
+.iam-permission-workspace__resource-list { display: grid; align-content: start; gap: var(--mom-space-3); min-height: 120px; max-height: min(58vh, 640px); overflow-y: auto; }
+.iam-permission-workspace__domain { display: grid; gap: var(--mom-space-1); }
+.iam-permission-workspace__domain h3 { margin: 0; padding: var(--mom-space-1) var(--mom-space-2); color: var(--mom-color-text-muted); font-family: var(--mom-font-family-mono); font-size: var(--mom-font-size-xs); letter-spacing: 0.08em; }
+.iam-permission-workspace__resource.mom-ui-button { display: grid; grid-template-areas: 'name state' 'code state'; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px var(--mom-space-2); width: 100%; min-width: 0; height: auto; min-height: 56px; margin: 0; padding: var(--mom-space-2) var(--mom-space-3); border: 1px solid var(--mom-color-border-strong); border-radius: var(--mom-radius-control); background: var(--mom-color-bg-surface); text-align: left; white-space: nowrap; }
 .iam-permission-workspace__resource.mom-ui-button:not(:disabled) { color: var(--mom-color-text-primary); }
 .iam-permission-workspace__resource.mom-ui-button:not(:disabled):hover, .iam-permission-workspace__resource--active.mom-ui-button:not(:disabled) { border-color: var(--mom-color-brand); background: color-mix(in srgb, var(--mom-color-brand) 7%, var(--mom-color-bg-surface)); }
 .iam-permission-workspace__resource--active.mom-ui-button { box-shadow: inset 3px 0 0 var(--mom-color-brand); }
 .iam-permission-workspace__resource:focus-visible { outline: 2px solid var(--mom-color-brand); outline-offset: 2px; }
-.iam-permission-workspace__resource-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 650; }
+.iam-permission-workspace__resource-name { grid-area: name; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 650; }
 .iam-permission-workspace__resource-code, .iam-permissions__resource-code { color: var(--mom-color-text-muted); font-family: var(--mom-font-family-mono); font-size: var(--mom-font-size-xs); overflow-wrap: anywhere; }
-.iam-permission-workspace__resource-code { max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.iam-permission-workspace__resource-state { display: inline-flex; align-items: center; gap: var(--mom-space-1); color: var(--mom-color-success); font-size: var(--mom-font-size-xs); white-space: nowrap; }
+.iam-permission-workspace__resource-code { grid-area: code; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iam-permission-workspace__resource-state { display: inline-flex; grid-area: state; align-items: center; gap: var(--mom-space-1); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); white-space: nowrap; }
 .iam-permission-workspace__resource-state--disabled { color: var(--mom-color-text-muted); }
 .iam-permission-workspace__rail-footer { padding-top: var(--mom-space-2); border-top: 1px solid var(--mom-color-border); }
 .iam-permission-workspace__rail-footer > div { display: flex; gap: var(--mom-space-1); }

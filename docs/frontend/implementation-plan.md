@@ -150,6 +150,22 @@ Web-P1 已完成，但不等于 IAM 完成。当前只提供真实可复用的�
 
 该收口允许后续 MDM Slice 复用基础设施，但不预先决定 MDM 领域模型、页面范围或 API 语义。
 
+### Foundation V1 最终收口与 API 契约统一
+
+状态：**执行中（2026-10-12）**。本轮不改变 ADR-003，不新增生产依赖、业务页面或后端业务接口。
+
+| Phase | 修改范围 | 必要性 | 验收条件 |
+|---|---|---|---|
+| 0. 基线审查 | Web 规则、API/布局/IAM 代码；Gateway 路由；Auth/System/MDM Controller 只读核对 | 区分真实缺口与历史文档，避免重复建设 | 形成三层路径矩阵、UI 问题证据和只读边界内风险清单 |
+| 1. API 契约 | `src/shared/api/config.ts`、`vite.config.ts`、Gateway `application.yml` 及定向测试 | 消除浏览器 `/api` 与 Gateway 模块路径混用，并修复 MDM 内部前缀 | Browser `/api/{module}`；开发代理仅去掉首个 `/api`；Auth/System StripPrefix=1；MDM 保留 `/mdm` 并在转发时补 `/api` |
+| 2. 账户入口 | `MainLayout.vue`、布局样式、组件测试 | 顶栏空间拥挤且“在线”状态具有误导性 | 复用 Reka Dropdown，提供账户、改密、退出；Esc/键盘/焦点由底层语义保障；移除无健康探测依据的在线文案 |
+| 3. 权限资源目录 | `PermissionResourcePage.vue`、页面样式、行为测试 | 平铺目录在多 Domain 下识别成本高 | 服务端 Domain 过滤；仅对当前页结果分组；名称/Code/状态形成明确层级；分页和选中项语义保持 |
+| 4. UI 一致性 | 本轮受影响组件及现有 Token | 保证新增结构不形成第二套样式 | 亮暗/系统主题、中英文、1024–1920px、Focus/Hover/Disabled 均使用现有 Token 和组件 |
+| 5. 质量验证 | 前端定向测试与 `pnpm verify`；Gateway 定向测试/编译；浏览器检查 | 防止 `/api` 前缀和交互行为回归 | 自动化命令有真实结果；无法执行的真实联调和浏览器项明确标记 |
+| 6. 文档收口 | 现有 API、Gateway、前端架构/Design System、Foundation 报告 | 让路径、组件和验收结论与代码一致 | 明确 Browser、Gateway、Controller 三层路径；记录已完成、未验证与阻塞风险 |
+
+实现顺序遵循测试驱动：先补会失败的契约/行为测试，再做最小实现；出现实际故障时按系统化调试定位根因。用户已要求连续执行，因此本计划不设置逐项确认、Worktree、提交或分支收口步骤。
+
 ## 4. Web-P2：IAM
 
 ### P2-S01：登录与认证闭环

@@ -18,4 +18,8 @@ describe('API path contract', () => {
     expect(() => resolveApiUrl(path)).toThrow(TypeError);
     expect(() => apiPath('auth', path)).toThrow(TypeError);
   });
+
+  it.each(['/api', '/api/auth/login'])('拒绝把浏览器 /api 前缀作为模块内部路径重复传入：%s', (path) => {
+    expect(() => apiPath('auth', path)).toThrow(TypeError);
+  });
 });

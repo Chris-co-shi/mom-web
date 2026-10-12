@@ -227,7 +227,6 @@
 }
 
 .app-header__leading,
-.app-header__status,
 .app-header__trailing {
   display: flex;
   align-items: center;
@@ -247,50 +246,65 @@
   font-weight: 600;
 }
 
-.app-header__eyebrow,
-.app-header__status {
+.app-header__eyebrow {
   color: var(--mom-color-text-muted);
   font-family: var(--mom-font-family-mono);
   font-size: 9px;
   letter-spacing: 0.1em;
 }
 
-.app-header__status {
+.app-header__trailing {
   gap: var(--mom-space-3);
 }
 
-.app-header__trailing {
-  gap: var(--mom-space-4);
-}
-
-.app-current-identity {
-  display: grid;
-  max-width: 172px;
-  gap: 1px;
-  padding: 4px 10px;
+.app-account-menu__trigger.mom-ui-button {
+  display: inline-flex;
+  max-width: 208px;
+  min-height: 38px;
+  align-items: center;
+  gap: var(--mom-space-2);
+  padding: 3px 8px 3px 4px;
   border: 1px solid var(--mom-color-border);
   border-radius: var(--mom-radius-round);
-  background: color-mix(in srgb, var(--mom-color-brand) 5%, var(--mom-color-bg-surface));
+  color: var(--mom-color-text-secondary);
+  background: var(--mom-color-bg-surface);
 }
 
-.app-current-identity small,
-.app-current-identity strong {
+.app-account-menu__trigger.mom-ui-button:hover:not(:disabled),
+.app-account-menu__trigger.mom-ui-button[data-state='open'] {
+  border-color: var(--mom-color-brand);
+  color: var(--mom-color-text-primary);
+  background: color-mix(in srgb, var(--mom-color-brand) 7%, var(--mom-color-bg-surface));
+}
+
+.app-account-menu__avatar {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--mom-color-text-inverse);
+  background: var(--mom-color-brand);
+  font-family: var(--mom-font-family-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.app-account-menu__name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.app-current-identity small {
-  color: var(--mom-color-text-muted);
-  font-size: 9px;
-}
-
-.app-current-identity strong {
-  color: var(--mom-color-text-secondary);
-  font-family: var(--mom-font-family-mono);
-  font-size: 10px;
-  font-weight: 600;
-}
+.app-account-menu__chevron { flex: 0 0 auto; color: var(--mom-color-text-muted); }
+.app-account-menu__content { width: min(260px, calc(100vw - 24px)); }
+.app-account-menu__label { display: grid; gap: 2px; padding: var(--mom-space-2); }
+.app-account-menu__label small { color: var(--mom-color-text-muted); font-size: var(--mom-font-size-xs); font-weight: 500; }
+.app-account-menu__label strong { overflow: hidden; color: var(--mom-color-text-primary); text-overflow: ellipsis; white-space: nowrap; }
+.app-account-menu__item { width: 100%; color: inherit; text-decoration: none; }
 
 .app-icon-button {
   display: grid;
@@ -307,28 +321,6 @@
 .app-icon-button:hover {
   color: var(--mom-color-brand);
   border-color: var(--mom-color-border-strong);
-}
-
-.app-session-button {
-  min-height: 34px;
-  padding: 0 14px;
-  border: 1px solid var(--mom-color-border);
-  border-radius: var(--mom-radius-round);
-  color: var(--mom-color-text-secondary);
-  background: var(--mom-color-bg-surface);
-  cursor: pointer;
-  transition: color var(--mom-motion-fast), border-color var(--mom-motion-fast), background var(--mom-motion-fast);
-}
-
-.app-session-button:hover:not(:disabled) {
-  color: var(--mom-color-brand);
-  border-color: var(--mom-color-brand);
-  background: color-mix(in srgb, var(--mom-color-brand) 7%, var(--mom-color-bg-surface));
-}
-
-.app-session-button:disabled {
-  cursor: wait;
-  opacity: 0.64;
 }
 
 .app-header__divider {

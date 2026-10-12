@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import { Blocks, BookOpenText, Languages, KeyRound, LayoutDashboard, ListTree, PanelLeftClose, PanelLeftOpen, ShieldCheck, UsersRound } from '@lucide/vue';
 import { hasAuthorities } from '../modules/auth/model/auth-permissions';
 import { logout, useAuthSession } from '../modules/auth/model/auth-session';
+import AccountMenu from '../modules/auth/components/AccountMenu.vue';
 import { mainNavigation } from '../router/route-registry';
 import { ROUTE_NAMES, type MomRouteName } from '../router/route-names';
 import LocaleSwitcher from '../shared/i18n/LocaleSwitcher.vue';
@@ -86,10 +87,9 @@ async function handleLogout(): Promise<void> {
       </template>
 
       <div class="app-sidebar__footer">
-        <span class="app-status-dot" aria-hidden="true"></span>
         <span class="app-sidebar__footer-copy">
           <strong>FOUNDATION</strong>
-          <small>LOCAL · READY</small>
+          <small>PC WEB</small>
         </span>
       </div>
     </aside>
@@ -116,20 +116,16 @@ async function handleLogout(): Promise<void> {
         </div>
 
         <div class="app-header__trailing">
-          <div class="app-header__status" :aria-label="t('shell.currentRuntime')">
-            <span class="app-status-dot" aria-hidden="true"></span>
-            <span>{{ t('shell.routerOnline') }}</span>
-          </div>
-          <span class="app-header__divider" aria-hidden="true"></span>
           <LocaleSwitcher />
           <ThemeSwitcher />
-          <RouterLink class="app-current-identity" :to="{ name: ROUTE_NAMES.account }" :title="t('navigation.account')">
-            <small>{{ t('navigation.account') }}</small>
-            <strong>{{ accountName }}</strong>
-          </RouterLink>
-          <MomButton class="app-session-button" variant="outline" :disabled="loggingOut" @click="handleLogout">
-            {{ loggingOut ? t('auth.logout.submitting') : t('auth.logout.action') }}
-          </MomButton>
+          <AccountMenu
+            :account-name="accountName"
+            :account-label="t('navigation.account')"
+            :password-label="t('account.password')"
+            :logout-label="t(loggingOut ? 'auth.logout.submitting' : 'auth.logout.action')"
+            :disabled="loggingOut"
+            @logout="handleLogout"
+          />
         </div>
       </header>
 

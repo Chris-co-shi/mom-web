@@ -99,7 +99,7 @@ describe('locale service', () => {
     const foundation = shell.children!.find((route) => route.name === ROUTE_NAMES.foundationOverview)!;
     await ensureNamespaces([...(shell.meta?.i18nNamespaces ?? []), ...(foundation.meta?.i18nNamespaces ?? [])]);
 
-    expect(shell.meta?.i18nNamespaces).toEqual(['system.web', 'system.navigation', 'auth.navigation']);
+    expect(shell.meta?.i18nNamespaces).toEqual(['system.web', 'system.navigation', 'auth.navigation', 'auth.account']);
     expect(translate('navigation.iam')).toBe('身份与访问');
     expect(mainNavigation.filter((item) => item.group === 'iam').map((item) => translate(item.titleKey)))
       .toEqual(['用户管理', '角色管理', '权限管理']);
@@ -120,7 +120,7 @@ describe('locale service', () => {
     await ensureNamespaces([...(shell.meta?.i18nNamespaces ?? []), ...(iam.meta?.i18nNamespaces ?? [])]);
     await ensureNamespaces([...(shell.meta?.i18nNamespaces ?? []), ...(iam.meta?.i18nNamespaces ?? [])]);
     expect(bundle.mock.calls.filter(([, , namespaces]) => namespaces.includes('auth.iam'))).toHaveLength(1);
-    expect(useLocaleStore().loadedNamespaces['zh-CN']).not.toContain('auth.account');
+    expect(useLocaleStore().loadedNamespaces['zh-CN']).toContain('auth.account');
     await ensureNamespaces([...(shell.meta?.i18nNamespaces ?? []), ...(account.meta?.i18nNamespaces ?? [])]);
     expect(bundle.mock.calls.filter(([, , namespaces]) => namespaces.includes('auth.account'))).toHaveLength(1);
   });

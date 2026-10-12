@@ -16,6 +16,9 @@ describe('MDM 路由/授权入口', () => {
     });
   });
   it.each([
+    ['mdmUom', 'mdm/uom', 'mdm:uom:read'],
+    ['mdmCategories', 'mdm/material-categories', 'mdm:material:read'],
+    ['mdmMaterials', 'mdm/materials', 'mdm:material:read'],
     ['mdmWorkshops', 'mdm/workshops', 'mdm:factory:read'],
     ['mdmProductionLines', 'mdm/production-lines', 'mdm:factory:read'],
     ['mdmWorkstations', 'mdm/workstations', 'mdm:factory:read'],

@@ -264,7 +264,7 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
                   {label:t('mdm.struct.disabled'),value:'DISABLED'}]" />
               </label>
             </template>
-            <p v-else class="mdm-plants__warning">{{ t('mdm.material.cascadeWarning') }}</p>
+            <p v-else class="mdm-plants__warning">{{ t(target?.status === 'ENABLED' ? 'mdm.material.cascadeWarning' : 'mdm.struct.statusHint') }}</p>
             <p v-if="formError" class="mdm-plants__field-error" role="alert">{{ formError }}</p>
             <div class="mdm-plants__footer">
               <MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>

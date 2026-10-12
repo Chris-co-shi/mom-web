@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Blocks, BookOpenText, Languages, KeyRound, LayoutDashboard, ListTree, PanelLeftClose, PanelLeftOpen, ShieldCheck, UsersRound } from '@lucide/vue';
+import { Factory, Blocks, BookOpenText, Languages, KeyRound, LayoutDashboard, ListTree, PanelLeftClose, PanelLeftOpen, ShieldCheck, UsersRound } from '@lucide/vue';
 import { hasAuthorities } from '../modules/auth/model/auth-permissions';
 import { logout, useAuthSession } from '../modules/auth/model/auth-session';
 import AccountMenu from '../modules/auth/components/AccountMenu.vue';
@@ -21,6 +21,7 @@ const { t } = useLocale();
 const { user, authorities } = useAuthSession();
 const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('navigation.currentUser'));
 const navigationIcons = {
+  [ROUTE_NAMES.mdmPlants]: Factory,
   [ROUTE_NAMES.iamUsers]: UsersRound,
   [ROUTE_NAMES.iamRoles]: ShieldCheck,
   [ROUTE_NAMES.iamPermissions]: KeyRound,
@@ -38,6 +39,7 @@ const visibleNavigation = computed(() => {
 });
 const navigationGroups = computed(() => [
   { id: 'iam', title: t('navigation.iam'), items: visibleNavigation.value.filter((item) => item.group === 'iam') },
+  { id: 'mdm', title: t('navigation.mdm'), items: visibleNavigation.value.filter((item) => item.group === 'mdm') },
   { id: 'system', title: t('system.navigation'), items: visibleNavigation.value.filter((item) => item.group === 'system') },
   { id: 'foundation', title: t('shell.foundationGroup'), items: visibleNavigation.value.filter((item) => item.group === 'foundation') },
 ].filter((group) => group.items.length > 0));

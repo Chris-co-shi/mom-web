@@ -3,10 +3,8 @@ import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 
-/** 开发代理只移除浏览器契约最前面的 `/api`，其余路径、查询参数和请求属性由代理原样转发。 */
-export function rewriteBrowserApiPath(path: string): string {
-  return path.replace(/^\/api(?=\/|$)/, '');
-}
+/** 浏览器到 Gateway 的稳定前缀；代理原样转发路径，禁止注入或移除 /api。 */
+export const browserGatewayContexts = ['/auth', '/system', '/mdm'] as const;
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'MOM_');
@@ -18,13 +16,10 @@ export default defineConfig(({ mode }) => {
     server: {
       host: 'localhost',
       strictPort: true,
-      proxy: {
-        '/api': {
-          // 浏览器统一使用 /api/{module}，Gateway 只接收 /{module}。
-          rewrite: rewriteBrowserApiPath,
-          target: gatewayTarget,
-        },
-      },
+      proxy: Object.fromEntries(browserGatewayContexts.map((prefix) => [
+        prefix,
+        { target: gatewayTarget },
+      ])),,
     },
   };
 });

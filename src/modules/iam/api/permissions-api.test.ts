@@ -12,13 +12,13 @@ describe('权限 API 契约', () => {
 
   it('分页向服务端发送域、资源、关键字和状态筛选', async () => {
     await permissions.searchPermissions(2, 20, undefined, { domainCode: 'AUTH', resourceId: '88', keyword: 'users', enabled: true });
-    expect(fetchMock.mock.calls[0]![0]).toBe('/api/auth/permissions/search');
+    expect(fetchMock.mock.calls[0]![0]).toBe('/auth/permissions/search');
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ params: { domainCode: 'AUTH', resourceId: '88', keyword: 'users', enabled: true }, pageNo: 2, pageSize: 20 });
   });
 
   it('技术 ID 按字符串编码，读取通过统一认证请求层', async () => {
     await permissions.getPermission('2106626945701810177/a', new AbortController().signal);
-    expect(fetchMock.mock.calls[0]![0]).toBe('/api/auth/permissions/2106626945701810177%2Fa');
+    expect(fetchMock.mock.calls[0]![0]).toBe('/auth/permissions/2106626945701810177%2Fa');
     expect(new Headers(fetchMock.mock.calls[0]![1].headers).get('Authorization')).toBe('Bearer test-token');
   });
 
@@ -27,7 +27,7 @@ describe('权限 API 契约', () => {
     await permissions.updatePermission('123', { name: 'New', description: 'note', enabled: true, version: 2 });
     await permissions.setPermissionEnabled('123', false, 3);
     await permissions.setPermissionEnabled('123', true, 4);
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/api/auth/permissions', '/api/auth/permissions/123', '/api/auth/permissions/123/disable', '/api/auth/permissions/123/enable']);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/permissions', '/auth/permissions/123', '/auth/permissions/123/disable', '/auth/permissions/123/enable']);
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ resourceId: '88', actionCode: 'READ', name: 'Operator', description: null, enabled: true });
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ name: 'New', description: 'note', enabled: true, version: 2 });
     expect(JSON.parse(fetchMock.mock.calls[2]![1].body)).toEqual({ version: 3 });

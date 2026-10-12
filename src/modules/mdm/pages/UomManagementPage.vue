@@ -73,8 +73,13 @@ const columns = computed<MomColumn[]>(() => [
   { key: 'actions', title: t('mdm.struct.actions'), width: 280, fixed: 'right', resizable: false },
 ]);
 const decimal = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?$/;
-const decimalsValid = (a: string, b: string): boolean =>
-  decimal.test(a.trim()) && decimal.test(b.trim()) && Number(a) > 0 && Number.isFinite(Number(a)) && Number.isFinite(Number(b));
+/** 十进制校验不经过 Number，避免把很大/很小但合法的 BigDecimal 拒绝或舍入。 */
+const decimalsValid = (a: string, b: string): boolean => {
+  const multiplier = a.trim();
+  const mantissa = multiplier.split(/[Ee]/)[0] ?? '';
+  return decimal.test(multiplier) && !multiplier.startsWith('-') && /[1-9]/.test(mantissa)
+    && decimal.test(b.trim());
+};
 const precisionValid = (raw: string): boolean =>
   /^\d+$/.test(raw.trim()) && Number(raw) >= 1 && Number(raw) <= 34;
 const options = (data: UomRow[], empty = false) => [
@@ -251,7 +256,7 @@ async function loadRule(row: UomRow, nextPage = 1): Promise<void> {
     ruleRows.value = history.records;
     rulePage.value = history.pageNo; ruleTotal.value = history.total;
     Object.assign(ruleForm, {
-      multiplier: String(current.multiplier), offset: String(current.offset),
+      multiplier: '', offset: '', // 强制手动输入精确 decimal，避免浏览器解析 JSON Number 时丢失 BigDecimal 精度
       calculationPrecision: String(current.calculationPrecision), roundingMode: current.roundingMode,
     });
   } catch (error) { if (!disposed) ruleError.value = errorText(error); }

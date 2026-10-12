@@ -19,13 +19,13 @@ import {
   createCatalog, getCatalog, searchCatalog, setCatalogEnabled, updateCatalog,
   type CatalogKind, type CreateCatalogRequest, type MasterRow,
 } from '../api/catalog-api';
-import { structureCatalogs } from '../model/structure-catalogs';
+import { structureCatalogs, type StructureCatalog } from '../model/structure-catalogs';
 import './mdm-pages.css';
 
 const props = defineProps<{ kind: Exclude<CatalogKind, 'plants'> }>();
 const route = useRoute();
 const { t, locale } = useLocale();
-const meta = computed(() => structureCatalogs[props.kind]);
+const meta = computed<StructureCatalog>(() => structureCatalogs[props.kind]);
 const rows = ref<MasterRow[]>([]);
 const pageNo = ref(1);
 const pageSize = ref(20);

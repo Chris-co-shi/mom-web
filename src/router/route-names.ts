@@ -1,6 +1,8 @@
 export const ROUTE_NAMES = {
   mdmPlants: 'mdm-plants',
   mdmUom: 'mdm-uom',
+  mdmCategories: 'mdm-categories',
+  mdmMaterials: 'mdm-materials',
   mdmWorkshops: 'mdm-workshops',
   mdmProductionLines: 'mdm-production-lines',
   mdmWorkstations: 'mdm-workstations',

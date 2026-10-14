@@ -68,7 +68,7 @@ export function updateCatalog(kind: CatalogKind, id: string, request: { name: st
 
 export function setCatalogEnabled(kind: CatalogKind, id: string, enabled: boolean, version: number): Promise<MasterRow> {
   return httpClient.result({
-    path: endpoint(kind, id, enabled ? '/enable' : '/disable'),
+    path: apiPath('mdm', `/${kind}/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`),
     method: 'PATCH', body: { version },
   });
 }

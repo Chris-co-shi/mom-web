@@ -60,7 +60,7 @@ export const i18nManagementApi = {
     }),
   duplicateMessageKeys: (owner: I18nOwner, messageId: string, localeCode: string, messageText: string) =>
     httpClient.result<string[]>({
-      path: path(owner, `/${encodeURIComponent(messageId)}/translations/${encodeURIComponent(localeCode)}/duplicate-check`),
+      path: path(owner, `/duplicate-check/${encodeURIComponent(messageId)}/${encodeURIComponent(localeCode)}`),
       method: 'POST',
       body: { messageText },
     }),

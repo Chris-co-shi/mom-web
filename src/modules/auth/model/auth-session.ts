@@ -135,7 +135,7 @@ export function getAuthorities(): readonly string[] {
 }
 
 /**
- * 使用真实 `/auth/me` 校验并补全当前标签页会话。
+ * 使用真实 `/auth/users/me` 校验并补全当前标签页会话。
  * 同一时刻只发送一次请求；临时网络故障保留 Token，401 则由统一请求层清除会话。
  */
 export function synchronizeAuthSession(force = false): Promise<void> {

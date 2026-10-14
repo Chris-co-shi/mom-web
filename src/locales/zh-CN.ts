@@ -545,6 +545,7 @@ export type MessageKey =
   | 'iam.roles.updatedAt'
   | 'iam.roles.version'
   | 'iam.users.actions'
+  | 'iam.users.assignRoles'
   | 'iam.users.cancel'
   | 'iam.users.close'
   | 'iam.users.comfortable'
@@ -595,6 +596,11 @@ export type MessageKey =
   | 'iam.users.referenced'
   | 'iam.users.refresh'
   | 'iam.users.reloadDetail'
+  | 'iam.users.roleAssignment'
+  | 'iam.users.roleDisabledHint'
+  | 'iam.users.roleAssignmentHint'
+  | 'iam.users.roleSelectionCount'
+  | 'iam.users.noRoles'
   | 'iam.users.resetPassword'
   | 'iam.users.retry'
   | 'iam.users.saved'
@@ -724,8 +730,6 @@ export type MessageKey =
   | 'system.messages.keyAlreadyExists'
   | 'system.messages.duplicateTextWarning'
   | 'system.messages.continueSave'
-  | 'system.messages.namespace'
-  | 'system.messages.namespaceHint'
   | 'system.messages.owner'
   | 'system.messages.noLocales'
   | 'system.messages.placeholdersMismatch'
@@ -809,6 +813,7 @@ export const messageParameterOrder: Readonly<Record<string, readonly string[]>> 
   'iam.roles.statusToggleLabel': ['code'],
   'iam.roles.total': ['total', 'visible'],
   'iam.users.pageSummary': ['current', 'pages'],
+  'iam.users.roleSelectionCount': ['count'],
   'iam.users.statusToggleLabel': ['action', 'username'],
   'iam.users.total': ['total', 'visible'],
   'system.common.count': ['total', 'visible'],

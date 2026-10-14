@@ -8,9 +8,9 @@ export const i18nOwners: ReadonlyArray<{
   writeAuthority: string;
   managementPath: string;
 }> = [
-  { owner: 'system', label: 'System', readAuthority: 'system:i18n:read', writeAuthority: 'system:i18n:write', managementPath: '/admin/i18n/messages' },
-  { owner: 'auth', label: 'Auth', readAuthority: 'auth:i18n:read', writeAuthority: 'auth:i18n:write', managementPath: '/admin/i18n/messages' },
-  { owner: 'mdm', label: 'MDM', readAuthority: 'mdm:i18n:read', writeAuthority: 'mdm:i18n:write', managementPath: '/admin/i18n/messages' },
+  { owner: 'system', label: 'System', readAuthority: 'system:i18n:read', writeAuthority: 'system:i18n:write', managementPath: '/i18n/messages' },
+  { owner: 'auth', label: 'Auth', readAuthority: 'auth:i18n:read', writeAuthority: 'auth:i18n:write', managementPath: '/i18n/messages' },
+  { owner: 'mdm', label: 'MDM', readAuthority: 'mdm:i18n:read', writeAuthority: 'mdm:i18n:write', managementPath: '/i18n/messages' },
 ];
 
 export function i18nOwner(owner: I18nOwner) {

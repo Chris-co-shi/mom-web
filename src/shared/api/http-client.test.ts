@@ -19,13 +19,11 @@ describe('httpClient', () => {
     setHttpUnauthorizedHandler(() => undefined);
   });
 
-  it.each(['auth', 'system', 'mdm'] as const)('国际化目录按 %s 服务查询且兼容精确 namespace', async owner => {
+  it.each(['auth', 'system', 'mdm'] as const)('国际化目录按 %s Owner 查询且不携带 namespace', async owner => {
     const fetchMock = vi.fn().mockImplementation(async () => jsonResponse({ code: '0', message: 'success', data: [] }));
     vi.stubGlobal('fetch', fetchMock);
     await i18nManagementApi.listMessages(owner);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(`/${owner}/admin/i18n/messages`);
-    await i18nManagementApi.listMessages(owner, `${owner}.web`);
-    expect(fetchMock.mock.calls[1]?.[0]).toBe(`/${owner}/admin/i18n/messages?namespace=${owner}.web`);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(`/${owner}/i18n/messages`);
   });
 
   it('拆包 Result<T> 并附加协议 Header', async () => {

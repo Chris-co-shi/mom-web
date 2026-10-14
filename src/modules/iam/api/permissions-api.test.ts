@@ -27,7 +27,7 @@ describe('权限 API 契约', () => {
     await permissions.updatePermission('123', { name: 'New', description: 'note', enabled: true, version: 2 });
     await permissions.setPermissionEnabled('123', false, 3);
     await permissions.setPermissionEnabled('123', true, 4);
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/permissions', '/auth/permissions/123', '/auth/permissions/123/disable', '/auth/permissions/123/enable']);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/permissions', '/auth/permissions/123', '/auth/permissions/disable/123', '/auth/permissions/enable/123']);
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ resourceId: '88', actionCode: 'READ', name: 'Operator', description: null, enabled: true });
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ name: 'New', description: 'note', enabled: true, version: 2 });
     expect(JSON.parse(fetchMock.mock.calls[2]![1].body)).toEqual({ version: 3 });

@@ -38,18 +38,18 @@ export interface ChangeOwnPasswordRequest {
 
 /** 自助接口不接收目标用户 ID，也不复用管理员重置接口。 */
 export function updateOwnProfile(request: UpdateOwnProfileRequest): Promise<CurrentSessionResponse> {
-  return httpClient.result({ path: apiPath('auth', '/me/profile'), method: 'PUT', body: request });
+  return httpClient.result({ path: apiPath('auth', '/users/me/profile'), method: 'PUT', body: request });
 }
 
 /** 原密码不做规范化；统一请求层不自动重试写入。 */
 export function changeOwnPassword(request: ChangeOwnPasswordRequest): Promise<CurrentSessionResponse> {
-  return httpClient.result({ path: apiPath('auth', '/me/password'), method: 'PUT', body: request });
+  return httpClient.result({ path: apiPath('auth', '/users/change-password/me'), method: 'PUT', body: request });
 }
 
 /** 通过 Gateway 调用 Mini Auth V1 登录端点。 */
 export function login(request: LoginRequest): Promise<LoginResponse> {
   return httpClient.result<LoginResponse>({
-    path: apiPath('auth', '/login'),
+    path: apiPath('auth', '/sessions/login'),
     method: 'POST',
     body: request,
   });
@@ -58,7 +58,7 @@ export function login(request: LoginRequest): Promise<LoginResponse> {
 /** 读取 Resource Server 已验证的当前 Opaque Token 权限快照。 */
 export function getCurrentSession(): Promise<CurrentSessionResponse> {
   return httpClient.result<CurrentSessionResponse>({
-    path: apiPath('auth', '/me'),
+    path: apiPath('auth', '/users/me'),
     method: 'GET',
   });
 }
@@ -66,7 +66,7 @@ export function getCurrentSession(): Promise<CurrentSessionResponse> {
 /** 注销当前已经通过 Resource Server 验证的 Opaque Token。 */
 export function logout(): Promise<void> {
   return httpClient.result<void>({
-    path: apiPath('auth', '/logout'),
+    path: apiPath('auth', '/sessions/logout'),
     method: 'POST',
   });
 }

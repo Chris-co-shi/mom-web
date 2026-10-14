@@ -54,7 +54,7 @@ export function updateMaterialCategory(id: string, request: UpdateMaterialCatego
   return httpClient.result({ path: categoryPath(id), method: 'PUT', body: request });
 }
 export function setMaterialCategoryEnabled(id: string, enabled: boolean, version: number): Promise<MaterialCategory> {
-  return httpClient.result({ path: categoryPath(id, enabled ? '/enable' : '/disable'),
+  return httpClient.result({ path: apiPath('mdm', `/material-categories/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`),
     method: 'PATCH', body: { version } });
 }
 export function searchMaterials(
@@ -73,6 +73,6 @@ export function updateMaterial(id: string, request: UpdateMaterialRequest): Prom
   return httpClient.result({ path: materialPath(id), method: 'PUT', body: request });
 }
 export function setMaterialEnabled(id: string, enabled: boolean, version: number): Promise<Material> {
-  return httpClient.result({ path: materialPath(id, enabled ? '/enable' : '/disable'),
+  return httpClient.result({ path: apiPath('mdm', `/materials/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`),
     method: 'PATCH', body: { version } });
 }

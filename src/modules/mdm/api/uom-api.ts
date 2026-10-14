@@ -65,7 +65,7 @@ export function updateUomCatalog(kind: UnitCatalogKind, id: string, name: string
   return httpClient.result({ path: path(kind, id), method: 'PUT', body: { name, version } });
 }
 export function setUomCatalogEnabled(kind: UnitCatalogKind, id: string, enabled: boolean, version: number): Promise<UomRow> {
-  return httpClient.result({ path: path(kind, id, enabled ? '/enable' : '/disable'),
+  return httpClient.result({ path: apiPath('mdm', `/${kind}/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`),
     method: 'PATCH', body: { version } });
 }
 export function getCurrentUomRule(uomId: string): Promise<UomRule> {

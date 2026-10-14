@@ -1,9 +1,8 @@
 import { validDisplayText } from '../../../shared/management/management-feedback';
 
-export const validNamespace = (value: string, owner = 'system'): boolean =>
-  value.length <= 128 && /^(?:system|auth|mdm)(?:\.[a-z][a-z0-9-]*)*$/.test(value)
-  && (value === owner || value.startsWith(`${owner}.`));
-export const validMessageKey = (value: string): boolean => value.length <= 160 && /^[a-zA-Z][a-zA-Z0-9]*(?:[._-][a-zA-Z0-9]+)*$/.test(value);
+export const normalizeMessageKey = (value: string): string => value.toLowerCase();
+export const validMessageKey = (value: string): boolean => value.length <= 160 && !/\s/.test(value)
+  && /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/.test(normalizeMessageKey(value));
 
 /** 与后端纯文本、数字占位符限制一致；跨 Locale 一致性仍由后端最终裁决。 */
 export function validMessageText(value: string): boolean {

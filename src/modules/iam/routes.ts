@@ -8,7 +8,7 @@ export const iamRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/UserManagementPage.vue'),
     meta: {
       title: '用户管理', titleKey: 'navigation.users', module: 'iam', requiresAuth: true,
-      permissions: ['auth:user:read'], i18nNamespaces: ['auth.iam'], navigationGroup: 'iam', navigationOrder: 10,
+      permissions: ['auth:user:read'], i18nOwners: ['auth'], navigationGroup: 'iam', navigationOrder: 10,
     },
   },
   {
@@ -17,7 +17,7 @@ export const iamRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/RoleManagementPage.vue'),
     meta: {
       title: '角色管理', titleKey: 'navigation.roles', module: 'iam', requiresAuth: true,
-      permissions: ['auth:role:read'], i18nNamespaces: ['auth.iam'], navigationGroup: 'iam', navigationOrder: 20,
+      permissions: ['auth:role:read'], i18nOwners: ['auth'], navigationGroup: 'iam', navigationOrder: 20,
     },
   },
   {
@@ -26,7 +26,7 @@ export const iamRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/PermissionResourcePage.vue'),
     meta: {
       title: '权限管理', titleKey: 'navigation.permissions', module: 'iam', requiresAuth: true,
-      permissions: ['auth:permission:read'], i18nNamespaces: ['auth.iam'], navigationGroup: 'iam', navigationOrder: 30,
+      permissions: ['auth:permission:read'], i18nOwners: ['auth'], navigationGroup: 'iam', navigationOrder: 30,
     },
   },
   {
@@ -35,7 +35,7 @@ export const iamRoutes: RouteRecordRaw[] = [
     redirect: { name: ROUTE_NAMES.iamPermissions },
     meta: {
       title: '权限管理', titleKey: 'navigation.permissions', module: 'iam', requiresAuth: true,
-      permissions: ['auth:permission:read'], i18nNamespaces: ['auth.iam'], hideInMenu: true,
+      permissions: ['auth:permission:read'], i18nOwners: ['auth'], hideInMenu: true,
     },
   },
 ];

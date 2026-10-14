@@ -1,5 +1,15 @@
 /** Web 仅保留稳定 Key 契约；展示文本由 System/Auth 数据库管理。 */
 export type MessageKey =
+  | 'mdm.struct.back'
+  | 'mdm.material.allCategories'
+  | 'iam.grants.queryResources'
+  | 'iam.grants.changed'
+  | 'iam.grants.backDirectory'
+  | 'iam.grants.allResources'
+  | 'iam.grants.discardTitle'
+  | 'iam.grants.discardHint'
+  | 'iam.grants.discard'
+  | 'system.common.backDirectory'
   | 'navigation.mdmCategories'
   | 'navigation.mdmMaterials'
   | 'mdm.material.categories'
@@ -710,6 +720,10 @@ export type MessageKey =
   | 'system.messages.editTranslation'
   | 'system.messages.key'
   | 'system.messages.keyHint'
+  | 'system.messages.keyInvalid'
+  | 'system.messages.keyAlreadyExists'
+  | 'system.messages.duplicateTextWarning'
+  | 'system.messages.continueSave'
   | 'system.messages.namespace'
   | 'system.messages.namespaceHint'
   | 'system.messages.owner'
@@ -799,5 +813,6 @@ export const messageParameterOrder: Readonly<Record<string, readonly string[]>> 
   'iam.users.total': ['total', 'visible'],
   'system.common.count': ['total', 'visible'],
   'system.common.page': ['current', 'pages'],
+  'system.messages.duplicateTextWarning': ['keys'],
   'system.messages.textHint': ['exampleZero', 'exampleOne'],
 };

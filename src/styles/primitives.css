@@ -52,9 +52,9 @@
   --mom-ref-size-16: 64px;
 
   --mom-ref-radius-1: 4px;
-  --mom-ref-radius-2: 8px;
-  --mom-ref-radius-3: 12px;
-  --mom-ref-radius-4: 16px;
+  --mom-ref-radius-2: 12px;
+  --mom-ref-radius-3: 20px;
+  --mom-ref-radius-4: 24px;
   --mom-ref-radius-round: 999px;
 
   --mom-ref-motion-fast: 120ms;

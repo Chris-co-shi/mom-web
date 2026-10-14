@@ -15,7 +15,7 @@ export interface SupportedLocaleInfo {
 export interface RuntimeBundle {
   requestedLocale: string;
   effectiveLocale: string;
-  bundles: Record<string, Record<string, string>>;
+  messages: Record<string, string>;
 }
 
 const runtimePath: Readonly<Record<I18nOwner, string>> = {
@@ -27,10 +27,10 @@ const runtimePath: Readonly<Record<I18nOwner, string>> = {
 /** 各 Owner 只暴露自己的 Runtime，System 只提供可选语言目录。 */
 export const i18nRuntimeApi = {
   locales: () => httpClient.result<SupportedLocaleInfo[]>({ path: apiPath('system', '/i18n/locales') }),
-  bundle: (owner: I18nOwner, locale: string, namespaces: readonly string[]) =>
+  bundle: (owner: I18nOwner, locale: string) =>
     httpClient.result<RuntimeBundle>({
       path: apiPath(owner, `${runtimePath[owner]}/bundles`),
-      query: { locale, namespaces: namespaces.join(',') },
+      query: { locale },
     }),
   eventUrl: (owner: I18nOwner) => resolveApiUrl(apiPath(owner, `${runtimePath[owner]}/events`)),
 };

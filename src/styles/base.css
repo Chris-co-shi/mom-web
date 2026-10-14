@@ -5,7 +5,7 @@
 html,
 body,
 #app {
-  min-width: 1024px;
+  min-width: 0;
   min-height: 100%;
 }
 

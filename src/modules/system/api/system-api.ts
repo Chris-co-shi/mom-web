@@ -12,20 +12,10 @@ export interface SupportedLocale {
   id: string; localeCode: string; displayName: string; nativeName: string; enabled: boolean;
   defaultLocale: boolean; sortOrder: number; version: number; updatedAt: string;
 }
-export interface SystemMessage {
-  id: string; namespace: string; messageKey: string; description: string | null;
-  enabled: boolean; version: number; updatedAt: string;
-}
-export interface SystemTranslation {
-  id: string; messageId: string; localeCode: string; messageText: string; version: number; updatedAt: string;
-}
-
 const dictionaryPath = '/admin/dictionaries';
 const localePath = '/i18n/locales/admin';
-const messagePath = '/admin/i18n/messages';
 const resource = (base: string, id: string) => apiPath('system', `${base}/${encodeURIComponent(id)}`);
 const dictionaryItemsPath = (typeId: string) => `${dictionaryPath}/${encodeURIComponent(typeId)}/items`;
-const translationPath = (messageId: string, localeCode: string) => `${messagePath}/${encodeURIComponent(messageId)}/translations/${encodeURIComponent(localeCode)}`;
 
 /** System 管理接口返回完整列表；搜索与分页只能在已加载数据上进行。写请求不自动重试。 */
 export const systemApi = {
@@ -55,14 +45,4 @@ export const systemApi = {
   makeDefaultLocale: (row: SupportedLocale) =>
     httpClient.result<SupportedLocale>({ path: `${resource(localePath, row.id)}/default`, method: 'POST', body: { version: row.version } }),
 
-  listMessages: (namespace: string, signal?: AbortSignal) =>
-    httpClient.result<SystemMessage[]>({ path: apiPath('system', messagePath), query: { namespace }, signal }),
-  createMessage: (body: { namespace: string; messageKey: string; description: string | null; enabled: boolean }) =>
-    httpClient.result<SystemMessage>({ path: apiPath('system', messagePath), method: 'POST', body }),
-  updateMessage: (row: SystemMessage, body: { description: string | null; enabled: boolean; version: number }) =>
-    httpClient.result<SystemMessage>({ path: resource(messagePath, row.id), method: 'PUT', body }),
-  listTranslations: (messageId: string, signal?: AbortSignal) =>
-    httpClient.result<SystemTranslation[]>({ path: apiPath('system', `${messagePath}/${encodeURIComponent(messageId)}/translations`), signal }),
-  saveTranslation: (messageId: string, localeCode: string, messageText: string, version: number | null) =>
-    httpClient.result<SystemTranslation>({ path: apiPath('system', translationPath(messageId, localeCode)), method: 'PUT', body: { messageText, version } }),
 };

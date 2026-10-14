@@ -13,7 +13,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
       module: 'mdm',
       requiresAuth: true,
       permissions: ['mdm:factory:read'],
-      i18nNamespaces: ['mdm.web'],
+      i18nOwners: ['mdm'],
       navigationGroup: 'mdm',
       navigationOrder: 10,
     },
@@ -24,7 +24,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'workshops' },
     meta: {
       title: 'workshops', titleKey: 'navigation.mdmWorkshops', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:factory:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 20,
     },
   },
@@ -34,7 +34,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'production-lines' },
     meta: {
       title: 'production-lines', titleKey: 'navigation.mdmProductionLines', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:factory:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 30,
     },
   },
@@ -44,7 +44,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'workstations' },
     meta: {
       title: 'workstations', titleKey: 'navigation.mdmWorkstations', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:factory:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 40,
     },
   },
@@ -54,7 +54,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'warehouses' },
     meta: {
       title: 'warehouses', titleKey: 'navigation.mdmWarehouses', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:warehouse:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:warehouse:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 50,
     },
   },
@@ -64,7 +64,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'warehouse-areas' },
     meta: {
       title: 'warehouse-areas', titleKey: 'navigation.mdmWarehouseAreas', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:warehouse:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:warehouse:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 60,
     },
   },
@@ -74,7 +74,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'location-types' },
     meta: {
       title: 'location-types', titleKey: 'navigation.mdmLocationTypes', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:location:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:location:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 70,
     },
   },
@@ -84,7 +84,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'locations' },
     meta: {
       title: 'locations', titleKey: 'navigation.mdmLocations', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:location:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:location:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 80,
     },
   },
@@ -92,7 +92,7 @@ export const mdmRoutes: RouteRecordRaw[] = [
     path: 'master-data/uom', name: ROUTE_NAMES.mdmUom,
     component: () => import('./pages/UomManagementPage.vue'),
     meta: { title: '计量单位', titleKey: 'navigation.mdmUom', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:uom:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:uom:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 90 },
   },
   {
@@ -100,13 +100,13 @@ export const mdmRoutes: RouteRecordRaw[] = [
     component: () => import('./pages/MaterialCategoryPage.vue'),
     meta: { title: '物料分类', titleKey: 'navigation.mdmCategories', module: 'mdm',
       requiresAuth: true, permissions: ['mdm:material:read'],
-      i18nNamespaces: ['mdm.web'], navigationGroup: 'mdm', navigationOrder: 100 },
+      i18nOwners: ['mdm'], navigationGroup: 'mdm', navigationOrder: 100 },
   },
   {
     path: 'master-data/materials', name: ROUTE_NAMES.mdmMaterials,
     component: () => import('./pages/MaterialManagementPage.vue'),
     meta: { title: '物料管理', titleKey: 'navigation.mdmMaterials', module: 'mdm',
       requiresAuth: true, permissions: ['mdm:material:read'],
-      i18nNamespaces: ['mdm.web'], navigationGroup: 'mdm', navigationOrder: 110 },
+      i18nOwners: ['mdm'], navigationGroup: 'mdm', navigationOrder: 110 },
   },
 ];

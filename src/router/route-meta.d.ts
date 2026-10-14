@@ -1,6 +1,7 @@
 import 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
 import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
+import type { I18nOwner } from '../shared/i18n/runtime-api';
 
 export type MomRouteModule = 'auth' | 'iam' | 'system' | 'mdm' | 'foundation' | 'shell';
 
@@ -24,8 +25,8 @@ declare module 'vue-router' {
     permissions?: readonly string[];
     /** 权限集合匹配方式；默认 all，跨 Owner 管理入口可显式使用 any。 */
     permissionMode?: AuthorityMatchMode;
-    /** 当前路由进入前必须可用的动态国际化 namespace。 */
-    i18nNamespaces?: readonly string[];
+    /** 当前路由进入前必须可用的服务 Owner 动态文案。 */
+    i18nOwners?: readonly I18nOwner[];
   }
 }
 

@@ -86,8 +86,8 @@
   --mom-motion-slow: var(--mom-ref-motion-slow) ease;
   --mom-z-content: 0;
   --mom-z-sticky: 100;
-  --mom-z-popover: 1000;
   --mom-z-overlay: 2000;
   --mom-z-modal: 2100;
+  --mom-z-popover: 2200;
   --mom-z-notification: 3000;
 }

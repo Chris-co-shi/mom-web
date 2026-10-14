@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
+import { submitWithFocus } from '../../../shared/ui/focus';
 import { MomButton as Button, MomInput as Input } from '../../../shared/ui';
 import { useRoute, useRouter } from 'vue-router';
 import { resolveLoginRedirect } from '../../../router/auth-guard';
@@ -52,6 +53,7 @@ function messageFor(error: unknown): string {
 }
 
 async function handleSubmit(): Promise<void> {
+  if (submitting.value) return;
   submitError.value = '';
   if (!validate()) return;
   submitting.value = true;
@@ -71,13 +73,9 @@ async function handleSubmit(): Promise<void> {
   <article class="auth-entry" aria-labelledby="auth-entry-title">
     <header class="auth-entry__header">
       <div class="auth-entry__heading">
-        <span class="auth-entry__index">{{ t('auth.login.eyebrow') }}</span>
         <h2 id="auth-entry-title">{{ t('auth.login.welcome') }}</h2>
         <p>{{ t('auth.login.description') }}</p>
       </div>
-      <span class="auth-entry__secure" :aria-label="t('auth.login.secureAria')">
-        <span aria-hidden="true"></span>{{ t('auth.login.secure') }}
-      </span>
     </header>
 
     <div v-if="logoutIncomplete" class="auth-entry__notice" role="status">
@@ -89,12 +87,13 @@ async function handleSubmit(): Promise<void> {
       <p>{{ submitError }}</p>
     </div>
 
-    <form class="auth-entry__form" aria-describedby="login-form-note" novalidate @submit.prevent="handleSubmit">
+    <form class="auth-entry__form" aria-describedby="login-form-note" novalidate @submit.prevent="submitWithFocus($event, handleSubmit)">
       <div class="auth-field" :class="{ 'auth-field--error': fieldErrors.username }">
         <label for="login-username">{{ t('auth.login.username') }}</label>
         <Input
           v-model="form.username"
           id="login-username"
+          :aria-invalid="!!fieldErrors.username"
           :aria-describedby="fieldErrors.username ? 'login-username-error' : undefined"
           name="username"
           autocomplete="username"
@@ -103,7 +102,7 @@ async function handleSubmit(): Promise<void> {
           size="large"
           @input="fieldErrors.username = ''"
         />
-        <span v-if="fieldErrors.username" id="login-username-error" class="auth-field__error">
+        <span v-if="fieldErrors.username" id="login-username-error" class="auth-field__error" role="alert">
           {{ fieldErrors.username }}
         </span>
       </div>
@@ -116,6 +115,7 @@ async function handleSubmit(): Promise<void> {
         <Input
           v-model="form.password"
           id="login-password"
+          :aria-invalid="!!fieldErrors.password"
           :aria-describedby="fieldErrors.password ? 'login-password-error' : undefined"
           name="password"
           type="password"
@@ -125,7 +125,7 @@ async function handleSubmit(): Promise<void> {
           size="large"
           @input="fieldErrors.password = ''"
         />
-        <span v-if="fieldErrors.password" id="login-password-error" class="auth-field__error">
+        <span v-if="fieldErrors.password" id="login-password-error" class="auth-field__error" role="alert">
           {{ fieldErrors.password }}
         </span>
       </div>

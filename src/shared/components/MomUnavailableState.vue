@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { CircleAlert, RotateCw } from '@lucide/vue';
 import { emergencyLocale, emergencyMessages } from '../i18n/emergency-messages';
 import MomButton from '../ui/MomButton.vue';
+import MomBrand from './MomBrand.vue';
 import './mom-unavailable-state.css';
 
 const props = defineProps<{
@@ -33,8 +34,7 @@ function retry(): void {
     <section class="mom-unavailable__panel" aria-labelledby="mom-unavailable-title"
       aria-describedby="mom-unavailable-description">
       <div class="mom-unavailable__brand" aria-label="MOM">
-        <span class="mom-unavailable__brand-mark" aria-hidden="true"></span>
-        <span>MOM</span>
+        <MomBrand />
       </div>
 
       <div class="mom-unavailable__status">

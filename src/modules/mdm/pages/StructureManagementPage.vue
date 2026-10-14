@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { submitWithFocus } from '../../../shared/ui/focus';
 import { computed, onMounted, onScopeDispose, reactive, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, RouterLink } from 'vue-router';
-import { Plus, RefreshCw } from '@lucide/vue';
+import { FolderTree, Plus, RefreshCw } from '@lucide/vue';
 import { AuthorityGuard, hasAuthority } from '../../auth';
 import { isApiError } from '../../../shared/api/errors';
 import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
@@ -10,6 +11,7 @@ import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomCrudSearch from '../../../shared/components/MomCrudSearch.vue';
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
+import MomCrudRowMenu from '../../../shared/components/MomCrudRowMenu.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { formatInstant } from '../../../shared/formatters';
@@ -37,8 +39,12 @@ const listError = ref<MessageKey>();
 const dialogError = ref<MessageKey>();
 const notice = ref<MessageKey>();
 const blocked = ref(false);
-const refError = ref(false);
-const referenceLoading = ref(false);
+const referencePending = reactive<Record<string, boolean>>({});
+const referenceFailures = reactive<Record<string, boolean>>({});
+const referenceVersions: Record<string, number> = {};
+const refError = computed(() => meta.value.references.some(field => referenceFailures[field.catalog]));
+const referenceLoading = computed(() => Object.values(referencePending).some(Boolean));
+const resolvedReferences = reactive<Record<string, MasterRow[]>>({});
 const references = reactive<Record<string, MasterRow[]>>({});
 const referencePages = reactive<Record<string, number>>({});
 const referenceTotals = reactive<Record<string, number>>({});
@@ -73,6 +79,9 @@ const modalTitle = computed(() => !action.value ? '' : t((
   { detail: 'mdm.struct.detail', create: 'mdm.struct.create', edit: 'mdm.struct.edit',
     status: 'mdm.struct.changeStatus' } as const
 )[action.value]));
+const activeContext = computed(() => meta.value.references
+  .filter(field => field.filterable && filters[field.field])
+  .map(field => ({ label: t(field.labelKey), value: referenceText(field.catalog, filters[field.field]) })));
 
 function errorKey(error: unknown, writing = false): MessageKey {
   if (!isApiError(error)) return writing ? 'mdm.struct.unknownWrite' : 'mdm.struct.loadFailed';
@@ -87,7 +96,7 @@ function errorKey(error: unknown, writing = false): MessageKey {
 
 function referenceText(catalog: CatalogKind, value: string | number | undefined | null): string {
   if (!value) return '—';
-  const row = references[catalog]?.find(item => item.id === value);
+  const row = [...(references[catalog] ?? []), ...(resolvedReferences[catalog] ?? [])].find(item => item.id === value);
   return row ? `${row.name} (${row.code})` : String(value);
 }
 function queryParams(): Record<string, string> {
@@ -122,26 +131,38 @@ async function loadPage(next = pageNo.value, size = pageSize.value): Promise<voi
 
 /** 仅请求首个分页；用户可按需继续加载，避免用第一页假装全量引用目录。 */
 async function loadReference(kind: CatalogKind, nextPage = 1): Promise<void> {
-  referenceLoading.value = true;
+  const current = referenceVersions[kind] = (referenceVersions[kind] ?? 0) + 1;
+  referencePending[kind] = true;
   try {
     const page = await searchCatalog(kind, nextPage, 50);
-    if (disposed) return;
+    if (disposed || current !== referenceVersions[kind]) return;
     references[kind] = nextPage === 1 ? page.records : [...(references[kind] ?? []), ...page.records];
     referencePages[kind] = nextPage;
     referenceTotals[kind] = page.total;
-    refError.value = false;
+    referenceFailures[kind] = false;
   } catch {
-    refError.value = true;
+    if (current === referenceVersions[kind]) referenceFailures[kind] = true;
   } finally {
-    referenceLoading.value = false;
+    if (current === referenceVersions[kind]) referencePending[kind] = false;
   }
 }
+let contextSequence = 0;
 async function loadReferences(): Promise<void> {
+  const sequence = ++contextSequence;
+  const selected = meta.value.references.filter(field => field.filterable && filters[field.field])
+    .map(field => ({ kind: field.catalog, id: filters[field.field]! }));
   const kinds = [...new Set(meta.value.references.map(r => r.catalog))];
   await Promise.all(kinds.map(kind => loadReference(kind)));
+  await Promise.allSettled(selected.map(async ({ kind, id }) => {
+    if (references[kind]?.some(row => row.id === id)) return;
+    const row = await getCatalog(kind, id);
+    if (!disposed && sequence === contextSequence) {
+      resolvedReferences[kind] = [...(resolvedReferences[kind] ?? []).filter(item => item.id !== id), row];
+    }
+  }));
 }
 function options(kind: CatalogKind, includeEmpty: boolean): { label: string; value: string }[] {
-  const all = (references[kind] ?? []).map(item => ({
+  const all = [...new Map([...(references[kind] ?? []), ...(resolvedReferences[kind] ?? [])].map(row => [row.id, row])).values()].map(item => ({
     value: item.id, label: `${item.name} (${item.code})`,
   }));
   return includeEmpty ? [{ label: t('mdm.struct.all'), value: '' }, ...all] : all;
@@ -165,6 +186,13 @@ async function readTarget(id: string): Promise<void> {
     target.value = detail;
     Object.assign(form, { code: detail.code, name: detail.name, status: detail.status });
     blocked.value = false;
+    await Promise.allSettled(meta.value.references.map(async field => {
+      const id = detail[field.field as keyof MasterRow];
+      if (typeof id !== 'string' || !id) return;
+      const resolved = await getCatalog(field.catalog, id, detailRequest?.signal);
+      if (!disposed && seq === detailSequence) resolvedReferences[field.catalog] = [resolved];
+    }));
+    if (disposed || seq !== detailSequence) return;
   } catch (error) {
     if (!disposed && seq === detailSequence) dialogError.value = errorKey(error);
   } finally {
@@ -195,6 +223,9 @@ function close(): void {
   detailRequest?.abort();
   action.value = undefined;
   target.value = undefined;
+}
+function handleMore(key: string, row: MasterRow): void {
+  if (key === 'edit' || key === 'status') void open(key, row);
 }
 function valid(): boolean {
   if (action.value !== 'create' && action.value !== 'edit') return true;
@@ -293,6 +324,13 @@ onScopeDispose(() => {
         <p>{{ t(listError) }}</p>
         <MomButton type="button" variant="outline" :disabled="loading" @click="loadPage()">{{ t('mdm.struct.retry') }}</MomButton>
       </div>
+      <aside v-if="activeContext.length" class="mdm-context" :aria-label="t('mdm.struct.filterTitle')">
+        <FolderTree :size="18" aria-hidden="true" />
+        <div class="mdm-context__copy">
+          <span>{{ t('mdm.struct.filterTitle') }}</span>
+          <strong v-for="item in activeContext" :key="item.label">{{ item.label }} · {{ item.value }}</strong>
+        </div>
+      </aside>
       <div v-if="meta.references.some(f => f.filterable)" class="mdm-struct__filters" :aria-label="t('mdm.struct.filterTitle')">
         <label v-for="field in meta.references.filter(f => f.filterable)" :key="field.field">
           <span>{{ t(field.labelKey) }}</span>
@@ -328,16 +366,19 @@ onScopeDispose(() => {
           <template #cell-actions="{ row }">
             <div class="mom-management-row-actions">
               <MomButton type="button" mode="text" :disabled="loading || saving" @click="open('detail', row)">{{ t('mdm.struct.detail') }}</MomButton>
-              <AuthorityGuard :authorities="[`${meta.permission}:write`]">
-                <MomButton type="button" mode="text" :disabled="loading || saving" @click="open('edit', row)">{{ t('mdm.struct.edit') }}</MomButton>
-                <MomButton type="button" mode="text" :disabled="loading || saving" @click="open('status', row)">
-                  {{ t(row.status === 'ENABLED' ? 'mdm.struct.disable' : 'mdm.struct.enable') }}
-                </MomButton>
-              </AuthorityGuard>
               <RouterLink v-if="meta.childRoute" class="mdm-struct__link"
                 :to="{ name: meta.childRoute.name, query: { [meta.childRoute.queryParam]: row.id } }">
                 {{ t('mdm.struct.children') }}
               </RouterLink>
+              <AuthorityGuard :authorities="[`${meta.permission}:write`]">
+                <MomButton v-if="!meta.childRoute" type="button" mode="text" :disabled="loading || saving"
+                  @click="open('edit', row)">{{ t('mdm.struct.edit') }}</MomButton>
+                <MomCrudRowMenu :label="t('mdm.struct.actions')" :disabled="loading || saving"
+                  :actions="[
+                    ...(meta.childRoute ? [{ key: 'edit', label: t('mdm.struct.edit') }] : []),
+                    { key: 'status', label: t(row.status === 'ENABLED' ? 'mdm.struct.disable' : 'mdm.struct.enable'), danger: row.status === 'ENABLED' },
+                  ]" @select="handleMore($event, row)" />
+              </AuthorityGuard>
             </div>
           </template>
         </MomDataTable>
@@ -365,17 +406,21 @@ onScopeDispose(() => {
               <dt>{{ t(field.labelKey) }}</dt><dd>{{ referenceText(field.catalog, target[field.field]) }}</dd>
             </div>
             <div><dt>{{ t('mdm.struct.version') }}</dt><dd>{{ target.version }}</dd></div>
+            <div><dt>{{ t('mdm.struct.status') }}</dt><dd>{{ t(target.status === 'ENABLED' ? 'mdm.struct.enabled' : 'mdm.struct.disabled') }}</dd></div>
+            <div><dt>{{ t('mdm.struct.updatedAt') }}</dt><dd>{{ formatInstant(target.updatedAt, { locale }) }}</dd></div>
             <div v-if="action === 'detail'"><dt>{{ t('mdm.struct.createdAt') }}</dt><dd>{{ formatInstant(target.createdAt, { locale }) }}</dd></div>
           </dl>
-          <form v-if="action && action !== 'detail'" class="mdm-plants__form" @submit.prevent="submit">
+          <form v-if="action && action !== 'detail'" class="mdm-plants__form" @submit.prevent="submitWithFocus($event, submit)">
             <template v-if="action !== 'status'">
               <label v-if="action === 'create'">
                 <span>{{ t('mdm.struct.code') }} *</span>
-                <MomInput v-model="form.code" :max-length="64" :disabled="saving" />
+                <MomInput id="mdm-structure-code" v-model="form.code" :max-length="64" :disabled="saving"
+                  :aria-invalid="fieldError && !form.code.trim()" aria-describedby="mdm-structure-form-error" />
               </label>
               <label>
                 <span>{{ t('mdm.struct.name') }} *</span>
-                <MomInput v-model="form.name" :max-length="200" :disabled="saving || detailLoading" />
+                <MomInput id="mdm-structure-name" v-model="form.name" :max-length="200" :disabled="saving || detailLoading"
+                  :aria-invalid="fieldError && !form.name.trim()" aria-describedby="mdm-structure-form-error" />
               </label>
               <template v-if="action === 'create'">
                 <label v-for="field in meta.references" :key="field.field">
@@ -396,7 +441,7 @@ onScopeDispose(() => {
                     :disabled="saving" @update:model-value="form.status = $event" />
                 </label>
               </template>
-              <p v-if="fieldError" class="mdm-plants__field-error" role="alert">{{ t('mdm.struct.validation') }}</p>
+              <p v-if="fieldError" id="mdm-structure-form-error" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ t('mdm.struct.validation') }}</p>
             </template>
             <p v-else class="mdm-plants__warning">
               {{ t(kind === 'location-types' ? 'mdm.struct.typeStatusHint' : 'mdm.struct.statusHint') }}

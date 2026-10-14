@@ -15,4 +15,6 @@
 .mom-crud-row-menu__item { display: flex; align-items: center; min-height: 38px; padding: 0 var(--mom-space-3); border-radius: var(--mom-radius-control); color: var(--mom-color-text-primary); font-size: var(--mom-font-size-sm); cursor: pointer; outline: none; }
 .mom-crud-row-menu__item[data-highlighted] { background: var(--mom-color-bg-subtle); }
 .mom-crud-row-menu__danger { color: var(--mom-color-danger); }
+.mom-crud-search { max-width: 100%; min-width: 0; }
+.mom-crud-pagination, .mom-crud-pagination__controls { flex-wrap: wrap; }
 .mom-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

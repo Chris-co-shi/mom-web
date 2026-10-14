@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { watch } from 'vue';
-import { ensureNamespaces, translate, useLocale } from '../shared/i18n/locale';
+import { ensureOwners, translate, useLocale } from '../shared/i18n/locale';
 import { emergencyLocale, emergencyMessages } from '../shared/i18n/emergency-messages';
 import { resolveAuthNavigation } from './auth-guard';
 import { appRoutes } from './route-registry';
@@ -15,9 +15,9 @@ export const router = createRouter({
 router.beforeEach(async (to) => {
   const redirect = await resolveAuthNavigation(to);
   if (redirect) return redirect;
-  const namespaces = [...new Set(to.matched.flatMap((record) => record.meta.i18nNamespaces ?? []))];
-  if (namespaces.length > 0) {
-    try { await ensureNamespaces(namespaces); }
+  const owners = [...new Set(to.matched.flatMap((record) => record.meta.i18nOwners ?? []))];
+  if (owners.length > 0) {
+    try { await ensureOwners(owners); }
     catch { return { name: ROUTE_NAMES.offline, query: { redirect: to.fullPath } }; }
   }
   return undefined;

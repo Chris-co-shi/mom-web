@@ -1,7 +1,32 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useWindowSize } from '@vueuse/core';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Factory, Blocks, BookOpenText, Languages, KeyRound, LayoutDashboard, ListTree, PanelLeftClose, PanelLeftOpen, ShieldCheck, UsersRound } from '@lucide/vue';
+import {
+  Blocks,
+  BookOpenText,
+  Boxes,
+  Building2,
+  ChevronDown,
+  Factory,
+  Gauge,
+  KeyRound,
+  Languages,
+  LayoutDashboard,
+  ListTree,
+  MapPin,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Ruler,
+  Settings2,
+  ShieldCheck,
+  Tags,
+  UsersRound,
+  Warehouse,
+  Workflow,
+  Wrench,
+} from '@lucide/vue';
 import { hasAuthorities } from '../modules/auth/model/auth-permissions';
 import { logout, useAuthSession } from '../modules/auth/model/auth-session';
 import AccountMenu from '../modules/auth/components/AccountMenu.vue';
@@ -11,17 +36,38 @@ import LocaleSwitcher from '../shared/i18n/LocaleSwitcher.vue';
 import { useLocale } from '../shared/i18n/locale';
 import ThemeSwitcher from '../shared/theme/ThemeSwitcher.vue';
 import MomButton from '../shared/ui/MomButton.vue';
+import MomModal from '../shared/components/MomModal.vue';
+import MomBrand from '../shared/components/MomBrand.vue';
+import { readNavigationCollapsed, writeNavigationCollapsed } from './navigation-preference';
 import './layouts.css';
 
 const route = useRoute();
 const router = useRouter();
-const navigationCollapsed = ref(false);
+const navigationCollapsed = ref(readNavigationCollapsed());
+const { width } = useWindowSize();
+const narrow = computed(() => width.value < 640);
+const automaticRail = computed(() => width.value < 1120);
+const rail = computed(() => navigationCollapsed.value || automaticRail.value);
+const navigationOpen = ref(false);
+watch(() => route.fullPath, () => { navigationOpen.value = false; });
+watch(narrow, () => { navigationOpen.value = false; });
+const expandedNavigationGroup = ref<string | null>(null);
 const loggingOut = ref(false);
 const { t } = useLocale();
 const { user, authorities } = useAuthSession();
 const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('navigation.currentUser'));
 const navigationIcons = {
   [ROUTE_NAMES.mdmPlants]: Factory,
+  [ROUTE_NAMES.mdmWorkshops]: Building2,
+  [ROUTE_NAMES.mdmProductionLines]: Workflow,
+  [ROUTE_NAMES.mdmWorkstations]: Wrench,
+  [ROUTE_NAMES.mdmWarehouses]: Warehouse,
+  [ROUTE_NAMES.mdmWarehouseAreas]: Boxes,
+  [ROUTE_NAMES.mdmLocationTypes]: Tags,
+  [ROUTE_NAMES.mdmLocations]: MapPin,
+  [ROUTE_NAMES.mdmUom]: Ruler,
+  [ROUTE_NAMES.mdmCategories]: ListTree,
+  [ROUTE_NAMES.mdmMaterials]: Package,
   [ROUTE_NAMES.iamUsers]: UsersRound,
   [ROUTE_NAMES.iamRoles]: ShieldCheck,
   [ROUTE_NAMES.iamPermissions]: KeyRound,
@@ -30,6 +76,12 @@ const navigationIcons = {
   [ROUTE_NAMES.systemLocales]: Languages,
   [ROUTE_NAMES.systemMessages]: BookOpenText,
 } satisfies Partial<Record<MomRouteName, typeof UsersRound>>;
+const navigationGroupIcons = {
+  iam: ShieldCheck,
+  mdm: Boxes,
+  system: Settings2,
+  foundation: Gauge,
+};
 
 const currentTitle = computed(() => t(route.meta.titleKey));
 const visibleNavigation = computed(() => {
@@ -38,11 +90,45 @@ const visibleNavigation = computed(() => {
   return mainNavigation.filter((item) => hasAuthorities(item.permissions, item.permissionMode));
 });
 const navigationGroups = computed(() => [
-  { id: 'iam', title: t('navigation.iam'), items: visibleNavigation.value.filter((item) => item.group === 'iam') },
-  { id: 'mdm', title: t('navigation.mdm'), items: visibleNavigation.value.filter((item) => item.group === 'mdm') },
-  { id: 'system', title: t('system.navigation'), items: visibleNavigation.value.filter((item) => item.group === 'system') },
-  { id: 'foundation', title: t('shell.foundationGroup'), items: visibleNavigation.value.filter((item) => item.group === 'foundation') },
+  { id: 'iam', title: t('navigation.iam'), icon: navigationGroupIcons.iam, items: visibleNavigation.value.filter((item) => item.group === 'iam') },
+  { id: 'mdm', title: t('navigation.mdm'), icon: navigationGroupIcons.mdm, items: visibleNavigation.value.filter((item) => item.group === 'mdm') },
+  { id: 'system', title: t('system.navigation'), icon: navigationGroupIcons.system, items: visibleNavigation.value.filter((item) => item.group === 'system') },
+  { id: 'foundation', title: t('shell.foundationGroup'), icon: navigationGroupIcons.foundation, items: visibleNavigation.value.filter((item) => item.group === 'foundation') },
 ].filter((group) => group.items.length > 0));
+const activeNavigationGroup = computed(() =>
+  visibleNavigation.value.find((item) => item.name === route.name)?.group ?? navigationGroups.value[0]?.id ?? null,
+);
+
+watch(activeNavigationGroup, (group) => {
+  if (group) expandedNavigationGroup.value = group;
+}, { immediate: true });
+
+function isNavigationGroupExpanded(group: string): boolean {
+  return !rail.value && expandedNavigationGroup.value === group;
+}
+
+function toggleNavigationGroup(group: string): void {
+  if (automaticRail.value) {
+    expandedNavigationGroup.value = group;
+    navigationOpen.value = true;
+    return;
+  }
+  if (navigationCollapsed.value) {
+    navigationCollapsed.value = false;
+    writeNavigationCollapsed(false);
+    expandedNavigationGroup.value = group;
+    return;
+  }
+  expandedNavigationGroup.value = expandedNavigationGroup.value === group ? null : group;
+}
+
+function toggleNavigation(): void {
+  navigationCollapsed.value = !navigationCollapsed.value;
+  writeNavigationCollapsed(navigationCollapsed.value);
+  if (!navigationCollapsed.value && !expandedNavigationGroup.value) {
+    expandedNavigationGroup.value = activeNavigationGroup.value;
+  }
+}
 
 async function handleLogout(): Promise<void> {
   if (loggingOut.value) return;
@@ -59,21 +145,44 @@ async function handleLogout(): Promise<void> {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'app-shell--collapsed': navigationCollapsed }">
+  <div class="app-shell" :class="{ 'app-shell--collapsed': rail, 'app-shell--narrow': narrow }">
     <a class="skip-link" href="#main-content">{{ t('shell.skipToContent') }}</a>
 
-    <aside class="app-sidebar" :aria-label="t('shell.mainNavigation')">
+    <aside v-if="!narrow" class="app-sidebar" :aria-label="t('shell.mainNavigation')">
       <div class="app-brand" aria-label="MOM">
-        <span class="app-brand__mark" aria-hidden="true"><span></span></span>
+        <MomBrand icon-only />
         <span class="app-brand__copy">
           <strong>MOM</strong>
-          <small>MANUFACTURING OS</small>
         </span>
       </div>
 
-      <template v-for="group in navigationGroups" :key="group.id">
-        <div class="app-nav__section-label">{{ group.title }}</div>
-        <nav class="app-nav" :aria-label="group.title">
+      <div id="app-sidebar-navigation" class="app-sidebar__navigation">
+        <section
+          v-for="group in navigationGroups"
+          :key="group.id"
+          class="app-nav-group"
+          :class="{ 'app-nav-group--current': activeNavigationGroup === group.id }"
+        >
+          <button
+            type="button"
+            class="app-nav-group__trigger"
+            :aria-controls="`app-navigation-${group.id}`"
+            :aria-expanded="isNavigationGroupExpanded(group.id)"
+            :aria-label="rail ? group.title : undefined"
+            :data-navigation-group="group.id"
+            :title="rail ? group.title : undefined"
+            @click="toggleNavigationGroup(group.id)"
+          >
+            <component :is="group.icon" class="app-nav-group__icon" :size="19" :stroke-width="1.8" aria-hidden="true" />
+            <span class="app-nav-group__label">{{ group.title }}</span>
+            <ChevronDown class="app-nav-group__chevron" :size="16" aria-hidden="true" />
+          </button>
+          <nav
+            v-show="isNavigationGroupExpanded(group.id)"
+            :id="`app-navigation-${group.id}`"
+            class="app-nav"
+            :aria-label="group.title"
+          >
           <RouterLink
             v-for="item in group.items"
             :key="item.name"
@@ -85,41 +194,44 @@ async function handleLogout(): Promise<void> {
             <component :is="navigationIcons[item.name as keyof typeof navigationIcons] ?? Blocks" class="app-nav__icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
             <span class="app-nav__label">{{ t(item.titleKey) }}</span>
           </RouterLink>
-        </nav>
-      </template>
+          </nav>
+        </section>
+      </div>
 
-      <div class="app-sidebar__footer">
-        <span class="app-sidebar__footer-copy">
-          <strong>FOUNDATION</strong>
-          <small>PC WEB</small>
-        </span>
+      <div v-if="!automaticRail" class="app-sidebar__footer">
+        <MomButton
+          data-testid="sidebar-toggle"
+          class="app-sidebar__toggle"
+          variant="ghost"
+          :size="navigationCollapsed ? 'icon' : 'default'"
+          :aria-label="navigationCollapsed ? t('shell.expandNavigation') : t('shell.collapseNavigation')"
+          aria-controls="app-sidebar-navigation"
+          :aria-expanded="!navigationCollapsed"
+          :title="navigationCollapsed ? t('shell.expandNavigation') : undefined"
+          @click="toggleNavigation"
+        >
+          <PanelLeftOpen v-if="navigationCollapsed" :size="18" aria-hidden="true" />
+          <PanelLeftClose v-else :size="18" aria-hidden="true" />
+          <span class="app-sidebar__toggle-label">{{ t('shell.collapseNavigation') }}</span>
+        </MomButton>
       </div>
     </aside>
 
     <section class="app-workspace">
       <header class="app-header">
         <div class="app-header__leading">
-          <MomButton
-            class="app-icon-button"
-            variant="outline"
-            size="icon"
-            :aria-label="navigationCollapsed ? t('shell.expandNavigation') : t('shell.collapseNavigation')"
-            :aria-expanded="!navigationCollapsed"
-            @click="navigationCollapsed = !navigationCollapsed"
-          >
-            <PanelLeftOpen v-if="navigationCollapsed" :size="18" aria-hidden="true" />
-            <PanelLeftClose v-else :size="18" aria-hidden="true" />
+          <MomButton v-if="narrow" data-testid="navigation-open" variant="ghost" size="icon"
+            :aria-label="t('shell.mainNavigation')" :aria-expanded="navigationOpen" @click="navigationOpen = true">
+            <PanelLeftOpen :size="20" aria-hidden="true" />
           </MomButton>
-          <span class="app-header__divider" aria-hidden="true"></span>
           <div>
-            <span class="app-header__eyebrow">PC WEB FOUNDATION</span>
             <strong>{{ currentTitle }}</strong>
           </div>
         </div>
 
         <div class="app-header__trailing">
-          <LocaleSwitcher />
-          <ThemeSwitcher />
+          <LocaleSwitcher :compact="automaticRail" />
+          <ThemeSwitcher :compact="automaticRail" />
           <AccountMenu
             :account-name="accountName"
             :account-label="t('navigation.account')"
@@ -135,5 +247,19 @@ async function handleLogout(): Promise<void> {
         <RouterView />
       </main>
     </section>
+    <MomModal :open="navigationOpen" :title="t('shell.mainNavigation')" :close-label="t('shell.collapseNavigation')"
+      placement="left" :width="320" @close="navigationOpen = false">
+      <div class="app-drawer-navigation">
+        <section v-for="group in navigationGroups" :key="group.id">
+          <MomButton variant="ghost" :aria-expanded="expandedNavigationGroup === group.id" @click="expandedNavigationGroup = expandedNavigationGroup === group.id ? null : group.id">
+            <component :is="group.icon" :size="18" aria-hidden="true" />{{ group.title }}<ChevronDown :size="16" aria-hidden="true" />
+          </MomButton>
+          <nav v-show="expandedNavigationGroup === group.id" :aria-label="group.title">
+            <RouterLink v-for="item in group.items" :key="item.name" :to="{ name: item.name }" class="app-nav__link"
+              :aria-current="route.name === item.name ? 'page' : undefined" @click="navigationOpen = false">{{ t(item.titleKey) }}</RouterLink>
+          </nav>
+        </section>
+      </div>
+    </MomModal>
   </div>
 </template>

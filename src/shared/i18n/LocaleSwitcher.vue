@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { emergencyText, useLocale } from './locale';
+import { Languages } from '@lucide/vue';
+import MomButton from '../ui/MomButton.vue';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '../ui/dropdown-menu';
 import './locale-switcher.css';
 
 const { locale, supportedLocales, setLocale, t } = useLocale();
+defineProps<{ compact?: boolean }>();
 const switching = ref(false);
 const failure = ref('');
 const options = computed(() => supportedLocales.value.filter((item) => item.enabled)
@@ -20,7 +24,16 @@ async function select(nextLocale: string): Promise<void> {
 </script>
 
 <template>
-  <div class="locale-switcher" role="radiogroup" :aria-label="t('locale.mode')">
+  <template v-if="compact">
+    <DropdownMenu>
+      <DropdownMenuTrigger as-child><MomButton variant="ghost" size="icon" :disabled="switching" :aria-label="t('locale.mode')" :title="t('locale.mode')"><Languages :size="18" aria-hidden="true" /></MomButton></DropdownMenuTrigger>
+      <DropdownMenuContent align="end"><DropdownMenuRadioGroup :model-value="locale" @update:model-value="select(String($event))">
+        <DropdownMenuRadioItem v-for="option in options" :key="option.localeCode" :value="option.localeCode" :disabled="switching">{{ option.nativeName }}</DropdownMenuRadioItem>
+      </DropdownMenuRadioGroup></DropdownMenuContent>
+    </DropdownMenu>
+    <span v-if="failure" role="alert">{{ failure }}</span>
+  </template>
+  <div v-else class="locale-switcher" role="radiogroup" :aria-label="t('locale.mode')">
     <button
       v-for="option in options"
       :key="option.localeCode"

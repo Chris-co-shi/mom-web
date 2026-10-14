@@ -15,7 +15,7 @@ export const foundationRoutes: RouteRecordRaw[] = [
       titleKey: 'foundation.overview.title',
       module: 'foundation',
       requiresAuth: false,
-      i18nNamespaces: ['system.web'],
+      i18nOwners: ['system'],
       navigationGroup: 'foundation',
       navigationOrder: 10,
     },

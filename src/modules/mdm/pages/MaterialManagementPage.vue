@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onScopeDispose, reactive, ref } from 'vue';
+import { submitWithFocus } from '../../../shared/ui/focus';
 import { onBeforeRouteLeave } from 'vue-router';
 import { Plus, RefreshCw } from '@lucide/vue';
 import { AuthorityGuard, hasAuthority } from '../../auth';
@@ -9,21 +10,29 @@ import MomManagementHeader from '../../../shared/components/MomManagementHeader.
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
+import MomCrudRowMenu from '../../../shared/components/MomCrudRowMenu.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
 import {
   searchMaterials, getMaterial, createMaterial, updateMaterial, setMaterialEnabled,
-  searchMaterialCategories, type Material, type MaterialCategory, type MaterialFilter,
+  searchMaterialCategories, getMaterialCategory, type Material, type MaterialCategory, type MaterialFilter,
 } from '../api/material-api';
-import { searchUomCatalog, type UomRow } from '../api/uom-api';
+import { getUomCatalog, searchUomCatalog, type UomRow } from '../api/uom-api';
 import './mdm-pages.css';
 
 const { t } = useLocale();
 const rows = ref<Material[]>([]);
 const categories = ref<MaterialCategory[]>([]), uoms = ref<UomRow[]>([]);
 const categoryPage = ref(1), categoryTotal = ref(0), uomPage = ref(1), uomTotal = ref(0);
-const referencesLoading = ref(false), referencesError = ref(false);
+const referencePending = reactive({ categories: false, uoms: false });
+const referenceFailures = reactive({ categories: false, uoms: false });
+const referenceVersions = { categories: 0, uoms: 0 };
+const referencesLoading = computed(() => Object.values(referencePending).some(Boolean));
+const referencesError = computed(() => Object.values(referenceFailures).some(Boolean));
+const resolvedCategories = ref<MaterialCategory[]>([]), resolvedUoms = ref<UomRow[]>([]);
+const knownCategories = computed(() => [...new Map([...categories.value, ...resolvedCategories.value].map(row => [row.id, row])).values()]);
+const knownUoms = computed(() => [...new Map([...uoms.value, ...resolvedUoms.value].map(row => [row.id, row])).values()]);
 const pageNo = ref(1), pageSize = ref(20), total = ref(0), loading = ref(false);
 const saving = ref(false), detailLoading = ref(false), blocked = ref(false);
 const action = ref<'create' | 'detail' | 'edit' | 'status'>(), target = ref<Material>();
@@ -36,6 +45,9 @@ const form = reactive({
 let controller: AbortController | undefined, detailController: AbortController | undefined;
 let seq = 0, detailSeq = 0, disposed = false;
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
+const modalTitle = computed(() => !action.value ? '' : `${t('mdm.material.materials')} · ${t(({
+  create: 'mdm.struct.create', detail: 'mdm.struct.detail', edit: 'mdm.struct.edit', status: 'mdm.struct.changeStatus',
+} as const)[action.value])}`);
 const columns = computed<MomColumn[]>(() => [
   { key:'code', title:t('mdm.material.materialCode'), minWidth:170 },
   { key:'name', title:t('mdm.struct.name'), minWidth:200 },
@@ -47,15 +59,18 @@ const columns = computed<MomColumn[]>(() => [
 ]);
 const categoryOptions = computed(() => [
   { value:'', label:t('mdm.struct.all') },
-  ...categories.value.map(x => ({ value:x.id, label:`${x.name} (${x.code})` })),
+  ...knownCategories.value.map(x => ({ value:x.id, label:`${x.name} (${x.code})` })),
 ]);
 const activeCategoryOptions = computed(() => [
   { value:'', label:t('mdm.struct.select') },
-  ...categories.value.filter(x => x.status === 'ENABLED').map(x => ({ value:x.id, label:`${x.name} (${x.code})` })),
+  ...knownCategories.value.filter(x => x.status === 'ENABLED' || x.id === form.categoryId).map(x => ({ value:x.id, label:`${x.name} (${x.code})` })),
 ]);
 const uomOptions = computed(() => [
   { value:'', label:t('mdm.struct.all') },
-  ...uoms.value.map(x => ({value:x.id,label:`${x.name} (${x.code})` })),
+  ...knownUoms.value.map(x => ({value:x.id,label:`${x.name} (${x.code})` })),
+]);
+const formUomOptions = computed(() => [
+  { value: '', label: t('mdm.struct.select') }, ...uomOptions.value.slice(1),
 ]);
 const dayValue = (raw: string): number | null => raw === '' ? null : Number(raw);
 const isDays = (raw: string): boolean => raw === '' || /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw));
@@ -86,22 +101,23 @@ async function loadPage(next = pageNo.value, size = pageSize.value): Promise<voi
   finally { if (current === seq) loading.value = false; }
 }
 async function loadReferences(kind: 'categories' | 'uoms', next = 1): Promise<void> {
-  referencesLoading.value = true;
+  const requestVersion = ++referenceVersions[kind];
+  referencePending[kind] = true;
   try {
     if (kind === 'categories') {
       const result = await searchMaterialCategories(next, 50, {status:'ENABLED'});
-      if (disposed) return;
+      if (disposed || requestVersion !== referenceVersions[kind]) return;
       categories.value = next === 1 ? result.records : [...categories.value, ...result.records];
       categoryPage.value = next; categoryTotal.value = result.total;
     } else {
       const result = await searchUomCatalog('uoms', next, 50, {status:'ENABLED'});
-      if (disposed) return;
+      if (disposed || requestVersion !== referenceVersions[kind]) return;
       uoms.value = next === 1 ? result.records : [...uoms.value, ...result.records];
       uomPage.value = next; uomTotal.value = result.total;
     }
-    referencesError.value = false;
-  } catch { referencesError.value = true; }
-  finally { referencesLoading.value = false; }
+    referenceFailures[kind] = false;
+  } catch { if (!disposed && requestVersion === referenceVersions[kind]) referenceFailures[kind] = true; }
+  finally { if (requestVersion === referenceVersions[kind]) referencePending[kind] = false; }
 }
 function reloadReferences(): void {
   void Promise.all([loadReferences('categories'),loadReferences('uoms')]);
@@ -126,6 +142,16 @@ async function open(next: 'create'|'detail'|'edit'|'status', row?: Material): Pr
     const detail = await getMaterial(row.id, detailController.signal);
     if (disposed || current !== detailSeq) return;
     target.value = detail; resetForm(detail); blocked.value = false;
+    // 名称补齐不扩大物料操作的权限依赖；失败时保留真实 ID，编辑仍遵守引用校验。
+    const [category, uom] = await Promise.allSettled([
+      getMaterialCategory(detail.categoryId, detailController.signal),
+      getUomCatalog('uoms', detail.baseUomId, detailController.signal),
+    ]);
+    if (disposed || current !== detailSeq) return;
+    if (category.status === 'fulfilled') resolvedCategories.value = [category.value];
+    else referenceFailures.categories = true;
+    if (uom.status === 'fulfilled') resolvedUoms.value = [uom.value];
+    else referenceFailures.uoms = true;
   } catch (error) { if (!disposed && current === detailSeq) dialogError.value = feedback(error); }
   finally { if (current === detailSeq) detailLoading.value = false; }
 }
@@ -186,11 +212,14 @@ async function submit(): Promise<void> {
       : true;
   } finally { saving.value = false; }
 }
-function displayCategory(id: string): string { return categories.value.find(r=>r.id===id)?.name ?? id; }
-function displayUom(id: string): string { return uoms.value.find(r=>r.id===id)?.code ?? id; }
+function displayCategory(id: string): string { return knownCategories.value.find(r=>r.id===id)?.name ?? id; }
+function displayUom(id: string): string { return knownUoms.value.find(r=>r.id===id)?.name ?? id; }
 function clearFilters(): void {
   Object.assign(filter, {keyword:'',categoryId:'',baseUomId:'',status:''});
   void loadPage(1);
+}
+function handleMore(key: string, row: Material): void {
+  if (key === 'status') void open('status', row);
 }
 onMounted(() => { void loadPage(); reloadReferences(); });
 onBeforeRouteLeave(() => !saving.value);
@@ -215,7 +244,8 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
       </MomManagementHeader>
       <p v-if="notice" role="status" class="mdm-plants__notice">{{ notice }}</p>
       <div v-if="listError || referencesError" class="mdm-plants__error" role="alert">
-        <p>{{ referencesError ? t('mdm.material.referencesError') : listError }}</p>
+        <p v-if="listError">{{ listError }}</p>
+        <p v-if="referencesError">{{ t('mdm.material.referencesError') }}</p>
         <MomButton variant="outline" @click="loadPage(); reloadReferences()">{{ t('mdm.struct.retry') }}</MomButton>
       </div>
       <form class="mdm-struct__filters" role="search" @submit.prevent="loadPage(1)">
@@ -251,9 +281,9 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
               <MomButton mode="text" @click="open('detail',row)">{{ t('mdm.struct.detail') }}</MomButton>
               <AuthorityGuard :authorities="['mdm:material:write']">
                 <MomButton mode="text" @click="open('edit',row)">{{ t('mdm.struct.edit') }}</MomButton>
-                <MomButton mode="text" @click="open('status',row)">
-                  {{ t(row.status === 'ENABLED' ? 'mdm.struct.disable' : 'mdm.struct.enable') }}
-                </MomButton>
+                <MomCrudRowMenu :label="t('mdm.struct.actions')" :actions="[
+                  { key: 'status', label: t(row.status === 'ENABLED' ? 'mdm.struct.disable' : 'mdm.struct.enable'), danger: row.status === 'ENABLED' },
+                ]" @select="handleMore($event, row)" />
               </AuthorityGuard>
             </div>
           </template>
@@ -272,7 +302,7 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
         <MomButton v-if="uoms.length < uomTotal" variant="outline" :disabled="referencesLoading"
           @click="loadReferences('uoms', uomPage + 1)">{{ t('mdm.struct.loadMore') }} · {{ t('mdm.material.baseUom') }}</MomButton>
       </div>
-      <MomModal :open="!!action" :title="t('mdm.material.materials')" :close-label="t('mdm.struct.close')"
+      <MomModal :open="!!action" :title="modalTitle" :close-label="t('mdm.struct.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -282,21 +312,26 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
           </div>
           <dl v-if="target && !detailLoading" class="mdm-plants__summary">
             <div><dt>{{ t('mdm.material.materialCode') }}</dt><dd>{{ target.code }}</dd></div>
+            <div><dt>{{ t('mdm.struct.name') }}</dt><dd>{{ target.name }}</dd></div>
             <div><dt>{{ t('mdm.material.category') }}</dt><dd>{{ displayCategory(target.categoryId) }}</dd></div>
             <div><dt>{{ t('mdm.material.baseUom') }}</dt><dd>{{ displayUom(target.baseUomId) }}</dd></div>
+            <div><dt>{{ t('mdm.material.shelfLife') }}</dt><dd>{{ target.shelfLifeDays ?? '—' }}</dd></div>
+            <div><dt>{{ t('mdm.struct.status') }}</dt><dd>{{ t(target.status === 'ENABLED' ? 'mdm.struct.enabled' : 'mdm.struct.disabled') }}</dd></div>
             <div><dt>{{ t('mdm.struct.version') }}</dt><dd>{{ target.version }}</dd></div>
           </dl>
-          <form v-if="action && action !== 'detail'" class="mdm-plants__form" @submit.prevent="submit">
+          <form v-if="action && action !== 'detail'" class="mdm-plants__form" @submit.prevent="submitWithFocus($event, submit)">
             <template v-if="action !== 'status'">
               <label v-if="action === 'create'"><span>{{ t('mdm.material.materialCode') }} *</span>
-                <MomInput v-model="form.code" :max-length="64" /></label>
-              <label><span>{{ t('mdm.struct.name') }} *</span><MomInput v-model="form.name" :max-length="200" /></label>
+                <MomInput id="mdm-material-code" v-model="form.code" :max-length="64"
+                  :aria-invalid="!!formError && !form.code.trim()" aria-describedby="mdm-material-form-error" /></label>
+              <label><span>{{ t('mdm.struct.name') }} *</span><MomInput id="mdm-material-name" v-model="form.name" :max-length="200"
+                :aria-invalid="!!formError && !form.name.trim()" aria-describedby="mdm-material-form-error" /></label>
               <label><span>{{ t('mdm.material.category') }} *</span>
-                <MomSelect v-model="form.categoryId" :options="activeCategoryOptions" :disabled="referencesError" />
+                <MomSelect v-model="form.categoryId" :options="activeCategoryOptions" :disabled="referencesError" :aria-invalid="!!formError && !form.categoryId" :aria-describedby="formError ? 'mdm-material-form-error' : undefined" />
                 <small>{{ t('mdm.material.leafOnly') }}</small>
               </label>
               <label><span>{{ t('mdm.material.baseUom') }} *</span>
-                <MomSelect v-model="form.baseUomId" :options="uomOptions" :disabled="referencesError" />
+                <MomSelect v-model="form.baseUomId" :options="formUomOptions" :disabled="referencesError" :aria-invalid="!!formError && !form.baseUomId" :aria-describedby="formError ? 'mdm-material-form-error' : undefined" />
               </label>
               <template v-if="action === 'create'">
                 <label><span>{{ t('mdm.material.shelfSource') }}</span>
@@ -317,7 +352,7 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
               </label>
             </template>
             <p v-else class="mdm-plants__warning">{{ t('mdm.material.statusWarning') }}</p>
-            <p v-if="formError" class="mdm-plants__field-error" role="alert">{{ formError }}</p>
+            <p v-if="formError" id="mdm-material-form-error" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer">
               <MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || blocked || detailLoading || (action !== 'status' && referencesError)">

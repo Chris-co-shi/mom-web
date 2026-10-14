@@ -7,14 +7,13 @@
 
 ## 1. 从这里开始
 
-修改 UI 前按顺序阅读：
+按任务风险读取（**无需每次读完整套文档**）：
 
-1. [根目录 AGENTS.md](../../../AGENTS.md)：范围、依赖、测试和协作限制。
-2. [Design System](../design-system.md)：颜色、排版、间距、圆角、层级与主题。
-3. [CRUD 管理页标准](crud-management-page-standard.md)：列表、表单、操作和失败行为。
-4. [ADR-003](../decisions/ADR-003-ui-foundation-migration.md)：已确定的 UI 技术栈。
-5. [产品体验](../product-experience.md)与[工程架构](../frontend-architecture.md)：页面组织与代码边界。
-6. [持续验收记录](../validation/web-foundation-v1.md)第5节：现有缺口、用户退回及未验证项。
+1. **每个任务**先读 [根目录 AGENTS.md](../../../AGENTS.md) 与本契约相关章节；优先查实际组件代码和一个调用方。
+2. **新建/调整 CRUD 交互**按需读 [CRUD 管理页标准](crud-management-page-standard.md) 对应章节；固定交互的字段/接口调整不用重读完整文档。
+3. **全局视觉与 Token 变更**才深入读 [Design System](../design-system.md)；[ADR-003](../decisions/ADR-003-ui-foundation-migration.md) 是技术选型决策，常规页面不重复评审。
+4. **产品信息架构/模块边界变化**才读 [产品体验](../product-experience.md)与[工程架构](../frontend-architecture.md)。
+5. **回归既有视觉缺陷**时参考 [持续验收记录](../validation/web-foundation-v1.md)第5节；它是历史证据，不是日常输入的必读材料。
 
 发生冲突先定位具体条款，不把历史计划或效果图自动当成当前实现。当前用户明确决策优先；涉及接口或领域边界时说明问题，不通过视觉改造偷偷改变业务规则。
 
@@ -92,13 +91,13 @@ Token 的数值权威为 [primitives.css](../../../src/styles/primitives.css) �
 - [ ] 连续改变可用宽度，采样390/768/1024/1280/1440/1920/2560及实际断点两侧；另查小高度、200%缩放。
 - [ ] 主体无非预期横向溢出；弹窗正文和表格滚动边界明确，分页与保存栏不被遮挡。
 - [ ] Esc、Tab、菜单、下拉及关闭后焦点恢复检查。
-- [ ] 按本地package.json运行 `pnpm verify`（lint/typecheck/test/build），记录实际数量和结果。
+- [ ] 局部迭代先执行与改动有关的 lint/定向测试和必要类型检查；完成页面/Slice 或公共组件改动的交付前，按 `package.json` 执行 `pnpm verify`（lint/typecheck/test/build）并记录结果。不得以减少次数为由跳过最终门禁。
 - [ ] 真实页面验收与静态命令分开。未打开浏览器、未联调、无真实数据的场景逐项标记未验证。
 
 当前规则要求常规页面不新建测试文件；涉及行为时优先维护现有定向测试，必要新增须说明范围。不删除测试或放宽校验换取绿灯。
 
 ## 8. 更换工具时的任务开场模板
 
-> 请先阅读AGENTS.md和docs/frontend/standards/b2-ui-contract.md及其必读链接，以当前本地代码为准。沿用B2与ADR-003，不重选风格或组件库。先报告范围、复用点和验证方式，再实施当前任务；不改无关业务/API，不新增生产依赖。遇到规范冲突列出具体文件和影响。交付列明修改、实际验证及未验证项，不能把构建成功当成视觉验收。
+> 请先阅读AGENTS.md和本契约与当前任务相关的章节，以当前本地代码为准。复用现有共享组件，沿用B2和已确认的技术栈；不要自动读取所有历史报告、重新设计视觉或扩大模块范围。先定位任务关联代码、说明复用点与验证方式，再实现；按任务风险验证，交付列出实际完成和未验证项。
 
 维护方式：视觉决策改Design System，交互规则改CRUD标准/本文，完成证据改验收报告；本入口只维护交叉引用，不复制整套Token或创建平行规范。效果图只能辅助Review，不能授权实现图中虚构的数据、按钮或能力。

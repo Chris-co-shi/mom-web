@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from './errors';
 import { httpClient, setHttpRequestContextProvider, setHttpUnauthorizedHandler } from './http-client';
-import { setLocale } from '../i18n/locale';
+import { createPinia, setActivePinia } from 'pinia';
+import { useLocaleStore } from '../i18n/locale';
+import { i18nManagementApi } from '../i18n/i18n-management-api';
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
@@ -11,9 +13,17 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 
 describe('httpClient', () => {
   beforeEach(() => {
-    setLocale('zh-CN');
+    setActivePinia(createPinia());
+    useLocaleStore().currentLocale = 'zh-CN';
     setHttpRequestContextProvider(() => ({ locale: 'zh-CN', accessToken: 'opaque-token' }));
     setHttpUnauthorizedHandler(() => undefined);
+  });
+
+  it.each(['auth', 'system', 'mdm'] as const)('国际化目录按 %s Owner 查询且不携带 namespace', async owner => {
+    const fetchMock = vi.fn().mockImplementation(async () => jsonResponse({ code: '0', message: 'success', data: [] }));
+    vi.stubGlobal('fetch', fetchMock);
+    await i18nManagementApi.listMessages(owner);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(`/${owner}/i18n/messages`);
   });
 
   it('拆包 Result<T> 并附加协议 Header', async () => {
@@ -48,7 +58,7 @@ describe('httpClient', () => {
       headers: { 'X-Correlation-Id': 'corr-409' },
     })));
 
-    const error = await httpClient.result({ path: '/api/system/dictionaries/1' })
+    const error = await httpClient.result({ path: '/system/dictionaries/1' })
       .catch((cause: unknown) => cause);
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({
@@ -101,7 +111,7 @@ describe('httpClient', () => {
       request.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
     })));
 
-    const request = httpClient.result({ path: '/api/system/i18n/locales', timeoutMs: 50 });
+    const request = httpClient.result({ path: '/system/i18n/locales', timeoutMs: 50 });
     const assertion = expect(request).rejects.toMatchObject({
       kind: 'timeout',
       retryable: true,

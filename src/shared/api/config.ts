@@ -1,8 +1,9 @@
 /** Gateway 对外暴露的 bounded context 路径。 */
 export const API_PATHS = {
   auth: '/auth',
-  system: '/api/system',
-  mdm: '/api/mdm',
+  system: '/system',
+  mdm: '/mdm',
+  qms: '/qms',
 } as const;
 
 export type ApiContext = keyof typeof API_PATHS;
@@ -29,9 +30,9 @@ export function resolveApiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
 
-/** 在已登记的 context path 下构造模块端点。 */
+/** 浏览器与 Gateway 均使用 /{module}/**；不添加 /api 或重复模块前缀。 */
 export function apiPath(context: ApiContext, path = ''): string {
-  if (path && (!path.startsWith('/') || path.startsWith('//'))) {
+  if (path && (!path.startsWith('/') || path.startsWith('//') || path === '/api' || path.startsWith('/api/') || path === API_PATHS[context] || path.startsWith(`${API_PATHS[context]}/`))) {
     throw new TypeError(`模块 API path 必须以单个 / 开头：${path}`);
   }
   return `${API_PATHS[context]}${path}`;

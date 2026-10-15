@@ -1,0 +1,13 @@
+.iam-user-roles { display: grid; gap: var(--mom-space-4); min-width: 0; }
+.iam-user-roles__target { display: flex; align-items: baseline; gap: var(--mom-space-3); flex-wrap: wrap; }
+.iam-user-roles__target code, .iam-user-roles__item code { color: var(--mom-color-text-secondary); font-family: var(--mom-font-family-mono); font-size: var(--mom-font-size-xs); }
+.iam-user-roles__count { margin: 0; color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.iam-user-roles__list { display: grid; max-height: min(48vh, 420px); overflow: auto; border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-surface); }
+.iam-user-roles__item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--mom-space-3); padding: var(--mom-space-3) var(--mom-space-4); border-bottom: 1px solid var(--mom-color-border); }
+.iam-user-roles__item:last-of-type { border-bottom: 0; }
+.iam-user-roles__item > span { display: grid; gap: var(--mom-space-1); min-width: 0; }
+.iam-user-roles__item small { color: var(--mom-color-text-secondary); }
+.iam-user-roles__empty { margin: 0; padding: var(--mom-space-8); color: var(--mom-color-text-secondary); text-align: center; }
+.iam-user-roles__paging { display: flex; align-items: center; justify-content: space-between; gap: var(--mom-space-3); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.iam-user-roles__paging > div { display: flex; gap: var(--mom-space-2); }
+@media (max-width: 480px) { .iam-user-roles__item { grid-template-columns: auto minmax(0, 1fr); } .iam-user-roles__item > small { grid-column: 2; } .iam-user-roles__paging { align-items: flex-start; flex-direction: column; } }

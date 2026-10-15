@@ -8,14 +8,14 @@
 | 框架 | Vue 3.5.34 | 保持 |
 | 语言 | TypeScript 6，`strict: true` | 保持严格模式 |
 | 构建 | Vite 8.0.10 | 保持 |
-| 包管理器 | pnpm 11.7.0 | 保持锁定版本与 frozen lockfile |
-| Router | `vue-router` 已正式接线，具备静态路由、元数据与 Auth Guard | 保持源码持有路由，不引入动态路由平台 |
-| UI 组件库 | TDesign Vue Next 1.20.9 已完成薄验证并锁定 | 保持单一 UI 库，升级需重新验证 |
-| 状态管理 | 未引入 Pinia 等全局状态库 | 真实跨模块状态需求出现后再决定 |
-| 请求层 | `src/shared/api` 已建立唯一 HTTP Client | 页面和模块 API 不重复处理 Token、超时与错误协议 |
-| 国际化 | `zh-CN/en-US` 静态资源、Locale 状态与 TDesign Locale 已接线 | Web 持有静态文案，按域渐进扩展 |
-| 测试 | Vitest、Vue Test Utils、jsdom 与 `pnpm verify` 已建立 | 业务 Slice 继续覆盖权限、失败和协议边界 |
-| 样式 | `src/styles` 已建立 Token / Theme / Base 分层并适配 TDesign | 保持单一 Semantic Token 体系 |
+| 包管理器 | pnpm 11 | 保持 |
+| Router | Vue Router 5 已接线 | Route Registry 同时派生路由与菜单 |
+| UI 组件库 | 已安装 | Reka UI + shadcn-vue；表格采用 TanStack Table v9 |
+| 状态管理 | Pinia 4 已接线 | 只保存认证、Locale 等真实跨页面状态 |
+| 请求层 | 已建立唯一 HTTP Client | 统一认证、Locale、取消、超时和错误语义 |
+| 国际化 | Vue I18n + Runtime Namespace | `zh-CN`/`en-US`，静态 Key 与服务端 Bundle 分工 |
+| 测试 | Vitest + Vue Test Utils + jsdom | 优先覆盖权限、协议与失败行为 |
+| 样式 | Tailwind 4 + MOM 分层 Token | Primitive → Semantic → Component → Base |
 
 ## 2. 架构目标
 
@@ -43,7 +43,7 @@ src/
 │   └── <future-domain>/    # 仅在对应 Slice 创建
 ├── shared/
 │   ├── api/                # HTTP client、错误与通用协议类型
-│   ├── components/         # 跨两个以上模块稳定复用的组件
+│   ├── components/         # 已验证跨模块稳定复用的组件
 │   ├── composables/        # 跨模块组合逻辑
 │   ├── directives/         # 唯一权限等通用指令入口
 │   ├── formatters/         # 时间、数字、单位等格式化
@@ -78,7 +78,7 @@ module api / components / composables
           ↓
 shared api / components / formatters
           ↓
-Vue / TDesign / browser platform
+Vue / 已选 UI 组件库 / browser platform
 ```
 
 规则：
@@ -91,13 +91,17 @@ Vue / TDesign / browser platform
 
 ## 5. 组件复用
 
-优先级：
+2026-10-06 当前基线：全站使用 Reka UI + shadcn-vue + Tailwind CSS 4（启用 Preflight）+ TanStack Table v9，详见 [ADR-003](decisions/ADR-003-ui-foundation-migration.md)。下列 P1 决策历程仅作为历史记录，若与 ADR-003 冲突以 ADR-003 为准。
 
-1. TDesign 基础组件；
+优先级（新改造页面）：
+
+1. 已选 UI 基础组件（当前为 MOM 共享层、shadcn-vue 和 Reka UI）；
 2. MOM 项目基础组件；
 3. 跨业务稳定组件；
 4. 模块私有组件；
 5. 页面局部结构。
+
+现有可复用管理页组合件：`MomManagementHeader` 负责页面标题/说明/操作插槽，`MomListSurface` 负责目录表面、工具栏插槽、表格/页脚插槽和 MOM 加载遮罩；`MomCrudSearch`、`MomCrudPagination`、`MomCrudRowMenu`、`MomModal` 分别负责基础交互。新 CRUD 页面须先复用这些稳定结构，不再复制 IAM 的页面外壳或按钮样式。它们不接管 API、权限、状态写入或表单字段；具体规则仍由模块实现。
 
 首批候选项目组件只在真实使用时创建：
 
@@ -108,7 +112,17 @@ Vue / TDesign / browser platform
 - `ConfirmAction`：高影响操作确认；
 - `PermissionGuard`：唯一按钮级权限入口。
 
-相似能力至少出现两次，或确实需要统一权限、无障碍、错误处理时才抽象。禁止万能表格和万能表单。
+交互性基础控件（弹窗/抽屉、输入、按钮、下拉、选择、提示等）优先使用已选组件库；不得在业务页面用原生标签、Teleport 和手写键盘/遮罩/滚动锁重复实现现成组件。`form`、`label`、`dl`、标题等语义 HTML 仍应保留。组件库无法满足需求时，先记录能力缺口、替代方案和无障碍/主题/测试影响，再批准局部实现。
+
+业务弹窗使用 `shared/components/MomModal` 统一承接 Reka UI Dialog 的标题、关闭按钮、尺寸、主题、焦点及保存遮罩；业务层只填写内容，不复制弹窗外壳或覆盖组件结构。该公共组件解决跨页面的视觉和无障碍不变量，不承载业务表单、权限或 API。
+
+同一或相似的业务 UI 实现在**超过三个使用处（第 4 处起）**时，必须评估是否抽象为模块内或 `shared/components` 公共组件；评估依据是语义、交互、样式和变化方向是否稳定一致，有复用收益才抽象，不机械套用。涉及统一权限、安全、无障碍等跨页面不变量时可提前抽象。禁止万能表格和万能表单。
+
+PC 管理页的首个可参照实现为 IAM 用户管理页。新增列表与弹窗须先核对[设计系统的管理页验收基线](design-system.md)；允许因业务语义偏离，但要说明状态动作、确认需求、权限和失败策略的差异，不复制 IAM 专属接口或权限码。
+
+列表型 CRUD 页面还须遵守[项目级 CRUD 管理页交互标准](standards/crud-management-page-standard.md)。该标准将页面骨架、行操作、分页、请求反馈和业务例外分开约束；后续页面不得重新实现第三套同类交互。
+
+列表的首次加载、刷新、翻页、页大小变化及写入后重读都必须绑定同一请求生命周期与局部加载遮罩；弹窗写入必须有局部遮罩和状态级防重复提交。遮罩阻止误操作，但不能代替请求取消、防乱序或写请求不重放规则。
 
 ## 6. 路由与导航
 
@@ -173,18 +187,19 @@ Web-P1 已建立唯一 HTTP Client：
 - 写请求默认不自动重试；
 - 页面 API 文件不直接操作 Token，也不重复实现错误提示。
 
-### 8.1 Gateway URL 与 Path 基线
+### 8.1 Browser → Gateway URL 与 Path 基线
 
-| bounded context | Web 统一路径 | Gateway 现状 | 备注 |
+| bounded context | 浏览器 URL 与 Gateway Predicate | Gateway 转发到 Server | 说明 |
 |---|---|---|---|
-| IAM/Auth | `/auth/**` | 已路由 | Gateway `StripPrefix=1`，例如外部 `/auth/login` 到 Auth `/login` |
-| System | `/api/system/**` | 已路由 | Gateway 保留完整路径 |
-| MDM | `/api/mdm/**` | 待接入 | MDM Controller 已使用该路径，但 Gateway 当前没有对应 Route |
+| IAM/Auth | `/auth/**` | `/**` | Gateway `StripPrefix=1` |
+| System | `/system/**` | `/**` | Gateway `StripPrefix=1` |
+| MDM | `/mdm/**` | `/api/mdm/**` | Gateway `PrefixPath=/api`，保留 MDM 已有内部 Controller 路径 |
 
-- 浏览器只面向 Gateway，不直接配置各业务服务地址；
-- 本地开发由 Vite 将 `/auth`、`/api` 代理到 `MOM_GATEWAY_DEV_TARGET`，默认 `http://127.0.0.1:20000`；
-- 生产默认使用同源相对路径，可通过 `VITE_MOM_API_BASE_URL` 显式覆盖；
-- `API_PATHS` 是 bounded context path 的唯一代码登记点，MDM 标记为契约预留，不代表已具备 Gateway 联调条件。
+- **冻结约束：Browser → Gateway 不含 `/api`，后端模块可以各自保留不同的内部 Controller Path。**
+- 浏览器只面向 Gateway，不能直接访问 Auth/System/MDM Server。
+- Vite 开发代理原样转发 `/auth`、`/system`、`/mdm`，不增加或删除 `/api`；目标 `MOM_GATEWAY_DEV_TARGET` 默认为 `http://127.0.0.1:20000`。
+- 生产默认同源；可通过 `VITE_MOM_API_BASE_URL` 配置 Gateway 基地址。
+- `API_PATHS` 只登记 Browser/Gateway 的模块前缀。MDM 内部 /api 路径不应泄露到 Web。
 
 ### 8.2 当前响应兼容策略
 
@@ -213,6 +228,13 @@ Web-P1 已建立唯一 HTTP Client：
 - 主布局状态；
 - 真实存在且跨模块共享的上下文。
 
+Web-P2 当前账户由 `GET /auth/me` 提供：`user` 含 String userId、username、displayName、version，
+`authorization.authorities` 为 Token 权限快照，`session.expiresAt` 为原始有效期。顶部显示 displayName，
+为空时回退 username，不显示技术 ID。sessionStorage 只保存 Token、类型和有效期，资料与权限只保存在内存。前端不解析
+Opaque Token；登录后与页面刷新恢复时各向 Auth 同步一次。路由、菜单和按钮统一调用
+`hasAuthority` / `hasAuthorities`，按钮级内容使用 `AuthorityGuard`；这些能力只改善界面体验，不能替代
+Resource Server 的 `@PreAuthorize`。V1 权限是登录时快照，授权变化后需要重新登录。
+
 表格数据、查询条件和编辑表单默认留在页面或模块内。Web-P1 不因“后台项目通常需要”而直接引入状态库；若 Pinia 的真实需求在认证和全局偏好接线中成立，再单独说明依赖理由并安装。
 
 ## 10. 国际化与格式化
@@ -232,7 +254,7 @@ Web-P1 已建立唯一 HTTP Client：
 - `src/shared/i18n/locale.ts` 是唯一 Locale 状态入口，当前只接受 `zh-CN`、`en-US`；
 - 初始选择顺序为“浏览器本地选择 → 受支持的浏览器 Locale → `zh-CN`”，仅接受受控 Alias；
 - 本地键 `mom.locale.preference` 只代表当前浏览器选择，不伪装为 System 用户偏好已同步；
-- 切换时同步更新 `<html lang>`、路由标题、菜单、基础页面以及 TDesign ConfigProvider；
+- 切换时同步更新 `<html lang>`、路由标题、菜单和基础页面；
 - `src/shared/formatters/index.ts` 提供时间点、普通数值、Decimal String 和带单位数值格式化；
 - 时间点必须携带 RFC 3339 Offset，默认显示时区为 `UTC`；浏览器时区不会被静默作为权威偏好；
 - Decimal String 通过字符串分组与小数符号映射保持精度，格式化层不擅自舍入或写回业务值；
@@ -246,7 +268,7 @@ Web-P1 已建立唯一 HTTP Client：
 - 主题写入 `document.documentElement`，由唯一 Theme Service 管理；
 - 用户主动选择当前只在浏览器本地持久化；System Preference 的真实接入范围留待 Web-P3 决策；
 - 首屏脚本需避免主题闪烁；
-- TDesign、MOM 组件和图表必须消费同一套 Semantic Token。
+- shadcn-vue、MOM 组件和图表必须消费同一套 Semantic Token。
 
 ## 12. 测试与质量门禁
 
@@ -258,8 +280,6 @@ Web-P1-S06 已建立统一命令：
 - `pnpm build`：类型检查与生产构建；
 - `pnpm verify`：按 Lint → Type → Test → Build 顺序执行完整前端门禁。
 
-GitHub Actions 在 `push main` 与 Pull Request 上执行 `pnpm install --frozen-lockfile` 和 `pnpm verify`，保证远程仓库与本地质量门禁使用同一条验证链。
-
 组件验证页只在开发模式登记路由，不进入生产菜单和构建产物。生产验收结果与已知限制见 `validation/web-p1-quality-gate.md`。真实业务模块进入后，测试继续优先覆盖权限、失败行为、并发冲突和未知写结果，不堆砌 getter 或静态快照。
 
 视觉回归系统、跨浏览器矩阵和屏幕阅读器专项测试只有真实页面稳定且维护收益成立时再引入。
@@ -269,7 +289,7 @@ GitHub Actions 在 `push main` 与 Pull Request 上执行 `pnpm install --frozen
 Web-P1 验证阶段记录而非提前承诺绝对值：
 
 - 首屏主包与样式体积；
-- TDesign 按需引入是否有效；
+- 共享 UI 与 Runtime Locale Chunk 的体积变化；
 - IAM 首屏路由分包；
 - 低端办公设备上的导航、表格和弹窗交互；
 - 大数据表必须使用服务端分页，虚拟滚动只在真实数据量证明需要时引入。

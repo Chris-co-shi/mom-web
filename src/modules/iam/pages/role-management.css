@@ -1,0 +1,24 @@
+.iam-role-footer { display: flex; flex-wrap: wrap; gap: var(--mom-space-2); }
+.iam-roles__table { min-width: 1030px; }
+.iam-roles__code { font-family: var(--mom-font-family-mono); font-weight: 600; }
+.iam-roles__jump input { width: 56px; }
+.iam-roles__notice { color: var(--mom-color-success); }
+.iam-role-feedback { display: grid; justify-items: start; gap: var(--mom-space-3); padding: var(--mom-space-4); margin-bottom: var(--mom-space-4); border-radius: var(--mom-radius-control); background: var(--mom-color-bg-subtle); color: var(--mom-color-danger); overflow-wrap: anywhere; }
+.iam-role-feedback p { margin: 0; }
+.iam-role-warning { margin: 0; padding-left: var(--mom-space-3); border-left: 2px solid var(--mom-color-warning); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); line-height: var(--mom-line-height-body); }
+.iam-role-dialog__body { padding: 0; }
+.iam-role-summary { display: grid; gap: var(--mom-space-3); margin: 0 0 var(--mom-space-6); padding: var(--mom-space-4); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-surface); background: var(--mom-color-bg-subtle); }
+.iam-role-summary > div { display: grid; grid-template-columns: minmax(100px, 1fr) 2fr; gap: var(--mom-space-4); }
+.iam-role-summary dt { color: var(--mom-color-text-secondary); }
+.iam-role-summary dd { margin: 0; overflow-wrap: anywhere; }
+.iam-role-form { display: grid; gap: var(--mom-space-4); }
+.iam-role-form label { display: grid; gap: var(--mom-space-2); }
+.iam-role-form label > span:first-child { font-weight: 600; font-size: var(--mom-font-size-sm); }
+.iam-role-input, .iam-role-textarea { width: 100%; border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-control); color: var(--mom-color-text-primary); background: var(--mom-color-bg-surface); }
+.iam-role-input { min-height: 40px; }
+.iam-role-input, .iam-role-textarea { padding: var(--mom-space-2) var(--mom-space-3); color: var(--mom-color-text-primary); }
+.iam-role-input:focus-within, .iam-role-textarea:focus-within { border-color: var(--mom-color-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mom-color-brand) 16%, transparent); }
+.iam-role-input[aria-invalid='true'], .iam-role-textarea[aria-invalid='true'] { border-color: var(--mom-color-danger); }
+.iam-role-form small { color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); }
+.iam-role-field-error { color: var(--mom-color-danger); font-size: var(--mom-font-size-xs); }
+.iam-role-footer { justify-content: flex-end; margin-top: var(--mom-space-5); }

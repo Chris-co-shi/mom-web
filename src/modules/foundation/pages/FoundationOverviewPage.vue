@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
-import { ROUTE_NAMES } from '../../../router/route-names';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { formatDecimalString, formatInstant, formatUnit } from '../../../shared/formatters';
 import { useLocale } from '../../../shared/i18n/locale';
 import './foundation-overview.css';
 
 const { locale, t } = useLocale();
-const showComponentValidation = import.meta.env.DEV;
 
 const foundationLayers = computed(() => [
   { index: '01', title: t('foundation.layer.tokens.title'), description: t('foundation.layer.tokens.description') },
@@ -63,13 +60,6 @@ const formattingSamples = computed(() => [
           <span>{{ t('foundation.overview.mapLabel') }}</span>
           <h2 id="foundation-layers-title">{{ t('foundation.overview.mapTitle') }}</h2>
         </div>
-        <RouterLink
-          v-if="showComponentValidation"
-          class="foundation-link"
-          :to="{ name: ROUTE_NAMES.foundationComponents }"
-        >
-          {{ t('foundation.overview.viewComponents') }} <span aria-hidden="true">→</span>
-        </RouterLink>
       </div>
 
       <div class="foundation-layer-list">

@@ -1,0 +1,3 @@
+import{beforeEach,describe,expect,it,vi}from'vitest';import{setHttpRequestContextProvider}from'../../../shared/api/http-client';import{runConsistencyCheck}from'./governance-api';
+describe('主数据治理 API',()=>{const fetchMock=vi.fn();beforeEach(()=>{fetchMock.mockReset().mockImplementation(async()=>new Response(JSON.stringify({code:'0',message:'ok',data:null}),{headers:{'Content-Type':'application/json'}}));vi.stubGlobal('fetch',fetchMock);setHttpRequestContextProvider(()=>({accessToken:'governance',locale:'zh-CN'}));});
+it('通过 /mdm 触发只读范围扫描',async()=>{await runConsistencyCheck('MATERIAL_UOM');expect(fetchMock.mock.calls[0]![0]).toBe('/mdm/governance/consistency-checks');expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({scope:'MATERIAL_UOM'});});});

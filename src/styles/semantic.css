@@ -19,6 +19,7 @@
   --mom-color-danger: var(--mom-ref-red-600);
   --mom-color-info: var(--mom-ref-blue-600);
   --mom-color-offline: var(--mom-ref-grey-600);
+  --mom-color-overlay-scrim: rgb(13 23 31 / 54%);
   --mom-shadow-overlay: 0 16px 40px rgb(23 36 46 / 14%);
   --mom-shadow-surface: 0 1px 2px rgb(23 36 46 / 4%);
 }
@@ -43,6 +44,7 @@
   --mom-color-danger: var(--mom-ref-red-300);
   --mom-color-info: var(--mom-ref-blue-300);
   --mom-color-offline: var(--mom-ref-grey-300);
+  --mom-color-overlay-scrim: rgb(0 0 0 / 68%);
   --mom-shadow-overlay: 0 18px 48px rgb(0 0 0 / 42%);
   --mom-shadow-surface: 0 1px 2px rgb(0 0 0 / 20%);
 }
@@ -84,8 +86,8 @@
   --mom-motion-slow: var(--mom-ref-motion-slow) ease;
   --mom-z-content: 0;
   --mom-z-sticky: 100;
-  --mom-z-popover: 1000;
   --mom-z-overlay: 2000;
   --mom-z-modal: 2100;
+  --mom-z-popover: 2200;
   --mom-z-notification: 3000;
 }

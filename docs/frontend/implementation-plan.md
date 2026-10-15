@@ -1,5 +1,7 @@
 # MOM PC Web 分阶段实施计划
 
+> UI 技术选型与实现优先级已由 [ADR-003](decisions/ADR-003-ui-foundation-migration.md) 更新。本文 Web-P1 中 TDesign / VXE 的记录仅是历史实施过程，不再指导新页面。
+
 ## 1. 总体顺序
 
 ```text
@@ -142,6 +144,28 @@ Web-P1 必须拆成可独立验证的小 Slice，不一次性生成所有基础�
 
 Web-P1 已完成，但不等于 IAM 完成。当前只提供真实可复用的地基，下一阶段进入 Web-P2。
 
+### Foundation V1 全站基础收口
+
+状态：**已完成（2026-10-12）**。在不更换 ADR-003 技术栈、不新增业务页面和生产依赖的前提下，完成 Design Token 迁移残留清理、共享组件边界复核、表格键盘列宽、弹窗无障碍告警修复、现行文档纠偏及 1024/1280/1440/1920px 浏览器验收。证据见 [MOM Web Foundation V1 审计与验收报告](validation/web-foundation-v1.md)。
+
+该收口允许后续 MDM Slice 复用基础设施，但不预先决定 MDM 领域模型、页面范围或 API 语义。
+
+### Foundation V1 最终收口与 API 契约统一
+
+状态：**执行中（2026-10-12）**。本轮不改变 ADR-003，不新增生产依赖、业务页面或后端业务接口。
+
+| Phase | 修改范围 | 必要性 | 验收条件 |
+|---|---|---|---|
+| 0. 基线审查 | Web 规则、API/布局/IAM 代码；Gateway 路由；Auth/System/MDM Controller 只读核对 | 区分真实缺口与历史文档，避免重复建设 | 形成三层路径矩阵、UI 问题证据和只读边界内风险清单 |
+| 1. API 契约 | `src/shared/api/config.ts`、`vite.config.ts`、Gateway `application.yml` 及定向测试 | 消除浏览器 `/api` 与 Gateway 模块路径混用，并修复 MDM 内部前缀 | Browser `/api/{module}`；开发代理仅去掉首个 `/api`；Auth/System StripPrefix=1；MDM 保留 `/mdm` 并在转发时补 `/api` |
+| 2. 账户入口 | `MainLayout.vue`、布局样式、组件测试 | 顶栏空间拥挤且“在线”状态具有误导性 | 复用 Reka Dropdown，提供账户、改密、退出；Esc/键盘/焦点由底层语义保障；移除无健康探测依据的在线文案 |
+| 3. 权限资源目录 | `PermissionResourcePage.vue`、页面样式、行为测试 | 平铺目录在多 Domain 下识别成本高 | 服务端 Domain 过滤；仅对当前页结果分组；名称/Code/状态形成明确层级；分页和选中项语义保持 |
+| 4. UI 一致性 | 本轮受影响组件及现有 Token | 保证新增结构不形成第二套样式 | 亮暗/系统主题、中英文、1024–1920px、Focus/Hover/Disabled 均使用现有 Token 和组件 |
+| 5. 质量验证 | 前端定向测试与 `pnpm verify`；Gateway 定向测试/编译；浏览器检查 | 防止 `/api` 前缀和交互行为回归 | 自动化命令有真实结果；无法执行的真实联调和浏览器项明确标记 |
+| 6. 文档收口 | 现有 API、Gateway、前端架构/Design System、Foundation 报告 | 让路径、组件和验收结论与代码一致 | 明确 Browser、Gateway、Controller 三层路径；记录已完成、未验证与阻塞风险 |
+
+实现顺序遵循测试驱动：先补会失败的契约/行为测试，再做最小实现；出现实际故障时按系统化调试定位根因。用户已要求连续执行，因此本计划不设置逐项确认、Worktree、提交或分支收口步骤。
+
 ## 4. Web-P2：IAM
 
 ### P2-S01：登录与认证闭环
@@ -154,7 +178,36 @@ Web-P1 已完成，但不等于 IAM 完成。当前只提供真实可复用的�
 - 已实现 sessionStorage、刷新恢复、认证路由守卫、统一 401 清理和退出入口；
 - Gateway → Auth → Redis Token Store → Resource Server 真实闭环验证通过。
 
+### P2-S02：IAM 契约审计与当前会话决策
+
+状态：**已完成（2026-10-04）**。实现与验证结论见
+[Web-P2-S02 IAM 管理与当前会话契约审计](validation/web-p2-s02-iam-contract-audit.md)。
+
+- 已核对 Gateway `/auth/**`、Auth Controller、Request/Response、Application 事务与权限码；
+- 已确认用户、角色、Permission 和关系分配 API 足以支撑真实管理页面；
+- 已新增真实 `GET /auth/me`；后续按用户确认扩展为实时用户资料、权限快照和会话元数据三个分区，不扩展 Token；
+- 已完成登录后及刷新时的权限恢复、权限路由、菜单过滤和 `AuthorityGuard`；
+- 已验证 401、403、服务不可用、刷新恢复与注销失效语义，不硬编码管理员权限。
+
 ### 实施顺序
+
+账户自助补充已完成并经用户验收（2026-10-04）：显示名展示与修改、验证原密码的个人改密。
+详见 [账户自助收口记录](validation/web-p2-account-self-service.md)。
+
+下一 Slice 定为 **Web-P2-S03：用户管理真实页面**，按现有接口落地用户列表、详情、创建、编辑、启停、删除与管理员重置密码。
+本 Slice 不提前加入角色/权限维护和关系分配，不虚构后端尚不支持的关键词、状态筛选。
+
+P2-S03 当前状态：**用户已确认验收完成（2026-10-05）**，后续管理页以其交互与视觉基线为模板，不复制用户业务规则。
+此前的 21 项定向测试、代理 URL 修正与 64 项全量测试记录属于开发阶段历史证据；用户已在实际页面完成用户管理验收。旧记录中的后端检出与账号缺口不再作为 S03 当前状态。
+详情见 [用户管理实施与验证记录](validation/web-p2-s03-user-management.md)。
+
+Web-P2-S04 角色管理已由用户完成页面与真实功能验收（2026-10-05），后续仍以用户管理页作为视觉和交互基线。开发期证据见[角色管理验证记录](validation/web-p2-s04-role-management.md)。
+
+当前 Slice：**Web-P2-S05 权限管理**。范围为权限目录列表、详情、创建、编辑、启停和删除；角色权限及用户角色分配分别留到 S06、S07。前端实现与自动化验证见[权限管理记录](validation/web-p2-s05-permission-management.md)；真实 Gateway/Auth 与页面验收由用户执行，未验收前不标记 S05 完成。
+
+Web-P2-S06 角色赋权前端已按现有关系接口实现：从角色行进入权限分配，跨页选择、差异核对后整体替换；前端自动化与设计边界见[角色赋权记录](validation/web-p2-s06-role-permission-assignment.md)。S05 和 S06 的真实页面验收均须由用户确认；S07 用户分配角色尚未开始。
+
+以下为 Web-P2 总体能力清单，S05 尚未最终验收：
 
 1. 登录、Token 保存、刷新恢复策略与登出；
 2. 权限判断入口、路由守卫、菜单和按钮可见性；
@@ -258,8 +311,8 @@ MDM 完成后再按照用户确认的业务 Slice 推进 WMS、QMS、MES 等模�
 
 | 风险 | 影响 | 处理阶段 |
 |---|---|---|
-| Locale/TDesign Provider 是当前最大的共享 Chunk | 后续 Locale 或 UI 能力增加可能影响首屏与缓存 | 持续记录 |
-| Mini Auth 当前用户展示与刷新恢复契约需核对 | 可能影响登录后恢复和用户菜单 | Web-P2 |
+| Reka UI、TanStack Table 与运行时 Locale 属于共享基础能力 | 后续继续关注首屏 Chunk 与缓存，不为优化指标重新引入旧 UI 栈 | 持续记录 |
+| Mini Auth `/me` 的用户资料实时读取，权限仍为 Token 快照 | 资料修改即时展示；权限变化需重新登录，密码修改不撤销旧 Token | V1 明确接受 |
 | System 历史文档能力多于当前 V1 | 容易误建页面 | 以 ADR-043 为唯一当前范围 |
 | System 后端已存在 User Preference，但 Web-P3 当前明确不做 | Locale/时区/Theme 服务端同步范围尚未决策 | Web-P3 前确认 |
 | 用户工作区已有未提交依赖变更 | 后续安装需避免覆盖来源 | 每个修改依赖的 Slice |

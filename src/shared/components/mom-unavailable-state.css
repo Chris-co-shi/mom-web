@@ -1,0 +1,121 @@
+html:has(.mom-unavailable),
+body:has(.mom-unavailable),
+#app:has(.mom-unavailable) {
+  min-width: 0;
+}
+
+.mom-unavailable {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  place-items: center;
+  padding: 32px;
+  background: var(--mom-color-bg-canvas);
+}
+
+.mom-unavailable__ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 80% 15%, color-mix(in srgb, var(--mom-color-brand) 8%, transparent), transparent 40%),
+    linear-gradient(90deg, color-mix(in srgb, var(--mom-color-border) 22%, transparent) 1px, transparent 1px) 0 0 / 64px 64px;
+  mask-image: linear-gradient(to bottom, #000, transparent 75%);
+}
+
+.mom-unavailable__panel {
+  position: relative;
+  width: min(100%, 560px);
+  padding: 42px 44px 30px;
+  border: 1px solid var(--mom-color-border);
+  border-radius: var(--mom-radius-surface);
+  background: var(--mom-color-bg-surface);
+  box-shadow: var(--mom-shadow-surface);
+}
+
+.mom-unavailable__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mom-color-text-primary);
+  font-family: var(--mom-font-family-mono);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+}
+
+.mom-unavailable__brand-mark {
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  border: 3px solid var(--mom-color-brand);
+  border-radius: 3px;
+}
+
+.mom-unavailable__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 58px;
+  color: var(--mom-color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mom-unavailable__status svg {
+  color: var(--mom-color-brand);
+}
+
+.mom-unavailable h1 {
+  margin: 16px 0 12px;
+  color: var(--mom-color-text-primary);
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+}
+
+.mom-unavailable p {
+  max-width: 450px;
+  margin: 0;
+  color: var(--mom-color-text-secondary);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.mom-unavailable__actions {
+  margin-top: 32px;
+}
+
+.mom-unavailable__retry {
+  display: inline-flex;
+  min-width: 146px;
+  min-height: 44px;
+  gap: 9px;
+  border-radius: var(--mom-radius-round);
+}
+
+.mom-unavailable__reference {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 44px;
+  padding-top: 18px;
+  border-top: 1px solid var(--mom-color-border);
+  color: var(--mom-color-text-muted);
+  font-size: 12px;
+}
+
+.mom-unavailable__reference code {
+  font-family: var(--mom-font-family-mono);
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 640px) {
+  .mom-unavailable { padding: 18px; }
+  .mom-unavailable__panel { padding: 30px 26px 24px; }
+  .mom-unavailable__status { margin-top: 44px; }
+  .mom-unavailable__reference { margin-top: 36px; }
+}

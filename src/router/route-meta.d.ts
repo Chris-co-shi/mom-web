@@ -1,7 +1,9 @@
 import 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
+import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
+import type { I18nOwner } from '../shared/i18n/runtime-api';
 
-export type MomRouteModule = 'auth' | 'foundation' | 'shell';
+export type MomRouteModule = 'auth' | 'iam' | 'system' | 'mdm' | 'qms' | 'foundation' | 'shell';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -19,8 +21,18 @@ declare module 'vue-router' {
     navigationGroup?: string;
     /** 同组菜单排序。 */
     navigationOrder?: number;
+    /** 三级导航中的稳定二级板块标识；当前仅 MDM 使用。 */
+    navigationSection?: string;
+    /** 二级板块标题的稳定国际化 Key。 */
+    navigationSectionTitleKey?: MessageKey;
+    /** 二级板块在一级产品目录内的排序。 */
+    navigationSectionOrder?: number;
     /** 后续 IAM Slice 使用的权限码；前端过滤不替代服务端授权。 */
     permissions?: readonly string[];
+    /** 权限集合匹配方式；默认 all，跨 Owner 管理入口可显式使用 any。 */
+    permissionMode?: AuthorityMatchMode;
+    /** 当前路由进入前必须可用的服务 Owner 动态文案。 */
+    i18nOwners?: readonly I18nOwner[];
   }
 }
 

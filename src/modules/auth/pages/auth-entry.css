@@ -1,16 +1,16 @@
 .auth-entry {
   width: min(100%, 480px);
-  padding: 40px;
+  padding: clamp(20px, 4vw, 40px);
   border: 1px solid color-mix(in srgb, var(--mom-color-border) 86%, transparent);
-  border-radius: 28px;
+  border-radius: var(--mom-radius-overlay);
   background: color-mix(in srgb, var(--mom-color-bg-surface) 96%, transparent);
-  box-shadow: var(--mom-shadow-overlay);
+  box-shadow: var(--mom-shadow-surface);
   backdrop-filter: blur(24px);
 }
 
 .auth-entry__header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--mom-space-5);
   align-items: start;
 }
@@ -92,25 +92,25 @@
   font-size: 11px;
 }
 
-.auth-field .t-input {
+.auth-field .mom-ui-input {
   height: 46px;
-  border-radius: 14px;
+  border-radius: var(--mom-radius-control);
   background: color-mix(in srgb, var(--mom-color-bg-subtle) 58%, var(--mom-color-bg-surface));
   box-shadow: none;
   transition: border-color var(--mom-motion-fast), box-shadow var(--mom-motion-fast), background var(--mom-motion-fast);
 }
 
-.auth-field .t-input:hover {
+.auth-field .mom-ui-input:hover {
   border-color: var(--mom-color-border-strong);
 }
 
-.auth-field .t-input--focused {
+.auth-field .mom-ui-input:focus-visible {
   border-color: var(--mom-color-brand);
   background: var(--mom-color-bg-surface);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--mom-color-brand) 11%, transparent);
 }
 
-.auth-field--error .t-input {
+.auth-field--error .mom-ui-input {
   border-color: var(--mom-color-danger);
 }
 
@@ -119,17 +119,17 @@
   font-size: 12px;
 }
 
-.auth-entry__submit.t-button {
+.auth-entry__submit.mom-ui-button {
   height: 48px;
   margin-top: 4px;
-  border-radius: 15px;
+  border-radius: var(--mom-radius-control);
   font-weight: 600;
   letter-spacing: 0.04em;
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--mom-color-brand) 24%, transparent);
+  box-shadow: var(--mom-shadow-surface);
 }
 
-.auth-entry__submit.t-button:hover:not(:disabled) {
-  transform: translateY(-1px);
+.auth-entry__submit.mom-ui-button:hover:not(:disabled) {
+  transform: none;
 }
 
 .auth-entry__error,
@@ -200,8 +200,7 @@
   font-weight: 600;
 }
 
-@media (max-width: 1180px) {
-  .auth-entry {
-    padding: 32px;
-  }
+@media (max-width: 40rem) {
+  .auth-entry__heading h2 { font-size: var(--mom-font-size-xl); }
+  .auth-entry__form { margin-top: var(--mom-space-6); }
 }

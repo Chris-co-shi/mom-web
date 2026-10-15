@@ -1,6 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router';
 import type { MessageKey } from '../locales/zh-CN';
+import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
 import { foundationRoutes } from '../modules/foundation/routes';
+import { iamRoutes } from '../modules/iam';
+import { mdmRoutes } from '../modules/mdm/routes';
+import { qmsRoutes } from '../modules/qms/routes';
+import { systemRoutes } from '../modules/system/routes';
 import { ROUTE_NAMES, type MomRouteName } from './route-names';
 
 export interface NavigationItem {
@@ -8,6 +13,11 @@ export interface NavigationItem {
   titleKey: MessageKey;
   group: string;
   order: number;
+  section?: string;
+  sectionTitleKey?: MessageKey;
+  sectionOrder?: number;
+  permissions: readonly string[];
+  permissionMode: AuthorityMatchMode;
 }
 
 /**
@@ -26,9 +36,29 @@ export const appRoutes: RouteRecordRaw[] = [
       titleKey: 'shell.main.title',
       module: 'shell',
       requiresAuth: true,
+      i18nOwners: ['system', 'auth'],
       hideInMenu: true,
     },
-    children: foundationRoutes,
+    children: [
+      ...foundationRoutes,
+      ...iamRoutes,
+      ...systemRoutes,
+      ...mdmRoutes,
+      ...qmsRoutes,
+      {
+        path: 'account',
+        name: ROUTE_NAMES.account,
+        component: () => import('../modules/auth/pages/AccountPage.vue'),
+        meta: {
+          title: '账户设置',
+          titleKey: 'navigation.account',
+          module: 'auth',
+          requiresAuth: true,
+          i18nOwners: ['auth'],
+          hideInMenu: true,
+        },
+      },
+    ],
   },
   {
     path: '/login',
@@ -50,6 +80,7 @@ export const appRoutes: RouteRecordRaw[] = [
           titleKey: 'auth.login.title',
           module: 'auth',
           requiresAuth: false,
+          i18nOwners: ['auth'],
           hideInMenu: true,
         },
       },
@@ -70,19 +101,18 @@ export const appRoutes: RouteRecordRaw[] = [
       titleKey: 'shell.forbidden.title',
       module: 'shell',
       requiresAuth: false,
+      i18nOwners: ['system'],
       hideInMenu: true,
     },
   },
   {
     path: '/offline',
     name: ROUTE_NAMES.offline,
-    component: () => import('../pages/RouteStatePage.vue'),
-    props: {
-      code: 'OFF',
-      eyebrowKey: 'state.offline.eyebrow',
-      titleKey: 'state.offline.title',
-      descriptionKey: 'state.offline.description',
-    },
+    component: () => import('../shared/components/MomUnavailableState.vue'),
+    props: (route) => ({
+      mode: 'route',
+      returnTo: typeof route.query.redirect === 'string' ? route.query.redirect : undefined,
+    }),
     meta: {
       title: '服务离线',
       titleKey: 'shell.offline.title',
@@ -106,6 +136,7 @@ export const appRoutes: RouteRecordRaw[] = [
       titleKey: 'shell.error.title',
       module: 'shell',
       requiresAuth: false,
+      i18nOwners: ['system'],
       hideInMenu: true,
     },
   },
@@ -124,6 +155,7 @@ export const appRoutes: RouteRecordRaw[] = [
       titleKey: 'shell.notFound.title',
       module: 'shell',
       requiresAuth: false,
+      i18nOwners: ['system'],
       hideInMenu: true,
     },
   },
@@ -142,12 +174,17 @@ function isNavigationRoute(route: RouteRecordRaw): route is RouteRecordRaw & {
 }
 
 /** 主导航直接由已注册路由派生，避免路由与菜单维护两份显示配置。 */
-export const mainNavigation: NavigationItem[] = foundationRoutes
+export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes, ...mdmRoutes, ...qmsRoutes]
   .filter(isNavigationRoute)
   .map((route) => ({
     name: route.name,
     titleKey: route.meta.titleKey,
     group: route.meta.navigationGroup,
     order: route.meta.navigationOrder,
+    section: route.meta.navigationSection,
+    sectionTitleKey: route.meta.navigationSectionTitleKey,
+    sectionOrder: route.meta.navigationSectionOrder,
+    permissions: route.meta.permissions ?? [],
+    permissionMode: route.meta.permissionMode ?? 'all',
   }))
   .sort((left, right) => left.order - right.order);

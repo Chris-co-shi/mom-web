@@ -1,90 +1,201 @@
-import { computed, readonly, ref } from 'vue';
-import type { GlobalConfigProvider } from 'tdesign-vue-next/es/config-provider';
-import tdesignEnUS from 'tdesign-vue-next/es/locale/en_US';
-import tdesignZhCN from 'tdesign-vue-next/es/locale/zh_CN';
-import { enUS } from '../../locales/en-US';
-import { zhCN, type MessageKey } from '../../locales/zh-CN';
+import { defineStore, storeToRefs } from 'pinia';
+import { readonly } from 'vue';
+import { createI18n } from 'vue-i18n';
+import { messageParameterOrder, type MessageKey } from '../../locales/zh-CN';
+import { emergencyMessages } from './emergency-messages';
+import { i18nRuntimeApi, type I18nOwner, type SupportedLocaleInfo } from './runtime-api';
 
-export type SupportedLocale = 'zh-CN' | 'en-US';
+export type SupportedLocale = string;
 export type MessageParams = Readonly<Record<string, string | number>>;
 
-type DeepMutable<T> = {
-  -readonly [Key in keyof T]: DeepMutable<T[Key]>;
-};
-
 export const LOCALE_STORAGE_KEY = 'mom.locale.preference';
-export const DEFAULT_LOCALE: SupportedLocale = 'zh-CN';
+export const DEFAULT_LOCALE = 'zh-CN';
 
-const messages = { 'zh-CN': zhCN, 'en-US': enUS } as const;
-const locale = ref<SupportedLocale>(DEFAULT_LOCALE);
-const tdesignLocales: Record<SupportedLocale, GlobalConfigProvider> = {
-  'zh-CN': structuredClone(tdesignZhCN) as DeepMutable<typeof tdesignZhCN>,
-  'en-US': structuredClone(tdesignEnUS) as DeepMutable<typeof tdesignEnUS>,
-};
-const componentLocale = computed<GlobalConfigProvider>(() => tdesignLocales[locale.value]);
+/** 数据库 Bundle 是权威；Vue I18n 只保存已加载 Owner 的当前标签页快照。 */
+export const i18n = createI18n({
+  legacy: false,
+  locale: DEFAULT_LOCALE,
+  fallbackLocale: false,
+  missingWarn: false,
+  fallbackWarn: false,
+  messages: {},
+});
 
-function normalizeLocale(value: string | null | undefined): SupportedLocale | undefined {
-  if (!value) return undefined;
-  const normalized = value.trim().replaceAll('_', '-').toLowerCase();
-  if (normalized === 'zh-cn' || normalized === 'zh-hans-cn') {
-    return 'zh-CN';
+export const useLocaleStore = defineStore('mom-locale', {
+  state: () => ({
+    supportedLocales: [] as SupportedLocaleInfo[],
+    defaultLocale: DEFAULT_LOCALE,
+    currentLocale: DEFAULT_LOCALE,
+    loadedOwners: {} as Record<string, I18nOwner[]>,
+    loadingOwners: {} as Record<string, I18nOwner[]>,
+    messagesByLocale: {} as Record<string, Partial<Record<I18nOwner, Record<string, string>>>>,
+    ready: false,
+  }),
+});
+
+const pending = new Map<string, Promise<void>>();
+const events = new Map<I18nOwner, EventSource>();
+const connected = new Set<I18nOwner>();
+
+function nestedMessages(flat: Record<string, string>): Record<string, unknown> {
+  const root: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(flat)) {
+    const path = key.split('.');
+    let cursor = root;
+    for (const part of path.slice(0, -1)) {
+      if (typeof cursor[part] !== 'object' || cursor[part] === null) cursor[part] = {};
+      cursor = cursor[part] as Record<string, unknown>;
+    }
+    cursor[path.at(-1)!] = value;
   }
-  if (normalized === 'en' || normalized === 'en-us') {
-    return 'en-US';
-  }
-  return undefined;
+  return root;
 }
 
-function readInitialLocale(): SupportedLocale {
-  try {
-    const stored = normalizeLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
-    if (stored) return stored;
-  } catch {
-    // 浏览器存储不可用时继续使用受支持的浏览器 Locale 或静态默认值。
+/** 合并已加载 Owner；跨 Owner 同名 Key 只有译文完全一致时才可展示，避免静默覆盖。 */
+function publishMessages(locale: string): void {
+  const store = useLocaleStore();
+  const byKey = new Map<string, Set<string>>();
+  for (const ownerMessages of Object.values(store.messagesByLocale[locale] ?? {})) {
+    for (const [key, value] of Object.entries(ownerMessages ?? {})) {
+      const normalizedKey = key.toLowerCase();
+      const values = byKey.get(normalizedKey) ?? new Set<string>();
+      values.add(value);
+      byKey.set(normalizedKey, values);
+    }
   }
-  for (const candidate of navigator.languages) {
-    const supported = normalizeLocale(candidate);
-    if (supported) return supported;
+  const merged = Object.fromEntries([...byKey].flatMap(([key, values]) =>
+    values.size === 1 ? [[key, [...values][0]]] : []));
+  i18n.global.setLocaleMessage(locale, nestedMessages(merged));
+}
+
+async function loadOwner(owner: I18nOwner, locale: string, force: boolean): Promise<void> {
+  const store = useLocaleStore();
+  if (!force && store.loadedOwners[locale]?.includes(owner)) return;
+  const key = `${locale}:${owner}`;
+  const existing = pending.get(key);
+  if (existing) return existing;
+  const work = (async () => {
+    store.loadingOwners[locale] = [...new Set([...(store.loadingOwners[locale] ?? []), owner])];
+    try {
+      connectI18nEvents(owner);
+      const result = await i18nRuntimeApi.bundle(owner, locale);
+      store.messagesByLocale[locale] = {
+        ...(store.messagesByLocale[locale] ?? {}),
+        [owner]: { ...result.messages },
+      };
+      store.loadedOwners[locale] = [...new Set([...(store.loadedOwners[locale] ?? []), owner])];
+      publishMessages(locale);
+    } finally {
+      store.loadingOwners[locale] = (store.loadingOwners[locale] ?? []).filter((item) => item !== owner);
+    }
+  })();
+  pending.set(key, work);
+  try { await work; } finally { pending.delete(key); }
+}
+
+/** 按 Locale + Owner 去重加载；强制刷新只替换目标服务的完整 Bundle。 */
+export async function ensureOwners(owners: readonly I18nOwner[], locale?: string, force = false): Promise<void> {
+  const target = locale ?? useLocaleStore().currentLocale;
+  await Promise.all([...new Set(owners)].map((owner) => loadOwner(owner, target, force)));
+}
+
+function preferredLocale(supported: readonly SupportedLocaleInfo[], defaultLocale: string): string {
+  let stored: string | null = null;
+  try { stored = window.localStorage.getItem(LOCALE_STORAGE_KEY); } catch { /* 浏览器禁用存储不影响启动。 */ }
+  const alias = stored?.toLowerCase() === 'en' ? 'en-US' : stored;
+  return supported.find((item) => item.enabled && item.localeCode.toLowerCase() === alias?.toLowerCase())?.localeCode
+    ?? defaultLocale;
+}
+
+function applyLocale(locale: string): void {
+  const store = useLocaleStore();
+  store.currentLocale = locale;
+  i18n.global.locale.value = locale;
+  document.documentElement.lang = locale;
+  document.documentElement.dataset.locale = locale;
+}
+
+/** 启动时重新读取 System 权威 Locale，随后加载 Shell 文案才允许挂载应用。 */
+export async function initializeLocale(): Promise<void> {
+  const store = useLocaleStore();
+  const supported = await i18nRuntimeApi.locales();
+  const platformDefault = supported.find((item) => item.defaultLocale && item.enabled);
+  if (!platformDefault) throw new Error('System 未返回可用的默认 Locale');
+  store.supportedLocales = supported;
+  store.defaultLocale = platformDefault.localeCode;
+  const effective = preferredLocale(supported, platformDefault.localeCode);
+  await ensureOwners(['system', 'auth'], effective);
+  applyLocale(effective);
+  store.ready = true;
+}
+
+/** 预先加载已使用 Owner 的新语言，再原子切换，失败时保留旧语言。 */
+export async function setLocale(nextLocale: SupportedLocale): Promise<void> {
+  const store = useLocaleStore();
+  if (!store.supportedLocales.some((item) => item.enabled && item.localeCode === nextLocale)) {
+    throw new Error(`不支持的 Locale：${nextLocale}`);
   }
-  return normalizeLocale(navigator.language) ?? DEFAULT_LOCALE;
-}
-
-function applyLocale(nextLocale: SupportedLocale): void {
-  locale.value = nextLocale;
-  document.documentElement.lang = nextLocale;
-  document.documentElement.dataset.locale = nextLocale;
-}
-
-/** 在 Vue 挂载前恢复浏览器级 Locale；该值不是 System 服务端用户偏好。 */
-export function initializeLocale(): void {
-  applyLocale(readInitialLocale());
-}
-
-/** 更新当前浏览器的界面语言，不改变权限、业务时区或 Factory 业务日期。 */
-export function setLocale(nextLocale: SupportedLocale): void {
+  if (store.currentLocale === nextLocale) return;
+  await ensureOwners(store.loadedOwners[store.currentLocale] ?? ['system', 'auth'], nextLocale);
   applyLocale(nextLocale);
-  try {
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
-  } catch {
-    // 持久化失败不阻断当前标签页的语言切换。
+  try { window.localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale); } catch { /* 当前标签页仍已切换。 */ }
+}
+
+/** 使用完整稳定 Key 翻译；Key 查询按小写规范化，参数名按既有契约保留原始大小写。 */
+export function translate(key: MessageKey, params: MessageParams = {}): string {
+  const normalizedKey = key.toLowerCase();
+  const names = messageParameterOrder[key];
+  const runtimeKey = normalizedKey;
+  const value = names
+    ? i18n.global.t(runtimeKey, names.map((name) => params[name] ?? ''))
+    : i18n.global.t(runtimeKey);
+  return value === runtimeKey ? key : value;
+}
+
+/** 加载失败时只提供极小应急文本，不回退整份静态业务词典。 */
+export function emergencyText(key: keyof typeof emergencyMessages['zh-CN']): string {
+  const locale = useLocaleStore().currentLocale;
+  return (locale === 'en-US' ? emergencyMessages['en-US'] : emergencyMessages['zh-CN'])[key];
+}
+
+/** SSE 只做本标签页当前 Owner 缓存失效；重连后重载完整 Bundle。 */
+export function connectI18nEvents(owner: I18nOwner): void {
+  if (events.has(owner) || typeof EventSource === 'undefined') return;
+  const source = new EventSource(i18nRuntimeApi.eventUrl(owner));
+  events.set(owner, source);
+  source.addEventListener('I18N_CONNECTED', () => {
+    if (!connected.has(owner)) { connected.add(owner); return; }
+    const store = useLocaleStore();
+    if (store.loadedOwners[store.currentLocale]?.includes(owner)) {
+      void ensureOwners([owner], store.currentLocale, true);
+    }
+  });
+  source.addEventListener('I18N_BUNDLE_CHANGED', (event) => {
+    const change = JSON.parse((event as MessageEvent).data) as { locale: string };
+    const store = useLocaleStore();
+    if ((change.locale === '*' || change.locale === store.currentLocale) &&
+        store.loadedOwners[store.currentLocale]?.includes(owner)) {
+      void ensureOwners([owner], store.currentLocale, true);
+    }
+  });
+  source.addEventListener('I18N_LOCALES_CHANGED', () => { void refreshSupportedLocales(); });
+}
+
+async function refreshSupportedLocales(): Promise<void> {
+  const store = useLocaleStore();
+  const supported = await i18nRuntimeApi.locales();
+  const platformDefault = supported.find((item) => item.defaultLocale && item.enabled);
+  if (!platformDefault) return;
+  store.supportedLocales = supported;
+  store.defaultLocale = platformDefault.localeCode;
+  if (!supported.some((item) => item.enabled && item.localeCode === store.currentLocale)) {
+    await setLocale(platformDefault.localeCode);
   }
 }
 
-/** 解析静态 Web 文案；动态业务文案仍由对应 bounded context 所有。 */
-export function translate(key: MessageKey, params: MessageParams = {}): string {
-  const template = messages[locale.value][key] ?? zhCN[key];
-  return Object.entries(params).reduce(
-    (message, [name, value]) => message.replaceAll(`{${name}}`, String(value)),
-    template,
-  );
-}
-
-/** 获取全应用唯一 Locale 状态、TDesign 配置和翻译入口。 */
+/** 获取全应用唯一 Locale 状态和翻译入口。 */
 export function useLocale() {
-  return {
-    locale: readonly(locale),
-    componentLocale,
-    setLocale,
-    t: translate,
-  };
+  const store = useLocaleStore();
+  const { currentLocale: locale, supportedLocales } = storeToRefs(store);
+  return { locale: readonly(locale), supportedLocales: readonly(supportedLocales), setLocale, t: translate };
 }

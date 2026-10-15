@@ -1,0 +1,24 @@
+name: MDM Frontend Verification
+on:
+  pull_request:
+    branches: [fix/base-line]
+    paths:
+      - 'src/**'
+      - 'vite.config.*'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/mdm-frontend.yml'
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: corepack enable
+      - run: corepack prepare pnpm@11.7.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify

@@ -6,8 +6,8 @@
   display: grid;
   min-height: 292px;
   align-items: end;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 64px;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+  gap: 32px;
   padding: 44px 8px 40px;
   border-bottom: 1px solid var(--mom-color-border);
 }
@@ -26,10 +26,12 @@
 .foundation-hero h1 {
   max-width: 850px;
   margin: 18px 0 16px;
-  font-size: clamp(36px, 4vw, 58px);
+  font-size: clamp(28px, 3vw, 40px);
   font-weight: 600;
   letter-spacing: -0.045em;
-  line-height: 1.06;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .foundation-hero p {
@@ -150,7 +152,7 @@
 
 .foundation-sequence {
   display: grid;
-  grid-template-columns: minmax(280px, 0.8fr) minmax(480px, 1.2fr);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: 40px;
   margin: 8px 8px 28px;
   padding: 28px;
@@ -163,7 +165,7 @@
 
 .foundation-format {
   display: grid;
-  grid-template-columns: minmax(280px, 0.8fr) minmax(480px, 1.2fr);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: 40px;
   margin: 8px;
   padding: 28px;
@@ -231,7 +233,7 @@
   font-size: 12px;
 }
 
-@media (max-width: 1180px) {
+@container (max-width: 64rem) {
   .foundation-hero {
     grid-template-columns: minmax(0, 1fr) 240px;
     gap: 32px;
@@ -244,4 +246,14 @@
   .foundation-format {
     grid-template-columns: 1fr;
   }
+}
+
+@container (max-width: 42rem) {
+  .foundation-hero { grid-template-columns: minmax(0, 1fr); min-height: auto; gap: 20px; padding: 24px 0; }
+  .foundation-hero h1 { font-size: 28px; }
+  .foundation-format, .foundation-sequence { padding: 16px; margin-inline: 0; }
+  .foundation-section__heading { flex-wrap: wrap; gap: 12px; }
+  .foundation-layer { grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 16px; }
+  .foundation-layer__status { grid-column: 2; justify-content: flex-start; }
+  .foundation-sequence ol, .foundation-format dl { grid-template-columns: minmax(0, 1fr); }
 }

@@ -9,6 +9,7 @@ export interface PlantView {
   id: string;
   code: string;
   name: string;
+  timeZoneId: string | null;
   status: MasterStatus;
   createdAt: string;
   createdBy: string;
@@ -20,11 +21,13 @@ export interface PlantView {
 export interface CreatePlantRequest {
   code: string;
   name: string;
+  timeZoneId: string;
   status: MasterStatus;
 }
 
 export interface UpdatePlantRequest {
   name: string;
+  timeZoneId: string | null;
   version: number;
 }
 

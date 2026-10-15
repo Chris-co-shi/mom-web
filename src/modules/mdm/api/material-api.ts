@@ -4,29 +4,38 @@ import { httpClient } from '../../../shared/api/http-client';
 
 export interface MaterialCategory {
   id: string; code: string; name: string; parentId: string | null; sort: number;
-  defaultShelfLifeDays: number | null; status: 'ENABLED' | 'DISABLED';
+  defaultShelfLifeDays: number | null; defaultBatchTrackingPolicy: BatchTrackingPolicy | null;
+  status: 'ENABLED' | 'DISABLED';
   version: number; createdAt: string; updatedAt: string;
 }
+export type MaterialType = 'UNSPECIFIED' | 'RAW_MATERIAL' | 'SEMI_FINISHED' | 'FINISHED_PRODUCT';
+export type BatchTrackingPolicy = 'UNSPECIFIED' | 'NONE' | 'REQUIRED';
 export interface Material {
   id: string; code: string; name: string; categoryId: string; baseUomId: string;
+  materialType: MaterialType; batchTrackingPolicy: BatchTrackingPolicy; revisionNo: number;
   shelfLifeDays: number | null; status: 'ENABLED' | 'DISABLED';
   version: number; createdAt: string; updatedAt: string;
 }
 export interface CreateMaterialCategoryRequest {
   code: string; name: string; parentId: string | null; sort: number;
-  defaultShelfLifeDays: number | null; status: MaterialCategory['status'];
+  defaultShelfLifeDays: number | null; defaultBatchTrackingPolicy: 'NONE' | 'REQUIRED' | null;
+  status: MaterialCategory['status'];
 }
 export interface UpdateMaterialCategoryRequest {
   name: string; parentId: string | null; sort: number;
-  defaultShelfLifeDays: number | null; version: number;
+  defaultShelfLifeDays: number | null; defaultBatchTrackingPolicy: 'NONE' | 'REQUIRED' | null;
+  version: number;
 }
 export interface CreateMaterialRequest {
   code: string; name: string; categoryId: string; baseUomId: string;
+  materialType: Exclude<MaterialType, 'UNSPECIFIED'>;
+  batchTrackingSource: 'CATEGORY_DEFAULT' | 'EXPLICIT';
+  batchTrackingPolicy: 'NONE' | 'REQUIRED' | null;
   shelfLifeSource: 'CATEGORY_DEFAULT' | 'EXPLICIT';
   shelfLifeDays: number | null; status: Material['status'];
 }
 export interface UpdateMaterialRequest {
-  name: string; categoryId: string; baseUomId: string;
+  name: string; categoryId: string; batchTrackingPolicy: 'NONE' | 'REQUIRED';
   shelfLifeDays: number | null; version: number;
 }
 export interface MaterialFilter {

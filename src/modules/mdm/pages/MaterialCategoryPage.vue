@@ -30,7 +30,8 @@ const blocked = ref(false), optionError = ref(false), optionLoading = ref(false)
 const search = ref(''), parentFilter = ref(''), statusFilter = ref('');
 const options = ref<MaterialCategory[]>([]), optionPage = ref(1), optionTotal = ref(0);
 const action = ref<'create' | 'detail' | 'edit' | 'status'>(), target = ref<MaterialCategory>();
-const form = reactive({ code: '', name: '', parentId: '', sort: '0', defaultShelfLifeDays: '', status: 'ENABLED' });
+const form = reactive({ code: '', name: '', parentId: '', sort: '0', defaultShelfLifeDays: '',
+  defaultBatchTrackingPolicy: '', status: 'ENABLED' });
 let controller: AbortController | undefined, detailController: AbortController | undefined;
 let seq = 0, detailSeq = 0, disposed = false;
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
@@ -44,6 +45,7 @@ const columns = computed<MomColumn[]>(() => [
   { key: 'parentId', title: t('mdm.material.parent'), minWidth: 155 },
   { key: 'sort', title: t('mdm.material.sort'), width: 90 },
   { key: 'defaultShelfLifeDays', title: t('mdm.material.defaultShelfLife'), minWidth: 180 },
+  { key: 'defaultBatchTrackingPolicy', title: t('mdm.material.defaultBatchPolicy'), minWidth: 180 },
   { key: 'status', title: t('mdm.struct.status'), width: 110 },
   { key: 'actions', title: t('mdm.struct.actions'), width: 270, fixed: 'right', resizable: false },
 ]);
@@ -107,6 +109,7 @@ function resetForm(row?: MaterialCategory): void {
   Object.assign(form, { code: row?.code ?? '', name: row?.name ?? '',
     parentId: row?.parentId ?? '', sort: String(row?.sort ?? 0),
     defaultShelfLifeDays: row?.defaultShelfLifeDays == null ? '' : String(row.defaultShelfLifeDays),
+    defaultBatchTrackingPolicy: row?.defaultBatchTrackingPolicy ?? '',
     status: row?.status ?? 'ENABLED' });
 }
 async function open(next: 'create' | 'detail' | 'edit' | 'status', row?: MaterialCategory): Promise<void> {
@@ -158,11 +161,15 @@ async function submit(): Promise<void> {
     if (currentAction === 'create') {
       await createMaterialCategory({ code: form.code, name: form.name, parentId: form.parentId || null,
         sort: Number(form.sort), defaultShelfLifeDays: days,
+        defaultBatchTrackingPolicy: form.defaultBatchTrackingPolicy === '' ? null
+          : form.defaultBatchTrackingPolicy as 'NONE' | 'REQUIRED',
         status: form.status === 'DISABLED' ? 'DISABLED' : 'ENABLED' });
     } else if (target.value) {
       if (currentAction === 'edit') {
         await updateMaterialCategory(target.value.id, { name: form.name, parentId: form.parentId || null,
-          sort: Number(form.sort), defaultShelfLifeDays: days, version: target.value.version });
+          sort: Number(form.sort), defaultShelfLifeDays: days,
+          defaultBatchTrackingPolicy: form.defaultBatchTrackingPolicy === '' ? null
+            : form.defaultBatchTrackingPolicy as 'NONE' | 'REQUIRED', version: target.value.version });
       } else {
         await setMaterialCategoryEnabled(target.value.id, target.value.status !== 'ENABLED', target.value.version);
       }
@@ -234,6 +241,9 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
           <template #cell-code="{ row }"><span class="mdm-plants__code">{{ row.code }}</span></template>
           <template #cell-parentId="{ row }">{{ parentName(row.parentId) }}</template>
           <template #cell-defaultShelfLifeDays="{ row }">{{ row.defaultShelfLifeDays ?? '—' }}</template>
+          <template #cell-defaultBatchTrackingPolicy="{ row }">{{ row.defaultBatchTrackingPolicy === 'REQUIRED'
+            ? t('mdm.material.batchRequiredLabel') : row.defaultBatchTrackingPolicy === 'NONE'
+              ? t('mdm.material.batchNone') : '—' }}</template>
           <template #cell-status="{ row }">
             <span class="mom-management-status" :class="row.status === 'ENABLED' ? 'mom-management-status--enabled' : 'mom-management-status--disabled'">
               <span class="mom-management-status__dot" aria-hidden="true"></span>
@@ -275,6 +285,9 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
             <div><dt>{{ t('mdm.material.parent') }}</dt><dd>{{ parentName(target.parentId) }}</dd></div>
             <div><dt>{{ t('mdm.material.sort') }}</dt><dd>{{ target.sort }}</dd></div>
             <div><dt>{{ t('mdm.material.defaultShelfLife') }}</dt><dd>{{ target.defaultShelfLifeDays ?? '—' }}</dd></div>
+            <div><dt>{{ t('mdm.material.defaultBatchPolicy') }}</dt><dd>{{ target.defaultBatchTrackingPolicy === 'REQUIRED'
+              ? t('mdm.material.batchRequiredLabel') : target.defaultBatchTrackingPolicy === 'NONE'
+                ? t('mdm.material.batchNone') : '—' }}</dd></div>
             <div><dt>{{ t('mdm.struct.status') }}</dt><dd>{{ t(target.status === 'ENABLED' ? 'mdm.struct.enabled' : 'mdm.struct.disabled') }}</dd></div>
             <div><dt>{{ t('mdm.struct.version') }}</dt><dd>{{ target.version }}</dd></div>
           </dl>
@@ -297,6 +310,12 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
                   <MomInput v-model="form.defaultShelfLifeDays" type="number" />
                 </label>
               </div>
+              <label><span>{{ t('mdm.material.defaultBatchPolicy') }}</span>
+                <MomSelect v-model="form.defaultBatchTrackingPolicy" :options="[
+                  {label:t('mdm.material.noDefault'),value:''},
+                  {label:t('mdm.material.batchNone'),value:'NONE'},
+                  {label:t('mdm.material.batchRequiredLabel'),value:'REQUIRED'}]" />
+              </label>
               <label v-if="action === 'create'"><span>{{ t('mdm.struct.status') }}</span>
                 <MomSelect v-model="form.status" :options="[{label:t('mdm.struct.enabled'),value:'ENABLED'},
                   {label:t('mdm.struct.disabled'),value:'DISABLED'}]" />

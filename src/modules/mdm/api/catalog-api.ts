@@ -2,7 +2,7 @@ import { apiPath } from '../../../shared/api/config';
 import type { PageResult } from '../../../shared/api/contracts';
 import { httpClient } from '../../../shared/api/http-client';
 
-/** 工厂、仓储、库位均由现有 MDM Controller 对外提供，不重复建模后端规则。 */
+/** 工厂、仓储、通用位置均由现有 MDM Controller 对外提供，不重复建模后端规则。 */
 export type CatalogKind =
   | 'plants' | 'workshops' | 'production-lines' | 'workstations'
   | 'warehouses' | 'warehouse-areas' | 'location-types' | 'locations';

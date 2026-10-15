@@ -71,6 +71,9 @@ describe('MainLayout cascading navigation', () => {
     expect(iam.attributes('aria-expanded')).toBe('false');
     expect(wrapper.get('#app-navigation-mdm').isVisible()).toBe(true);
     expect(wrapper.get('#app-navigation-iam').isVisible()).toBe(false);
+    expect(wrapper.get('[data-navigation-section="material-uom"]').attributes('aria-expanded')).toBe('true');
+    expect(wrapper.get('[data-navigation-section="organization-resources"]').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get('[data-navigation-section="manufacturing-definition"]').attributes('aria-expanded')).toBe('false');
 
     await iam.trigger('click');
     expect(iam.attributes('aria-expanded')).toBe('true');

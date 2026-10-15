@@ -17,6 +17,7 @@ import { useLocale } from '../../../shared/i18n/locale';
 import {
   searchMaterials, getMaterial, createMaterial, updateMaterial, setMaterialEnabled,
   searchMaterialCategories, getMaterialCategory, type Material, type MaterialCategory, type MaterialFilter,
+  type CreateMaterialRequest, type BatchTrackingPolicy, type MaterialType,
 } from '../api/material-api';
 import { getUomCatalog, searchUomCatalog, type UomRow } from '../api/uom-api';
 import './mdm-pages.css';
@@ -40,6 +41,9 @@ const listError = ref(''), dialogError = ref(''), notice = ref(''), formError = 
 const filter = reactive({ keyword:'', categoryId:'', baseUomId:'', status:'' });
 const form = reactive({
   code:'', name:'', categoryId:'', baseUomId:'', status:'ENABLED',
+  materialType:'' as MaterialType | '',
+  batchTrackingSource:'' as CreateMaterialRequest['batchTrackingSource'] | '',
+  batchTrackingPolicy:'' as BatchTrackingPolicy | '',
   shelfLifeSource:'CATEGORY_DEFAULT', shelfLifeDays:'',
 });
 let controller: AbortController | undefined, detailController: AbortController | undefined;
@@ -53,6 +57,9 @@ const columns = computed<MomColumn[]>(() => [
   { key:'name', title:t('mdm.struct.name'), minWidth:200 },
   { key:'categoryId', title:t('mdm.material.category'), minWidth:180 },
   { key:'baseUomId', title:t('mdm.material.baseUom'), minWidth:160 },
+  { key:'materialType', title:t('mdm.material.type'), minWidth:150 },
+  { key:'batchTrackingPolicy', title:t('mdm.material.batchPolicy'), minWidth:150 },
+  { key:'revisionNo', title:t('mdm.material.revision'), width:110 },
   { key:'shelfLifeDays', title:t('mdm.material.shelfLife'), minWidth:120 },
   { key:'status', title:t('mdm.struct.status'), width:120 },
   { key:'actions', title:t('mdm.struct.actions'), width:180, fixed:'right', resizable:false },
@@ -126,6 +133,8 @@ function resetForm(value?: Material): void {
   Object.assign(form, {
     code:value?.code ?? '', name:value?.name ?? '',
     categoryId:value?.categoryId ?? '', baseUomId:value?.baseUomId ?? '',
+    materialType:value?.materialType ?? '',
+    batchTrackingSource:'', batchTrackingPolicy:value?.batchTrackingPolicy ?? '',
     status:value?.status ?? 'ENABLED', shelfLifeSource:'CATEGORY_DEFAULT',
     shelfLifeDays:value?.shelfLifeDays == null ? '' : String(value.shelfLifeDays),
   });
@@ -170,9 +179,16 @@ async function submit(): Promise<void> {
   const next = action.value;
   formError.value = ''; dialogError.value = '';
   if (next === 'create' || next === 'edit') {
-    if (!form.name.trim() || form.name.length > 200 || !form.categoryId || !form.baseUomId ||
-        next === 'create' && (!form.code.trim() || form.code.length > 64)) {
+    if (!form.name.trim() || form.name.length > 200 || !form.categoryId ||
+        next === 'create' && (!form.code.trim() || form.code.length > 64 || !form.baseUomId ||
+          !form.materialType || form.materialType === 'UNSPECIFIED' || !form.batchTrackingSource) ||
+        next === 'edit' && (!form.batchTrackingPolicy || form.batchTrackingPolicy === 'UNSPECIFIED')) {
       formError.value = t('mdm.struct.validation'); return;
+    }
+    if (next === 'create' && (form.batchTrackingSource === 'EXPLICIT'
+      ? !form.batchTrackingPolicy || form.batchTrackingPolicy === 'UNSPECIFIED'
+      : !knownCategories.value.find(row => row.id === form.categoryId)?.defaultBatchTrackingPolicy)) {
+      formError.value = t('mdm.material.batchRequired'); return;
     }
     if (!isDays(form.shelfLifeDays)) { formError.value = t('mdm.material.invalidDays'); return; }
     if (referencesError.value) { formError.value = t('mdm.material.referencesError'); return; }
@@ -188,13 +204,18 @@ async function submit(): Promise<void> {
       const source = form.shelfLifeSource === 'EXPLICIT' ? 'EXPLICIT' : 'CATEGORY_DEFAULT';
       await createMaterial({
         code:form.code, name:form.name, categoryId:form.categoryId, baseUomId:form.baseUomId,
+        materialType:form.materialType as CreateMaterialRequest['materialType'],
+        batchTrackingSource:form.batchTrackingSource as CreateMaterialRequest['batchTrackingSource'],
+        batchTrackingPolicy:form.batchTrackingSource === 'CATEGORY_DEFAULT' ? null
+          : form.batchTrackingPolicy as CreateMaterialRequest['batchTrackingPolicy'],
         shelfLifeSource:source, shelfLifeDays:source === 'CATEGORY_DEFAULT' ? null : dayValue(form.shelfLifeDays),
         status:form.status === 'DISABLED' ? 'DISABLED' : 'ENABLED',
       });
     } else if (target.value) {
       if (next === 'edit') {
         await updateMaterial(target.value.id, {
-          name:form.name, categoryId:form.categoryId, baseUomId:form.baseUomId,
+          name:form.name, categoryId:form.categoryId,
+          batchTrackingPolicy:form.batchTrackingPolicy as 'NONE' | 'REQUIRED',
           shelfLifeDays:dayValue(form.shelfLifeDays), version:target.value.version,
         });
       } else {
@@ -214,6 +235,18 @@ async function submit(): Promise<void> {
 }
 function displayCategory(id: string): string { return knownCategories.value.find(r=>r.id===id)?.name ?? id; }
 function displayUom(id: string): string { return knownUoms.value.find(r=>r.id===id)?.name ?? id; }
+function displayType(type: MaterialType): string {
+  return t(({
+    RAW_MATERIAL:'mdm.material.rawMaterial', SEMI_FINISHED:'mdm.material.semiFinished',
+    FINISHED_PRODUCT:'mdm.material.finishedProduct', UNSPECIFIED:'mdm.material.unspecified',
+  } as const)[type]);
+}
+function displayBatchPolicy(policy: BatchTrackingPolicy): string {
+  return t(({
+    NONE:'mdm.material.batchNone', REQUIRED:'mdm.material.batchRequiredLabel',
+    UNSPECIFIED:'mdm.material.unspecified',
+  } as const)[policy]);
+}
 function clearFilters(): void {
   Object.assign(filter, {keyword:'',categoryId:'',baseUomId:'',status:''});
   void loadPage(1);
@@ -269,6 +302,8 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
           <template #cell-code="{row}"><span class="mdm-plants__code">{{ row.code }}</span></template>
           <template #cell-categoryId="{row}">{{ displayCategory(row.categoryId) }}</template>
           <template #cell-baseUomId="{row}">{{ displayUom(row.baseUomId) }}</template>
+          <template #cell-materialType="{row}">{{ displayType(row.materialType) }}</template>
+          <template #cell-batchTrackingPolicy="{row}">{{ displayBatchPolicy(row.batchTrackingPolicy) }}</template>
           <template #cell-shelfLifeDays="{row}">{{ row.shelfLifeDays ?? '—' }}</template>
           <template #cell-status="{row}">
             <span class="mom-management-status" :class="row.status === 'ENABLED' ? 'mom-management-status--enabled' : 'mom-management-status--disabled'">
@@ -315,6 +350,9 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
             <div><dt>{{ t('mdm.struct.name') }}</dt><dd>{{ target.name }}</dd></div>
             <div><dt>{{ t('mdm.material.category') }}</dt><dd>{{ displayCategory(target.categoryId) }}</dd></div>
             <div><dt>{{ t('mdm.material.baseUom') }}</dt><dd>{{ displayUom(target.baseUomId) }}</dd></div>
+            <div><dt>{{ t('mdm.material.type') }}</dt><dd>{{ displayType(target.materialType) }}</dd></div>
+            <div><dt>{{ t('mdm.material.batchPolicy') }}</dt><dd>{{ displayBatchPolicy(target.batchTrackingPolicy) }}</dd></div>
+            <div><dt>{{ t('mdm.material.revision') }}</dt><dd>{{ target.revisionNo }}</dd></div>
             <div><dt>{{ t('mdm.material.shelfLife') }}</dt><dd>{{ target.shelfLifeDays ?? '—' }}</dd></div>
             <div><dt>{{ t('mdm.struct.status') }}</dt><dd>{{ t(target.status === 'ENABLED' ? 'mdm.struct.enabled' : 'mdm.struct.disabled') }}</dd></div>
             <div><dt>{{ t('mdm.struct.version') }}</dt><dd>{{ target.version }}</dd></div>
@@ -330,8 +368,28 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
                 <MomSelect v-model="form.categoryId" :options="activeCategoryOptions" :disabled="referencesError" :aria-invalid="!!formError && !form.categoryId" :aria-describedby="formError ? 'mdm-material-form-error' : undefined" />
                 <small>{{ t('mdm.material.leafOnly') }}</small>
               </label>
-              <label><span>{{ t('mdm.material.baseUom') }} *</span>
+              <label v-if="action === 'create'"><span>{{ t('mdm.material.baseUom') }} *</span>
                 <MomSelect v-model="form.baseUomId" :options="formUomOptions" :disabled="referencesError" :aria-invalid="!!formError && !form.baseUomId" :aria-describedby="formError ? 'mdm-material-form-error' : undefined" />
+              </label>
+              <label v-if="action === 'create'"><span>{{ t('mdm.material.type') }} *</span>
+                <MomSelect v-model="form.materialType" :options="[
+                  {label:t('mdm.struct.select'),value:''},
+                  {label:t('mdm.material.rawMaterial'),value:'RAW_MATERIAL'},
+                  {label:t('mdm.material.semiFinished'),value:'SEMI_FINISHED'},
+                  {label:t('mdm.material.finishedProduct'),value:'FINISHED_PRODUCT'}]" />
+              </label>
+              <label v-if="action === 'create'"><span>{{ t('mdm.material.batchSource') }} *</span>
+                <MomSelect v-model="form.batchTrackingSource" :options="[
+                  {label:t('mdm.struct.select'),value:''},
+                  {label:t('mdm.material.categoryDefault'),value:'CATEGORY_DEFAULT'},
+                  {label:t('mdm.material.explicit'),value:'EXPLICIT'}]" />
+              </label>
+              <p v-if="action === 'create' && form.batchTrackingSource === 'CATEGORY_DEFAULT'">{{ t('mdm.material.batchDefaultHint') }}</p>
+              <label v-if="action === 'edit' || form.batchTrackingSource === 'EXPLICIT'"><span>{{ t('mdm.material.batchPolicy') }} *</span>
+                <MomSelect v-model="form.batchTrackingPolicy" :options="[
+                  {label:t('mdm.struct.select'),value:''},
+                  {label:t('mdm.material.batchNone'),value:'NONE'},
+                  {label:t('mdm.material.batchRequiredLabel'),value:'REQUIRED'}]" />
               </label>
               <template v-if="action === 'create'">
                 <label><span>{{ t('mdm.material.shelfSource') }}</span>

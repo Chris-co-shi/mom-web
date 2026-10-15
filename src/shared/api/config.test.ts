@@ -3,10 +3,11 @@ import { API_PATHS, apiPath, resolveApiUrl } from './config';
 
 describe('Gateway module path contract', () => {
   it('浏览器到 Gateway 不包含 /api 前缀', () => {
-    expect(API_PATHS).toEqual({ auth: '/auth', system: '/system', mdm: '/mdm' });
+    expect(API_PATHS).toEqual({ auth: '/auth', system: '/system', mdm: '/mdm', qms: '/qms' });
     expect(apiPath('auth', '/login')).toBe('/auth/login');
     expect(apiPath('system', '/i18n/locales')).toBe('/system/i18n/locales');
     expect(apiPath('mdm', '/materials/search')).toBe('/mdm/materials/search');
+    expect(apiPath('qms', '/quality-specifications/search')).toBe('/qms/quality-specifications/search');
     expect(apiPath('auth')).toBe('/auth');
   });
 

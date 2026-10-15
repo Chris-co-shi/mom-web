@@ -12,7 +12,7 @@ describe('MDM 结构主数据 API 契约', () => {
     setHttpRequestContextProvider(() => ({ accessToken: 'mdm-test-token', locale: 'zh-CN' }));
   });
 
-  it('库位查询使用 MDM 分页契约并按字符串传递仓库 ID', async () => {
+  it('位置查询使用 MDM 分页契约并按字符串传递仓库 ID', async () => {
     await searchCatalog('locations', 2, 20, { warehouseId: '2106626945701810177' });
     expect(fetchMock.mock.calls[0]![0]).toBe('/mdm/locations/search');
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({

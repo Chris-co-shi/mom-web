@@ -30,7 +30,7 @@ import {
 import { hasAuthorities } from '../modules/auth/model/auth-permissions';
 import { logout, useAuthSession } from '../modules/auth/model/auth-session';
 import AccountMenu from '../modules/auth/components/AccountMenu.vue';
-import { mainNavigation } from '../router/route-registry';
+import { mainNavigation, type NavigationItem } from '../router/route-registry';
 import { ROUTE_NAMES, type MomRouteName } from '../router/route-names';
 import LocaleSwitcher from '../shared/i18n/LocaleSwitcher.vue';
 import { useLocale } from '../shared/i18n/locale';
@@ -52,6 +52,7 @@ const navigationOpen = ref(false);
 watch(() => route.fullPath, () => { navigationOpen.value = false; });
 watch(narrow, () => { navigationOpen.value = false; });
 const expandedNavigationGroup = ref<string | null>(null);
+const expandedNavigationSection = ref<string | null>(null);
 const loggingOut = ref(false);
 const { t } = useLocale();
 const { user, authorities } = useAuthSession();
@@ -89,18 +90,48 @@ const visibleNavigation = computed(() => {
   void authorities.value;
   return mainNavigation.filter((item) => hasAuthorities(item.permissions, item.permissionMode));
 });
+interface NavigationSection {
+  id: string;
+  titleKey: NavigationItem['titleKey'];
+  order: number;
+  items: NavigationItem[];
+}
+
+function buildNavigationSections(items: NavigationItem[]): NavigationSection[] {
+  const sections = new Map<string, NavigationSection>();
+  for (const item of items) {
+    if (!item.section || !item.sectionTitleKey || item.sectionOrder === undefined) continue;
+    const section = sections.get(item.section) ?? {
+      id: item.section,
+      titleKey: item.sectionTitleKey,
+      order: item.sectionOrder,
+      items: [],
+    };
+    section.items.push(item);
+    sections.set(item.section, section);
+  }
+  return [...sections.values()].sort((left, right) => left.order - right.order);
+}
+
 const navigationGroups = computed(() => [
   { id: 'iam', title: t('navigation.iam'), icon: navigationGroupIcons.iam, items: visibleNavigation.value.filter((item) => item.group === 'iam') },
   { id: 'mdm', title: t('navigation.mdm'), icon: navigationGroupIcons.mdm, items: visibleNavigation.value.filter((item) => item.group === 'mdm') },
   { id: 'system', title: t('system.navigation'), icon: navigationGroupIcons.system, items: visibleNavigation.value.filter((item) => item.group === 'system') },
   { id: 'foundation', title: t('shell.foundationGroup'), icon: navigationGroupIcons.foundation, items: visibleNavigation.value.filter((item) => item.group === 'foundation') },
-].filter((group) => group.items.length > 0));
+].filter((group) => group.items.length > 0).map((group) => ({
+  ...group,
+  sections: buildNavigationSections(group.items),
+})));
+const activeNavigationItem = computed(() => visibleNavigation.value.find((item) => item.name === route.name));
 const activeNavigationGroup = computed(() =>
-  visibleNavigation.value.find((item) => item.name === route.name)?.group ?? navigationGroups.value[0]?.id ?? null,
+  activeNavigationItem.value?.group ?? navigationGroups.value[0]?.id ?? null,
 );
 
 watch(activeNavigationGroup, (group) => {
   if (group) expandedNavigationGroup.value = group;
+}, { immediate: true });
+watch(activeNavigationItem, (item) => {
+  if (item?.section) expandedNavigationSection.value = item.section;
 }, { immediate: true });
 
 function isNavigationGroupExpanded(group: string): boolean {
@@ -120,6 +151,10 @@ function toggleNavigationGroup(group: string): void {
     return;
   }
   expandedNavigationGroup.value = expandedNavigationGroup.value === group ? null : group;
+}
+
+function toggleNavigationSection(section: string): void {
+  expandedNavigationSection.value = expandedNavigationSection.value === section ? null : section;
 }
 
 function toggleNavigation(): void {
@@ -183,17 +218,46 @@ async function handleLogout(): Promise<void> {
             class="app-nav"
             :aria-label="group.title"
           >
-          <RouterLink
-            v-for="item in group.items"
-            :key="item.name"
-            :to="{ name: item.name }"
-            :title="navigationCollapsed ? t(item.titleKey) : undefined"
-            class="app-nav__link"
-            :aria-current="route.name === item.name ? 'page' : undefined"
-          >
-            <component :is="navigationIcons[item.name as keyof typeof navigationIcons] ?? Blocks" class="app-nav__icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
-            <span class="app-nav__label">{{ t(item.titleKey) }}</span>
-          </RouterLink>
+            <template v-if="group.sections.length > 0">
+              <section v-for="section in group.sections" :key="section.id" class="app-nav-section">
+                <button
+                  type="button"
+                  class="app-nav-section__trigger"
+                  :aria-controls="`app-navigation-section-${section.id}`"
+                  :aria-expanded="expandedNavigationSection === section.id"
+                  :data-navigation-section="section.id"
+                  @click="toggleNavigationSection(section.id)"
+                >
+                  <span>{{ t(section.titleKey) }}</span>
+                  <ChevronDown :size="14" aria-hidden="true" />
+                </button>
+                <div v-show="expandedNavigationSection === section.id" :id="`app-navigation-section-${section.id}`" class="app-nav-section__items">
+                  <RouterLink
+                    v-for="item in section.items"
+                    :key="item.name"
+                    :to="{ name: item.name }"
+                    class="app-nav__link"
+                    :aria-current="route.name === item.name ? 'page' : undefined"
+                  >
+                    <component :is="navigationIcons[item.name as keyof typeof navigationIcons] ?? Blocks" class="app-nav__icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
+                    <span class="app-nav__label">{{ t(item.titleKey) }}</span>
+                  </RouterLink>
+                </div>
+              </section>
+            </template>
+            <template v-else>
+              <RouterLink
+                v-for="item in group.items"
+                :key="item.name"
+                :to="{ name: item.name }"
+                :title="navigationCollapsed ? t(item.titleKey) : undefined"
+                class="app-nav__link"
+                :aria-current="route.name === item.name ? 'page' : undefined"
+              >
+                <component :is="navigationIcons[item.name as keyof typeof navigationIcons] ?? Blocks" class="app-nav__icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
+                <span class="app-nav__label">{{ t(item.titleKey) }}</span>
+              </RouterLink>
+            </template>
           </nav>
         </section>
       </div>
@@ -255,8 +319,21 @@ async function handleLogout(): Promise<void> {
             <component :is="group.icon" :size="18" aria-hidden="true" />{{ group.title }}<ChevronDown :size="16" aria-hidden="true" />
           </MomButton>
           <nav v-show="expandedNavigationGroup === group.id" :aria-label="group.title">
-            <RouterLink v-for="item in group.items" :key="item.name" :to="{ name: item.name }" class="app-nav__link"
-              :aria-current="route.name === item.name ? 'page' : undefined" @click="navigationOpen = false">{{ t(item.titleKey) }}</RouterLink>
+            <template v-if="group.sections.length > 0">
+              <section v-for="section in group.sections" :key="section.id" class="app-nav-section">
+                <MomButton variant="ghost" :aria-expanded="expandedNavigationSection === section.id" @click="toggleNavigationSection(section.id)">
+                  {{ t(section.titleKey) }}<ChevronDown :size="14" aria-hidden="true" />
+                </MomButton>
+                <div v-show="expandedNavigationSection === section.id" class="app-nav-section__items">
+                  <RouterLink v-for="item in section.items" :key="item.name" :to="{ name: item.name }" class="app-nav__link"
+                    :aria-current="route.name === item.name ? 'page' : undefined" @click="navigationOpen = false">{{ t(item.titleKey) }}</RouterLink>
+                </div>
+              </section>
+            </template>
+            <template v-else>
+              <RouterLink v-for="item in group.items" :key="item.name" :to="{ name: item.name }" class="app-nav__link"
+                :aria-current="route.name === item.name ? 'page' : undefined" @click="navigationOpen = false">{{ t(item.titleKey) }}</RouterLink>
+            </template>
           </nav>
         </section>
       </div>

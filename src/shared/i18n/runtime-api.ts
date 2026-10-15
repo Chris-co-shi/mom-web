@@ -1,7 +1,7 @@
 import { apiPath, resolveApiUrl } from '../api/config';
 import { httpClient } from '../api/http-client';
 
-export type I18nOwner = 'system' | 'auth' | 'mdm';
+export type I18nOwner = 'system' | 'auth' | 'mdm' | 'qms';
 
 export interface SupportedLocaleInfo {
   localeCode: string;
@@ -22,6 +22,7 @@ const runtimePath: Readonly<Record<I18nOwner, string>> = {
   system: '/i18n/runtime',
   auth: '/i18n/runtime',
   mdm: '/i18n/runtime',
+  qms: '/i18n/runtime',
 };
 
 /** 各 Owner 只暴露自己的 Runtime，System 只提供可选语言目录。 */

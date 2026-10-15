@@ -7,7 +7,7 @@ describe('Gateway module path contract', () => {
     expect(apiPath('auth', '/login')).toBe('/auth/login');
     expect(apiPath('system', '/i18n/locales')).toBe('/system/i18n/locales');
     expect(apiPath('mdm', '/materials/search')).toBe('/mdm/materials/search');
-    expect(apiPath('qms', '/quality-specifications/search')).toBe('/qms/quality-specifications/search');
+    expect(apiPath('qms', '/inspection-tasks/search')).toBe('/qms/inspection-tasks/search');
     expect(apiPath('auth')).toBe('/auth');
   });
 

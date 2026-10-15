@@ -83,7 +83,7 @@ MOM PC Web
 |---|---|---|
 | IAM | 登录、用户、角色、权限、用户角色分配、角色权限分配 | Mini Auth 与现有 Controller |
 | System | 平台字典、Supported Locale、`system.*` Message/Translation | ADR-043 与 System V1 Controller |
-| MDM | 工厂结构、仓储结构、库位类型与库位、物料分类与物料、计量单位与换算 | MDM V1 Controller |
+| MDM | 组织与仓储结构、物料与单位、制造定义、质量基础定义、一致性检查 | MDM 当前 Controller |
 
 System 不包含 Parameter、User Preference、Application Catalog 或 Navigation。历史表或历史报告不能成为当前页面范围依据。
 

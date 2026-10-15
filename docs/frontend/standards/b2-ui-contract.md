@@ -13,7 +13,7 @@
 2. **新建/调整 CRUD 交互**按需读 [CRUD 管理页标准](crud-management-page-standard.md) 对应章节；固定交互的字段/接口调整不用重读完整文档。
 3. **全局视觉与 Token 变更**才深入读 [Design System](../design-system.md)；[ADR-003](../decisions/ADR-003-ui-foundation-migration.md) 是技术选型决策，常规页面不重复评审。
 4. **产品信息架构/模块边界变化**才读 [产品体验](../product-experience.md)与[工程架构](../frontend-architecture.md)。
-5. **回归既有视觉缺陷**时参考 [持续验收记录](../validation/web-foundation-v1.md)第5节；它是历史证据，不是日常输入的必读材料。
+5. 回归视觉缺陷时直接核对现行标准、相关组件测试与真实页面，不读取历史验收报告。
 
 发生冲突先定位具体条款，不把历史计划或效果图自动当成当前实现。当前用户明确决策优先；涉及接口或领域边界时说明问题，不通过视觉改造偷偷改变业务规则。
 

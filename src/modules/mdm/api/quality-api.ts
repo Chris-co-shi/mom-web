@@ -12,7 +12,7 @@ export interface SpecificationDetail extends Omit<QualitySpecification,'latestRe
   plantVersion:number; materialRevisionNo:number; materialVersion:number; revisionId:string; revisionNo:number;
   status:RevisionStatus; lockVersion:number; releasedAt:string|null; obsoleteAt:string|null; items:SpecificationItem[];
 }
-const path = (root:string,suffix='') => apiPath('qms',`/${root}${suffix}`);
+const path = (root:string,suffix='') => apiPath('mdm',`/${root}${suffix}`);
 const id = (value:string) => encodeURIComponent(value);
 export function searchCharacteristics(pageNo:number,pageSize:number,enabled?:boolean,signal?:AbortSignal):Promise<PageResult<InspectionCharacteristic>> {
   return httpClient.result({path:path('inspection-characteristics','/search'),method:'POST',body:{params:{enabled},pageNo,pageSize},signal});

@@ -33,8 +33,8 @@ describe('MDM 三级导航路由契约', () => {
     expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmProductionVersions)).toMatchObject({
       section: 'manufacturing-definition', permissions: ['mdm:manufacturing-definition:read'],
     });
-    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.qmsQualitySpecifications)).toMatchObject({
-      group: 'mdm', section: 'quality-definition', permissions: ['qms:quality-definition:read'],
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmQualitySpecifications)).toMatchObject({
+      group: 'mdm', section: 'quality-definition', permissions: ['mdm:quality-definition:read'],
     });
     expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmGovernanceChecks)).toMatchObject({
       group: 'mdm', section: 'governance', permissions: ['mdm:governance:read'],

@@ -4,7 +4,7 @@ import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions'
 import { foundationRoutes } from '../modules/foundation/routes';
 import { iamRoutes } from '../modules/iam';
 import { mdmRoutes } from '../modules/mdm/routes';
-import { qmsRoutes } from '../modules/qms/routes';
+import { mdmQualityRoutes } from '../modules/mdm/quality-routes';
 import { systemRoutes } from '../modules/system/routes';
 import { ROUTE_NAMES, type MomRouteName } from './route-names';
 
@@ -44,7 +44,7 @@ export const appRoutes: RouteRecordRaw[] = [
       ...iamRoutes,
       ...systemRoutes,
       ...mdmRoutes,
-      ...qmsRoutes,
+      ...mdmQualityRoutes,
       {
         path: 'account',
         name: ROUTE_NAMES.account,
@@ -174,7 +174,7 @@ function isNavigationRoute(route: RouteRecordRaw): route is RouteRecordRaw & {
 }
 
 /** 主导航直接由已注册路由派生，避免路由与菜单维护两份显示配置。 */
-export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes, ...mdmRoutes, ...qmsRoutes]
+export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes, ...mdmRoutes, ...mdmQualityRoutes]
   .filter(isNavigationRoute)
   .map((route) => ({
     name: route.name,

@@ -92,7 +92,7 @@ Web-P1-S01 证明 Table、Tree、Form、Select、Dialog、Tag、亮暗主题和�
 2. Input/Select 的原生输入标签关联需要基础组件补齐；
 3. Dialog 的语义、初始焦点、焦点循环和关闭后焦点恢复需要统一封装。
 
-完整证据见 [TDesign Vue Next 1.20.9 验证报告](../validation/tdesign-vue-next-1.20.9.md)。
+对应薄验证报告已随历史过程文档清理；当前选择以 ADR-003 为准。
 
 ## 9. 官方资料
 

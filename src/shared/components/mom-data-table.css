@@ -12,3 +12,6 @@
 .mom-data-table__resizer:hover, .mom-data-table__resizer:active, .mom-data-table__resizer:focus-visible { border-right: var(--mom-focus-ring-width) solid var(--mom-color-brand); }
 .mom-data-table__resizer:focus-visible { outline: none; }
 .mom-data-table .mom-data-table__empty { max-width: none; height: 120px; color: var(--mom-color-text-secondary); text-align: center; }
+@container (max-width: 40rem) {
+  .mom-data-table .mom-data-table__pinned { position: relative; right: auto; box-shadow: none; }
+}

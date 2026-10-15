@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onScopeDispose, reactive, ref } from 'vue';
+import { submitWithFocus } from '../../../shared/ui/focus';
 import { onBeforeRouteLeave } from 'vue-router';
 import { Plus, RefreshCw } from '@lucide/vue';
 import { AuthorityGuard, hasAuthority } from '../../auth';
@@ -10,6 +11,9 @@ import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomCrudSearch from '../../../shared/components/MomCrudSearch.vue';
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
+import MdmSectionTabs from '../components/MdmSectionTabs.vue';
+import { decimalRuleExpression } from '../model/mdm-display';
+import MomCrudRowMenu from '../../../shared/components/MomCrudRowMenu.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
@@ -41,9 +45,20 @@ const target = ref<UomRow>();
 const listError = ref(''), dialogError = ref(''), notice = ref(''), formError = ref('');
 const search = ref('');
 const dimensions = ref<UomRow[]>([]), categories = ref<UomRow[]>([]);
+const resolvedNames = reactive<Record<string, UomRow>>({});
+function referenceName(kind: UnitCatalogKind, id: string): string {
+  const row = resolvedNames[`${kind}:${id}`]
+    ?? (kind === 'dimensions' ? dimensions.value : kind === 'uom-categories' ? categories.value : []).find(item => item.id === id);
+  return row ? `${row.name} (${row.code})` : id;
+}
 const dimensionPage = ref(1), categoryPage = ref(1);
-const dimensionTotal = ref(0), categoryTotal = ref(0), referencesError = ref(false);
-const referencesLoading = ref(false);
+const dimensionTotal = ref(0), categoryTotal = ref(0);
+const referencePending = reactive<Record<string, boolean>>({});
+const referenceFailures = reactive<Record<string, boolean>>({});
+const referenceVersions: Record<string, number> = {};
+const referencesError = computed(() => Object.values(referenceFailures).some(Boolean));
+const referencesLoading = computed(() => Object.values(referencePending).some(Boolean));
+let ruleSequence = 0;
 const form = reactive<Record<string, string>>({});
 const ruleOpen = ref(false), ruleTarget = ref<UomRow>();
 const ruleCurrent = ref<UomRule>(), ruleRows = ref<UomRule[]>([]);
@@ -117,17 +132,18 @@ async function loadList(next = pageNo.value, size = pageSize.value): Promise<voi
   }
 }
 async function loadReferences(kind: 'dimensions' | 'uom-categories', pageNo = 1): Promise<void> {
-  referencesLoading.value = true;
+  const current = referenceVersions[kind] = (referenceVersions[kind] ?? 0) + 1;
+  referencePending[kind] = true;
   try {
     const result = await searchUomCatalog(kind, pageNo, 50, { status: 'ENABLED' });
-    if (disposed) return;
+    if (disposed || current !== referenceVersions[kind]) return;
     const refList = kind === 'dimensions' ? dimensions : categories;
     refList.value = pageNo === 1 ? result.records : [...refList.value, ...result.records];
     if (kind === 'dimensions') { dimensionPage.value = pageNo; dimensionTotal.value = result.total; }
     else { categoryPage.value = pageNo; categoryTotal.value = result.total; }
-    referencesError.value = false;
-  } catch { referencesError.value = true; }
-  finally { referencesLoading.value = false; }
+    referenceFailures[kind] = false;
+  } catch { if (current === referenceVersions[kind]) referenceFailures[kind] = true; }
+  finally { if (current === referenceVersions[kind]) referencePending[kind] = false; }
 }
 function changeTab(kind: UnitCatalogKind): void {
   if (saving.value || ruleSaving.value || action.value || ruleOpen.value) return;
@@ -162,6 +178,15 @@ async function open(next: 'create' | 'edit' | 'detail' | 'status', row?: UomRow)
       form.name = detail.name;
       form.code = detail.code;
       blocked.value = false;
+      // 仅补齐当前详情引用，不扫描引用目录；辅助读取失败保留真实 ID，不阻断状态操作。
+      const references: [UnitCatalogKind, string | undefined][] = [
+        ['dimensions', detail.dimensionId], ['uom-categories', detail.categoryId], ['uoms', detail.referenceUomId],
+      ];
+      await Promise.allSettled(references.map(async ([kind, id]) => {
+        if (!id) return;
+        const row = await getUomCatalog(kind, id, detailController?.signal);
+        if (!disposed && seq === detailSequence) resolvedNames[`${kind}:${id}`] = row;
+      }));
     } catch (error) {
       if (!disposed && seq === detailSequence) dialogError.value = errorText(error);
     } finally {
@@ -244,14 +269,16 @@ async function submit(): Promise<void> {
   } finally { saving.value = false; }
 }
 async function loadRule(row: UomRow, nextPage = 1): Promise<void> {
-  if (row.referenceUnit) return;
+  if (row.referenceUnit || ruleSaving.value) return;
+  const request = ++ruleSequence;
+  ruleCurrent.value = undefined; ruleRows.value = [];
   ruleOpen.value = true; ruleTarget.value = row; ruleLoading.value = true;
   ruleBlocked.value = false; ruleError.value = '';
   try {
     const [current, history] = await Promise.all([
       getCurrentUomRule(row.id), searchRules(row.id, nextPage, 20),
     ]);
-    if (disposed) return;
+    if (disposed || request !== ruleSequence || !ruleOpen.value) return;
     ruleCurrent.value = current;
     ruleRows.value = history.records;
     rulePage.value = history.pageNo; ruleTotal.value = history.total;
@@ -259,8 +286,8 @@ async function loadRule(row: UomRow, nextPage = 1): Promise<void> {
       multiplier: '', offset: '', // 强制手动输入精确 decimal，避免浏览器解析 JSON Number 时丢失 BigDecimal 精度
       calculationPrecision: String(current.calculationPrecision), roundingMode: current.roundingMode,
     });
-  } catch (error) { if (!disposed) ruleError.value = errorText(error); }
-  finally { ruleLoading.value = false; }
+  } catch (error) { if (!disposed && request === ruleSequence && ruleOpen.value) ruleError.value = errorText(error); }
+  finally { if (request === ruleSequence) ruleLoading.value = false; }
 }
 async function publish(): Promise<void> {
   if (!ruleTarget.value || !ruleCurrent.value || ruleSaving.value || ruleBlocked.value ||
@@ -306,15 +333,11 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
           </AuthorityGuard>
         </template>
       </MomManagementHeader>
-      <div class="mdm-struct__tabs" role="tablist" :aria-label="t('mdm.uom.title')">
-        <MomButton v-for="tab in tabs" :key="tab.kind" variant="outline" role="tab"
-          :aria-selected="active === tab.kind" :disabled="loading || saving || !!action || ruleOpen"
-          @click="changeTab(tab.kind)">{{ t(tab.key) }}</MomButton>
-      </div>
+<MdmSectionTabs :model-value="active" :items="tabs.map(tab => ({ value: tab.kind, label: t(tab.key) }))" :label="t('mdm.uom.title')" :disabled="loading || saving || !!action || ruleOpen" @update:model-value="changeTab($event as UnitCatalogKind)">
       <p v-if="notice" class="mdm-plants__notice" role="status">{{ notice }}</p>
       <div v-if="referencesError" class="mdm-plants__error" role="alert">
         <p>{{ t('mdm.struct.referenceLoadFailed') }}</p>
-        <MomButton variant="outline" @click="loadReferences('dimensions'); loadReferences('uom-categories')">{{ t('mdm.struct.retry') }}</MomButton>
+        <MomButton variant="outline" :disabled="referencesLoading" @click="loadReferences('dimensions'); loadReferences('uom-categories')">{{ t('mdm.struct.retry') }}</MomButton>
       </div>
       <div v-if="listError" class="mdm-plants__error" role="alert">
         <p>{{ listError }}</p>
@@ -336,12 +359,11 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
               <MomButton mode="text" :disabled="loading || saving" @click="open('detail', row)">{{ t('mdm.struct.detail') }}</MomButton>
               <AuthorityGuard :authorities="['mdm:uom:write']">
                 <MomButton mode="text" :disabled="loading || saving" @click="open('edit', row)">{{ t('mdm.struct.edit') }}</MomButton>
-                <MomButton mode="text" :disabled="loading || saving" @click="open('status', row)">
-                  {{ t(row.status === 'ENABLED' ? 'mdm.struct.disable' : 'mdm.struct.enable') }}
-                </MomButton>
+
               </AuthorityGuard>
-              <MomButton v-if="active === 'uoms' && !row.referenceUnit" mode="text"
-                :disabled="loading || saving" @click="loadRule(row)">{{ t('mdm.uom.rules') }}</MomButton>
+<MomCrudRowMenu :label="t('mdm.struct.actions')" :disabled="loading || saving"
+                :actions="[...(hasAuthority('mdm:uom:write') ? [{key:'status',label:t(row.status === 'ENABLED' ? 'mdm.struct.disable' : 'mdm.struct.enable')}] : []), ...(active === 'uoms' && !row.referenceUnit ? [{key:'rules',label:t('mdm.uom.rules')}] : [])]"
+                @select="$event === 'rules' ? loadRule(row) : open('status', row)" />
             </div>
           </template>
         </MomDataTable>
@@ -353,7 +375,8 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
             :disabled="loading || saving" @page="loadList($event)" @size="loadList(1, $event)" />
         </template>
       </MomListSurface>
-      <MomModal :open="!!action" :title="currentLabel" :close-label="t('mdm.struct.close')"
+</MdmSectionTabs>
+      <MomModal :open="!!action" :title="`${currentLabel} · ${t(action === 'create' ? 'mdm.struct.create' : action === 'edit' ? 'mdm.struct.edit' : action === 'status' ? 'mdm.struct.changeStatus' : 'mdm.struct.detail')}`" :close-label="t('mdm.struct.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -361,14 +384,21 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
           <dl v-if="target && !detailLoading" class="mdm-plants__summary">
             <div><dt>{{ t('mdm.struct.code') }}</dt><dd>{{ target.code }}</dd></div>
             <div><dt>{{ t('mdm.struct.name') }}</dt><dd>{{ target.name }}</dd></div>
+            <div><dt>{{ t('mdm.struct.status') }}</dt><dd>{{ t(target.status === 'ENABLED' ? 'mdm.struct.enabled' : 'mdm.struct.disabled') }}</dd></div>
+            <div v-if="target.symbol"><dt>{{ t('mdm.uom.symbol') }}</dt><dd>{{ target.symbol }}</dd></div>
+            <div v-if="target.dimensionId"><dt>{{ t('mdm.uom.dimensions') }}</dt><dd>{{ referenceName('dimensions', target.dimensionId) }}</dd></div>
+            <div v-if="target.categoryId"><dt>{{ t('mdm.uom.categories') }}</dt><dd>{{ referenceName('uom-categories', target.categoryId) }}</dd></div>
+            <div v-if="target.referenceUomId"><dt>{{ t('mdm.uom.reference') }}</dt><dd>{{ referenceName('uoms', target.referenceUomId) }}</dd></div>
+            <div v-if="target.ucumNotApplicableReason"><dt>{{ t('mdm.uom.referenceReason') }}</dt><dd>{{ target.ucumNotApplicableReason }}</dd></div>
+            <template v-if="active === 'dimensions'"><div v-for="[field, label] in exponentFields" :key="field"><dt>{{ t(label) }}</dt><dd>{{ target[field] }}</dd></div></template>
             <div><dt>{{ t('mdm.struct.version') }}</dt><dd>{{ target.version }}</dd></div>
           </dl>
-          <form v-if="action && action !== 'detail'" class="mdm-plants__form" @submit.prevent="submit">
+          <form v-if="action && action !== 'detail'" class="mdm-plants__form" @submit.prevent="submitWithFocus($event, submit)">
             <template v-if="action !== 'status'">
               <label v-if="action === 'create'">
-                <span>{{ t('mdm.struct.code') }} *</span><MomInput v-model="form.code" :max-length="64" />
+                <span>{{ t('mdm.struct.code') }} *</span><MomInput v-model="form.code" :max-length="64" :aria-invalid="!!formError && !form.code?.trim()" :aria-describedby="formError ? 'mdm-uom-form-error' : undefined" />
               </label>
-              <label><span>{{ t('mdm.struct.name') }} *</span><MomInput v-model="form.name" :max-length="200" /></label>
+              <label><span>{{ t('mdm.struct.name') }} *</span><MomInput v-model="form.name" :max-length="200" :aria-invalid="!!formError && !form.name?.trim()" :aria-describedby="formError ? 'mdm-uom-form-error' : undefined" /></label>
               <template v-if="action === 'create'">
                 <div v-if="active === 'dimensions'" class="mdm-struct__form-grid">
                   <label v-for="[key, label] in exponentFields" :key="key">
@@ -378,7 +408,7 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
                 <template v-else-if="active === 'uom-categories'">
                   <label><span>{{ t('mdm.uom.dimension') }} *</span>
                     <MomSelect v-model="form.dimensionId" :options="options(dimensions)" :disabled="referencesError" />
-                    <MomButton v-if="dimensions.length < dimensionTotal" variant="outline"
+                    <MomButton v-if="dimensions.length < dimensionTotal" variant="outline" :disabled="referencesLoading"
                       @click="loadReferences('dimensions', dimensionPage + 1)">{{ t('mdm.struct.loadMore') }}</MomButton>
                   </label>
                   <p>{{ t('mdm.uom.createCategoryHint') }}</p>
@@ -391,7 +421,7 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
                   <p>{{ t('mdm.uom.createUnitHint') }}</p>
                   <label><span>{{ t('mdm.uom.category') }} *</span>
                     <MomSelect v-model="form.categoryId" :options="options(categories)" :disabled="referencesError" />
-                    <MomButton v-if="categories.length < categoryTotal" variant="outline"
+                    <MomButton v-if="categories.length < categoryTotal" variant="outline" :disabled="referencesLoading"
                       @click="loadReferences('uom-categories', categoryPage + 1)">{{ t('mdm.struct.loadMore') }}</MomButton>
                   </label>
                   <label><span>{{ t('mdm.uom.symbol') }} *</span><MomInput v-model="form.symbol" :max-length="32" /></label>
@@ -411,7 +441,7 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
               </template>
             </template>
             <p v-else class="mdm-plants__warning">{{ t('mdm.uom.referenceGuard') }}</p>
-            <p v-if="formError" class="mdm-plants__field-error" role="alert">{{ formError }}</p>
+            <p v-if="formError" id="mdm-uom-form-error" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer">
               <MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || blocked || detailLoading || referencesError">{{ t('mdm.struct.confirm') }}</MomButton>
@@ -423,10 +453,10 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
 
       <MomModal :open="ruleOpen" :title="t('mdm.uom.rules')" :close-label="t('mdm.struct.close')"
         :busy="ruleSaving" :busy-text="t('mdm.struct.saving')"
-        @close="ruleOpen = false">
+        @close="ruleOpen = false; ruleSequence++">
         <div class="mdm-plants__dialog">
           <p v-if="ruleLoading" role="status">{{ t('mdm.struct.loading') }}</p>
-          <div v-if="ruleError" class="mdm-plants__error" role="alert">{{ ruleError }}</div>
+          <div v-if="ruleError && (!ruleCurrent || !hasAuthority('mdm:uom:write'))" class="mdm-plants__error" role="alert">{{ ruleError }}</div>
           <dl v-if="ruleCurrent" class="mdm-plants__summary">
             <div><dt>{{ t('mdm.struct.code') }}</dt><dd>{{ ruleTarget?.code }}</dd></div>
             <div><dt>{{ t('mdm.uom.currentVersion') }}</dt><dd>{{ ruleCurrent.versionNo }}</dd></div>
@@ -434,7 +464,9 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
           <div class="mdm-struct__history">
             <strong>{{ t('mdm.uom.versionHistory') }}</strong>
             <div v-for="rule in ruleRows" :key="rule.id">
-              #{{ rule.versionNo }} · {{ rule.multiplier }} × + {{ rule.offset }} · {{ rule.roundingMode }} · {{ rule.status }}
+              <strong>#{{ rule.versionNo }} · {{ rule.status }}</strong>
+              <p>{{ decimalRuleExpression(rule.multiplier, rule.offset) }}</p>
+              <small>{{ t('mdm.uom.precision') }}: {{ rule.calculationPrecision }} · {{ t('mdm.uom.rounding') }}: {{ rule.roundingMode }}</small>
             </div>
             <div class="mdm-plants__footer">
               <MomButton variant="outline" :disabled="rulePage <= 1 || ruleLoading"
@@ -443,12 +475,13 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
                 @click="ruleTarget && loadRule(ruleTarget, rulePage + 1)">{{ t('mdm.struct.next') }}</MomButton>
             </div>
           </div>
-          <form v-if="ruleCurrent && hasAuthority('mdm:uom:write')" class="mdm-plants__form" @submit.prevent="publish">
+          <form v-if="ruleCurrent && hasAuthority('mdm:uom:write')" class="mdm-plants__form" @submit.prevent="submitWithFocus($event, publish)">
             <p>{{ t('mdm.uom.publishHint') }}</p>
+            <p v-if="ruleError" id="mdm-rule-error" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ ruleError }}</p>
             <div class="mdm-struct__form-grid">
-              <label><span>{{ t('mdm.uom.multiplier') }}</span><MomInput v-model="ruleForm.multiplier" /></label>
-              <label><span>{{ t('mdm.uom.offset') }}</span><MomInput v-model="ruleForm.offset" /></label>
-              <label><span>{{ t('mdm.uom.precision') }}</span><MomInput v-model="ruleForm.calculationPrecision" type="number" /></label>
+              <label><span>{{ t('mdm.uom.multiplier') }}</span><MomInput v-model="ruleForm.multiplier" :aria-invalid="!!ruleError && !decimalsValid(ruleForm.multiplier, '0')" :aria-describedby="ruleError ? 'mdm-rule-error' : undefined" /></label>
+              <label><span>{{ t('mdm.uom.offset') }}</span><MomInput v-model="ruleForm.offset" :aria-invalid="!!ruleError && !decimal.test(ruleForm.offset)" :aria-describedby="ruleError ? 'mdm-rule-error' : undefined" /></label>
+              <label><span>{{ t('mdm.uom.precision') }}</span><MomInput v-model="ruleForm.calculationPrecision" type="number" :aria-invalid="!!ruleError && !precisionValid(ruleForm.calculationPrecision)" :aria-describedby="ruleError ? 'mdm-rule-error' : undefined" /></label>
               <label><span>{{ t('mdm.uom.rounding') }}</span>
                 <MomSelect v-model="ruleForm.roundingMode" :options="['UP','DOWN','CEILING','FLOOR','HALF_UP','HALF_DOWN','HALF_EVEN','UNNECESSARY'].map(v => ({ value: v, label: v }))" />
               </label>

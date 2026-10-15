@@ -5,8 +5,9 @@
 本目录是 `mom-web` 的 PC 管理端前端基线，适用于 IAM、System、MDM 以及后续 WMS、QMS、MES 等业务模块。
 它不是 MDM 专属设计，也不包含供应商门户、客户门户或 PDA 设计。
 
-当前代码已经包含 IAM、System 的真实管理页与对应基础能力；各业务 Slice 的验收状态以其独立记录为准。
-**MOM Web Foundation V1 已于 2026-10-12 完成收口**，当前仍不通过演示数据伪造业务联调结果。
+当前代码包含 IAM、System 与现有 MDM 管理页。2026-10-12 的 Foundation 报告是历史阶段证据，不代表后续 B2 改造全部验收通过；当前问题和验证结果见[持续验收记录](validation/web-foundation-v1.md)第5节。
+
+**更换开发工具时，从 [B2 UI 执行契约](standards/b2-ui-contract.md) 开始。** 该入口不依赖某个插件、模型或聊天记录。
 
 ## 2. 已冻结的方向
 
@@ -16,11 +17,13 @@
 - 实施顺序：`整体设计 → 全局骨架 → IAM → System → MDM → 业务模块`；
 - UI 基线：Reka UI + shadcn-vue + Tailwind CSS 4 + TanStack Table v9；先复用 MOM 共享组件；
 - 主题：亮色、暗色、跟随系统三种模式；
-- 国际化：静态资源由 Web 持有，初始支持 `zh-CN` 与 `en-US`；
+- 国际化：Web 持有 Key/归属映射，业务译文走各服务 Runtime；初始支持 `zh-CN` 与 `en-US`，应急文案不作为第二套业务译文；
 - 权限：前端只做可见性与体验控制，后端始终是最终授权边界；
 - 导航：由 Web 源码维护可执行路由与菜单映射，不依赖已经退出 System V1 的历史导航能力。
 
 ## 3. 文档索引
+
+- [B2 UI 跨工具执行契约（UI 任务必读入口）](standards/b2-ui-contract.md)
 
 1. [产品体验与信息架构](product-experience.md)
 2. [视觉与设计系统](design-system.md)

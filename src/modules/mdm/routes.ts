@@ -13,9 +13,12 @@ export const mdmRoutes: RouteRecordRaw[] = [
       module: 'mdm',
       requiresAuth: true,
       permissions: ['mdm:factory:read'],
-      i18nNamespaces: ['mdm.web'],
+      i18nOwners: ['mdm'],
       navigationGroup: 'mdm',
       navigationOrder: 10,
+      navigationSection: 'organization-resources',
+      navigationSectionTitleKey: 'navigation.mdmOrganizationResources',
+      navigationSectionOrder: 10,
     },
   },
   {
@@ -24,8 +27,9 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'workshops' },
     meta: {
       title: 'workshops', titleKey: 'navigation.mdmWorkshops', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:factory:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 20,
+      navigationSection: 'organization-resources', navigationSectionTitleKey: 'navigation.mdmOrganizationResources', navigationSectionOrder: 10,
     },
   },
   {
@@ -34,8 +38,9 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'production-lines' },
     meta: {
       title: 'production-lines', titleKey: 'navigation.mdmProductionLines', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:factory:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 30,
+      navigationSection: 'organization-resources', navigationSectionTitleKey: 'navigation.mdmOrganizationResources', navigationSectionOrder: 10,
     },
   },
   {
@@ -44,8 +49,9 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'workstations' },
     meta: {
       title: 'workstations', titleKey: 'navigation.mdmWorkstations', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:factory:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:factory:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 40,
+      navigationSection: 'organization-resources', navigationSectionTitleKey: 'navigation.mdmOrganizationResources', navigationSectionOrder: 10,
     },
   },
   {
@@ -54,8 +60,9 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'warehouses' },
     meta: {
       title: 'warehouses', titleKey: 'navigation.mdmWarehouses', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:warehouse:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:warehouse:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 50,
+      navigationSection: 'warehouse-logistics', navigationSectionTitleKey: 'navigation.mdmWarehouseLogistics', navigationSectionOrder: 40,
     },
   },
   {
@@ -64,8 +71,9 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'warehouse-areas' },
     meta: {
       title: 'warehouse-areas', titleKey: 'navigation.mdmWarehouseAreas', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:warehouse:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:warehouse:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 60,
+      navigationSection: 'warehouse-logistics', navigationSectionTitleKey: 'navigation.mdmWarehouseLogistics', navigationSectionOrder: 40,
     },
   },
   {
@@ -74,8 +82,9 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'location-types' },
     meta: {
       title: 'location-types', titleKey: 'navigation.mdmLocationTypes', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:location:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:location:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 70,
+      navigationSection: 'warehouse-logistics', navigationSectionTitleKey: 'navigation.mdmWarehouseLogistics', navigationSectionOrder: 40,
     },
   },
   {
@@ -84,29 +93,67 @@ export const mdmRoutes: RouteRecordRaw[] = [
     props: { kind: 'locations' },
     meta: {
       title: 'locations', titleKey: 'navigation.mdmLocations', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:location:read'], i18nNamespaces: ['mdm.web'],
+      permissions: ['mdm:location:read'], i18nOwners: ['mdm'],
       navigationGroup: 'mdm', navigationOrder: 80,
+      navigationSection: 'warehouse-logistics', navigationSectionTitleKey: 'navigation.mdmWarehouseLogistics', navigationSectionOrder: 40,
     },
   },
   {
     path: 'master-data/uom', name: ROUTE_NAMES.mdmUom,
     component: () => import('./pages/UomManagementPage.vue'),
     meta: { title: '计量单位', titleKey: 'navigation.mdmUom', module: 'mdm', requiresAuth: true,
-      permissions: ['mdm:uom:read'], i18nNamespaces: ['mdm.web'],
-      navigationGroup: 'mdm', navigationOrder: 90 },
+      permissions: ['mdm:uom:read'], i18nOwners: ['mdm'],
+      navigationGroup: 'mdm', navigationOrder: 90,
+      navigationSection: 'material-uom', navigationSectionTitleKey: 'navigation.mdmMaterialUom', navigationSectionOrder: 20 },
   },
   {
     path: 'master-data/material-categories', name: ROUTE_NAMES.mdmCategories,
     component: () => import('./pages/MaterialCategoryPage.vue'),
     meta: { title: '物料分类', titleKey: 'navigation.mdmCategories', module: 'mdm',
       requiresAuth: true, permissions: ['mdm:material:read'],
-      i18nNamespaces: ['mdm.web'], navigationGroup: 'mdm', navigationOrder: 100 },
+      i18nOwners: ['mdm'], navigationGroup: 'mdm', navigationOrder: 100,
+      navigationSection: 'material-uom', navigationSectionTitleKey: 'navigation.mdmMaterialUom', navigationSectionOrder: 20 },
   },
   {
     path: 'master-data/materials', name: ROUTE_NAMES.mdmMaterials,
     component: () => import('./pages/MaterialManagementPage.vue'),
     meta: { title: '物料管理', titleKey: 'navigation.mdmMaterials', module: 'mdm',
       requiresAuth: true, permissions: ['mdm:material:read'],
-      i18nNamespaces: ['mdm.web'], navigationGroup: 'mdm', navigationOrder: 110 },
+      i18nOwners: ['mdm'], navigationGroup: 'mdm', navigationOrder: 110,
+      navigationSection: 'material-uom', navigationSectionTitleKey: 'navigation.mdmMaterialUom', navigationSectionOrder: 20 },
+  },
+  {
+    path: 'master-data/formulas', name: ROUTE_NAMES.mdmFormulas,
+    component: () => import('./pages/FormulaManagementPage.vue'),
+    meta: { title: '配方', titleKey: 'navigation.mdmFormulas', module: 'mdm',
+      requiresAuth: true, permissions: ['mdm:manufacturing-definition:read'],
+      i18nOwners: ['system', 'mdm'], navigationGroup: 'mdm', navigationOrder: 120,
+      navigationSection: 'manufacturing-definition',
+      navigationSectionTitleKey: 'navigation.mdmManufacturingDefinition', navigationSectionOrder: 30 },
+  },
+  {
+    path: 'master-data/routings', name: ROUTE_NAMES.mdmRoutings,
+    component: () => import('./pages/RoutingManagementPage.vue'),
+    meta: { title: '工艺路线', titleKey: 'navigation.mdmRoutings', module: 'mdm',
+      requiresAuth: true, permissions: ['mdm:manufacturing-definition:read'],
+      i18nOwners: ['system', 'mdm'], navigationGroup: 'mdm', navigationOrder: 130,
+      navigationSection: 'manufacturing-definition',
+      navigationSectionTitleKey: 'navigation.mdmManufacturingDefinition', navigationSectionOrder: 30 },
+  },
+  {
+    path: 'master-data/production-versions', name: ROUTE_NAMES.mdmProductionVersions,
+    component: () => import('./pages/ProductionVersionManagementPage.vue'),
+    meta: { title: '生产版本', titleKey: 'navigation.mdmProductionVersions', module: 'mdm',
+      requiresAuth: true, permissions: ['mdm:manufacturing-definition:read'],
+      i18nOwners: ['system','mdm'], navigationGroup: 'mdm', navigationOrder: 140,
+      navigationSection: 'manufacturing-definition', navigationSectionTitleKey: 'navigation.mdmManufacturingDefinition', navigationSectionOrder: 30 },
+  },
+  {
+    path: 'master-data/governance/consistency-checks', name: ROUTE_NAMES.mdmGovernanceChecks,
+    component: () => import('./pages/GovernanceConsistencyPage.vue'),
+    meta: { title: '一致性检查', titleKey: 'navigation.mdmGovernanceChecks', module: 'mdm',
+      requiresAuth: true, permissions: ['mdm:governance:read'], i18nOwners: ['system','mdm'],
+      navigationGroup: 'mdm', navigationOrder: 180, navigationSection: 'governance',
+      navigationSectionTitleKey: 'navigation.mdmGovernance', navigationSectionOrder: 60 },
   },
 ];

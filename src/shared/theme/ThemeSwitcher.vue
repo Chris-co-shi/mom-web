@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { useTheme, type ThemePreference } from './theme';
 import { useLocale } from '../i18n/locale';
+import { Palette } from '@lucide/vue';
+import MomButton from '../ui/MomButton.vue';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '../ui/dropdown-menu';
 import './theme-switcher.css';
 
 const { preference, setPreference } = useTheme();
 const { t } = useLocale();
+defineProps<{ compact?: boolean }>();
 
 const options: ReadonlyArray<{
   value: ThemePreference;
@@ -18,7 +22,13 @@ const options: ReadonlyArray<{
 </script>
 
 <template>
-  <div class="theme-switcher" role="radiogroup" :aria-label="t('theme.mode')">
+  <DropdownMenu v-if="compact">
+    <DropdownMenuTrigger as-child><MomButton variant="ghost" size="icon" :aria-label="t('theme.mode')" :title="t('theme.mode')"><Palette :size="18" aria-hidden="true" /></MomButton></DropdownMenuTrigger>
+    <DropdownMenuContent align="end"><DropdownMenuRadioGroup :model-value="preference" @update:model-value="setPreference($event as ThemePreference)">
+      <DropdownMenuRadioItem v-for="option in options" :key="option.value" :value="option.value">{{ t(option.labelKey) }}</DropdownMenuRadioItem>
+    </DropdownMenuRadioGroup></DropdownMenuContent>
+  </DropdownMenu>
+  <div v-else class="theme-switcher" role="radiogroup" :aria-label="t('theme.mode')">
     <button
       v-for="option in options"
       :key="option.value"

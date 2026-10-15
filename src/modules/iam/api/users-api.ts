@@ -1,6 +1,7 @@
 import { apiPath } from '../../../shared/api/config';
 import type { PageResult } from '../../../shared/api/contracts';
 import { httpClient } from '../../../shared/api/http-client';
+import type { RoleResponse } from './roles-api';
 
 export interface UserResponse {
   id: string;
@@ -48,14 +49,24 @@ export function updateUser(id: string, request: UpdateUserRequest): Promise<User
 
 /** 管理员重置无需原密码；不可复用个人 /me/password 接口。 */
 export function resetUserPassword(id: string, newPassword: string, version: number): Promise<UserResponse> {
-  return httpClient.result({ path: userPath(id, '/password'), method: 'PUT', body: { newPassword, version } });
+  return httpClient.result({ path: apiPath('auth', `/users/change-password/${encodeURIComponent(id)}`), method: 'PUT', body: { newPassword, version } });
 }
 
 export function setUserEnabled(id: string, enabled: boolean, version: number): Promise<UserResponse> {
-  return httpClient.result({ path: userPath(id, enabled ? '/enable' : '/disable'), method: 'PUT', body: { version } });
+  return httpClient.result({ path: apiPath('auth', `/users/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`), method: 'PUT', body: { version } });
 }
 
 /** 已有删除契约无请求体和 version，引用保护由后端负责，不虚构条件删除。 */
 export function deleteUser(id: string): Promise<void> {
   return httpClient.result({ path: userPath(id), method: 'DELETE' });
+}
+
+/** 读取用户角色关系，角色信息以 Auth 返回值为准。 */
+export function getUserRoles(id: string, signal?: AbortSignal): Promise<RoleResponse[]> {
+  return httpClient.result({ path: userPath(id, '/roles'), signal });
+}
+
+/** 整体替换用户角色关系；失败时不自动重放，空数组表示移除全部角色。 */
+export function replaceUserRoles(id: string, roleIds: string[]): Promise<RoleResponse[]> {
+  return httpClient.result({ path: userPath(id, '/roles'), method: 'PUT', body: { roleIds } });
 }

@@ -14,17 +14,21 @@ import { formatInstant } from '../../../shared/formatters';
 import { useLocale } from '../../../shared/i18n/locale';
 import { AuthorityGuard, useAuthSession } from '../../auth';
 import UserActionDialog from '../components/UserActionDialog.vue';
+import UserRoleAssignmentDialog from '../components/UserRoleAssignmentDialog.vue';
 import type { UserResponse } from '../api/users-api';
 import { useUserManagement } from '../model/use-user-management';
+import { useUserRoleAssignment } from '../model/use-user-role-assignment';
 import './user-management.css';
 
 const { t, locale } = useLocale();
-const { userId } = useAuthSession();
+const { userId, authorities } = useAuthSession();
 const management = useUserManagement();
+const roleAssignment = useUserRoleAssignment();
 const { rows, pageNo, pageSize, total, loading, listError, statusError, statusBlocked, notice, saving,
   loadPage, open, toggleEnabled } = management;
 const compact = ref(false);
 const searchQuery = ref('');
+const canAssignRoles = computed(() => authorities.value.includes('auth:role:read'));
 // 后端尚无搜索参数，仅筛选当前已加载页，不能暗示跨页搜索。
 const visibleRows = computed(() => {
   const keyword = searchQuery.value.trim().toLowerCase();
@@ -41,10 +45,15 @@ const columns = computed<MomColumn[]>(() => [
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
 function handleRowMore(action: string, row: UserResponse): void {
   if (action === 'password' || action === 'delete') void open(action, row);
+  if (action === 'roles') void roleAssignment.openFor(row);
+}
+
+function handleRolesSaved(): void {
+  management.notice.value = { key: 'iam.users.saved' };
 }
 
 onMounted(() => loadPage());
-onBeforeRouteLeave(() => !saving.value);
+onBeforeRouteLeave(() => !saving.value && !roleAssignment.saving.value);
 </script>
 
 <template>
@@ -102,7 +111,7 @@ onBeforeRouteLeave(() => !saving.value);
                   <AuthorityGuard :authorities="['auth:user:write']">
                     <MomButton class="mom-crud-row-action" mode="text" type="button" :disabled="saving || loading" @click="open('edit', row)">{{ t('iam.users.edit') }}</MomButton>
                     <MomCrudRowMenu :label="t('iam.users.moreActions')" :disabled="saving || loading"
-                      :actions="[{ key: 'password', label: t('iam.users.resetPassword') }, { key: 'delete', label: t('iam.users.delete'), danger: true }]"
+                      :actions="[...(canAssignRoles ? [{ key: 'roles', label: t('iam.users.assignRoles') }] : []), { key: 'password', label: t('iam.users.resetPassword') }, { key: 'delete', label: t('iam.users.delete'), danger: true }]"
                       @select="handleRowMore($event, row)" />
                   </AuthorityGuard>
                 </div>
@@ -117,6 +126,7 @@ onBeforeRouteLeave(() => !saving.value);
         </template>
       </MomListSurface>
       <UserActionDialog :management="management" />
+      <UserRoleAssignmentDialog :assignment="roleAssignment" @saved="handleRolesSaved" />
     </section>
   </PageContainer>
 </template>

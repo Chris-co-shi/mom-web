@@ -62,7 +62,7 @@ export function updatePermission(id: string, request: UpdatePermissionRequest): 
 }
 
 export function setPermissionEnabled(id: string, enabled: boolean, version: number): Promise<PermissionResponse> {
-  return httpClient.result({ path: permissionPath(id, enabled ? '/enable' : '/disable'), method: 'PUT', body: { version } });
+  return httpClient.result({ path: apiPath('auth', `/permissions/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`), method: 'PUT', body: { version } });
 }
 
 /** 删除契约没有版本条件；引用检查由 Auth 后端负责。 */

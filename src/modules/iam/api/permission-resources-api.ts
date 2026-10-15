@@ -58,7 +58,7 @@ export function updateResource(id: string, request: UpdateResourceRequest): Prom
 }
 
 export function setResourceEnabled(id: string, enabled: boolean, version: number): Promise<PermissionResourceResponse> {
-  return httpClient.result({ path: path(id, enabled ? '/enable' : '/disable'), method: 'PUT', body: { version } });
+  return httpClient.result({ path: `${base}/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`, method: 'PUT', body: { version } });
 }
 
 export function deleteResource(id: string): Promise<void> {

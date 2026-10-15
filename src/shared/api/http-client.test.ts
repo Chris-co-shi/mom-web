@@ -3,6 +3,7 @@ import { ApiError } from './errors';
 import { httpClient, setHttpRequestContextProvider, setHttpUnauthorizedHandler } from './http-client';
 import { createPinia, setActivePinia } from 'pinia';
 import { useLocaleStore } from '../i18n/locale';
+import { i18nManagementApi } from '../i18n/i18n-management-api';
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
@@ -16,6 +17,13 @@ describe('httpClient', () => {
     useLocaleStore().currentLocale = 'zh-CN';
     setHttpRequestContextProvider(() => ({ locale: 'zh-CN', accessToken: 'opaque-token' }));
     setHttpUnauthorizedHandler(() => undefined);
+  });
+
+  it.each(['auth', 'system', 'mdm'] as const)('国际化目录按 %s Owner 查询且不携带 namespace', async owner => {
+    const fetchMock = vi.fn().mockImplementation(async () => jsonResponse({ code: '0', message: 'success', data: [] }));
+    vi.stubGlobal('fetch', fetchMock);
+    await i18nManagementApi.listMessages(owner);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(`/${owner}/i18n/messages`);
   });
 
   it('拆包 Result<T> 并附加协议 Header', async () => {

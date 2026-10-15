@@ -9,6 +9,7 @@ export interface PlantView {
   id: string;
   code: string;
   name: string;
+  timeZoneId: string | null;
   status: MasterStatus;
   createdAt: string;
   createdBy: string;
@@ -20,11 +21,13 @@ export interface PlantView {
 export interface CreatePlantRequest {
   code: string;
   name: string;
+  timeZoneId: string;
   status: MasterStatus;
 }
 
 export interface UpdatePlantRequest {
   name: string;
+  timeZoneId: string | null;
   version: number;
 }
 
@@ -54,7 +57,7 @@ export function updatePlant(id: string, request: UpdatePlantRequest): Promise<Pl
 /** 状态操作必须显式提交读到的 version；失败不得乐观翻转。 */
 export function setPlantEnabled(id: string, enabled: boolean, version: number): Promise<PlantView> {
   return httpClient.result({
-    path: plantPath(id, enabled ? '/enable' : '/disable'),
+    path: apiPath('mdm', `/plants/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`),
     method: 'PATCH',
     body: { version },
   });

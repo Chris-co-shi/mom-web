@@ -39,6 +39,18 @@ export function useRolePermissionAssignment() {
   const known = ref<PermissionResponse[]>([]);
   const catalog = ref<PermissionResponse[]>([]);
   const resources = ref<PermissionResourceResponse[]>([]);
+  // 独立保存当前资源上下文，目录翻页不抹掉右侧标题，也不影响权限草稿。
+  const currentResource = ref<PermissionResourceResponse>();
+  const resourceQuery = ref('');
+  const resourceDomain = ref('');
+  const resourcePage = ref(1);
+  const resourcePageSize = ref(8);
+  const resourceTotal = ref(0);
+  const resourceLoading = ref(false);
+  const resourceError = ref<GrantFeedback>();
+  const resourcePages = computed(() => Math.max(1, Math.ceil(resourceTotal.value / resourcePageSize.value)));
+  let resourceController: AbortController | undefined;
+  let resourceSequence = 0;
   const domainCode = ref('');
   const resourceId = ref('');
   const pageNo = ref(1);
@@ -108,9 +120,9 @@ export function useRolePermissionAssignment() {
     assigned.value = [];
     selectedIds.value = [];
     try {
-      const [freshRole, relations, resourcePages] = await Promise.all([
+      const [freshRole, relations] = await Promise.all([
         getRole(role.id, controller.signal), getRolePermissions(role.id, controller.signal),
-        loadResourceCatalog(controller.signal),
+        loadResources(1),
       ]);
       if (disposed || current !== sequence) return;
       target.value = freshRole;
@@ -118,7 +130,6 @@ export function useRolePermissionAssignment() {
       selectedIds.value = relations.map((item) => item.id);
       known.value = [];
       remember(relations);
-      resources.value = resourcePages;
       pageNo.value = 1;
       total.value = 0;
       stage.value = 'select';
@@ -149,6 +160,9 @@ export function useRolePermissionAssignment() {
     searchQuery.value = '';
     domainCode.value = '';
     resourceId.value = '';
+    currentResource.value = undefined;
+    resourceQuery.value = '';
+    resourceDomain.value = '';
     await readCurrent(role);
   }
 
@@ -159,28 +173,54 @@ export function useRolePermissionAssignment() {
     ++pageSequence;
     controller?.abort();
     pageController?.abort();
+    resourceController?.abort();
+    ++resourceSequence;
     if (searchTimer) clearTimeout(searchTimer);
   }
 
-  async function loadResourceCatalog(signal: AbortSignal): Promise<PermissionResourceResponse[]> {
-    const all: PermissionResourceResponse[] = [];
-    let page = 1;
-    while (true) {
-      const result = await searchResources(page, 100, {}, signal);
-      all.push(...result.records);
-      if (all.length >= result.total || !result.records.length) return all;
-      page += 1;
+  async function loadResources(page = 1): Promise<void> {
+    if (!opened.value || saving.value || page < 1) return;
+    const current = ++resourceSequence;
+    resourceController?.abort();
+    resourceController = new AbortController();
+    resourceLoading.value = true;
+    resourceError.value = undefined;
+    resources.value = [];
+    try {
+      const result = await searchResources(page, resourcePageSize.value, {
+        domainCode: resourceDomain.value.trim() || undefined,
+        keyword: resourceQuery.value.trim() || undefined,
+      }, resourceController.signal);
+      if (disposed || current !== resourceSequence || !opened.value) return;
+      resources.value = result.records;
+      resourcePage.value = result.pageNo;
+      resourceTotal.value = result.total;
+    } catch (cause) {
+      if (current === resourceSequence && opened.value) resourceError.value = feedback(cause);
+    } finally {
+      if (current === resourceSequence) resourceLoading.value = false;
     }
+  }
+
+  function setResourcePageSize(value: number): Promise<void> {
+    if (![8, 16, 24].includes(value) || loading.value || resourceLoading.value || saving.value) return Promise.resolve();
+    resourcePageSize.value = value;
+    return loadResources(1);
   }
 
   function setDomain(value: string): Promise<void> {
     domainCode.value = value;
     resourceId.value = '';
-    return loadCatalog(1);
+    void loadCatalog(1);
+    return loadResources(1);
   }
 
   function setResource(value: string): Promise<void> {
+    searchQuery.value = '';
+    if (searchTimer) clearTimeout(searchTimer);
     resourceId.value = value;
+    currentResource.value = value ? resources.value.find(item => item.id === value) : undefined;
+    domainCode.value = value ? resources.value.find(item => item.id === value)?.domainCode ?? '' : '';
     return loadCatalog(1);
   }
 
@@ -190,6 +230,7 @@ export function useRolePermissionAssignment() {
     pageController?.abort();
     pageController = new AbortController();
     catalogLoading.value = true;
+    catalog.value = [];
     catalogError.value = undefined;
     if (!hasCatalogScope.value) {
       catalog.value = [];
@@ -220,7 +261,7 @@ export function useRolePermissionAssignment() {
   watch(searchQuery, () => {
     if (searchTimer) clearTimeout(searchTimer);
     if (opened.value && !loading.value) searchTimer = setTimeout(() => void loadCatalog(1), 300);
-  });
+  }, { flush: 'sync' });
 
   function toggle(item: PermissionResponse): void {
     if (loading.value || catalogLoading.value || saving.value || stage.value !== 'select') return;
@@ -296,8 +337,9 @@ export function useRolePermissionAssignment() {
     }
   }
 
-  onScopeDispose(() => { disposed = true; controller?.abort(); pageController?.abort(); if (searchTimer) clearTimeout(searchTimer); });
+  onScopeDispose(() => { disposed = true; controller?.abort(); pageController?.abort(); resourceController?.abort(); if (searchTimer) clearTimeout(searchTimer); });
   return { opened, target, assigned, selectedIds, selected, catalog, visibleCatalog, groupedCatalog, resources, domainCode, resourceId,
+    currentResource, resourceDomain, resourceQuery, resourcePage, resourcePageSize, setResourcePageSize, resourcePages, resourceTotal, resourceLoading, resourceError, loadResources,
     domainOptions, resourceOptions, hasCatalogScope, setDomain, setResource, pageNo, pageCount, total, searchQuery,
     loading, catalogLoading, saving, stage, error, catalogError, notice, added, removed, invalidSelection, canReview,
     openFor, close, loadCatalog, toggle, review, back, submit, reconcile: () => target.value && readCurrent(target.value, stage.value === 'unknown') };

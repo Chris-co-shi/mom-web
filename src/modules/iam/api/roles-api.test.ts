@@ -27,7 +27,7 @@ describe('角色 API 契约', () => {
     await roles.updateRole('123', { name: 'New', description: 'note', enabled: true, version: 2 });
     await roles.setRoleEnabled('123', false, 3);
     await roles.setRoleEnabled('123', true, 4);
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/roles', '/auth/roles/123', '/auth/roles/123/disable', '/auth/roles/123/enable']);
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/roles', '/auth/roles/123', '/auth/roles/disable/123', '/auth/roles/enable/123']);
     expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ code: 'OPS', name: 'Operator', description: null, enabled: true });
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ name: 'New', description: 'note', enabled: true, version: 2 });
     expect(JSON.parse(fetchMock.mock.calls[2]![1].body)).toEqual({ version: 3 });

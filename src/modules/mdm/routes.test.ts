@@ -1,35 +1,58 @@
 import { describe, expect, it } from 'vitest';
-import { mainNavigation, appRoutes } from '../../router/route-registry';
+import { mainNavigation } from '../../router/route-registry';
 import { ROUTE_NAMES } from '../../router/route-names';
-import { mdmRoutes } from './routes';
 
-describe('MDM 路由/授权入口', () => {
-  it('工厂管理出现在静态 Route Registry，读取权限控制导航', () => {
-    expect(mdmRoutes[0]).toMatchObject({
-      path: 'master-data/plants',
-      name: ROUTE_NAMES.mdmPlants,
-      meta: { module: 'mdm', requiresAuth: true, permissions: ['mdm:factory:read'] },
+describe('MDM 三级导航路由契约', () => {
+  it('将现有真实页面归入稳定的二级业务板块', () => {
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmPlants)).toMatchObject({
+      group: 'mdm',
+      section: 'organization-resources',
+      sectionTitleKey: 'navigation.mdmOrganizationResources',
+      sectionOrder: 10,
     });
-    expect(appRoutes[0]?.children).toContain(mdmRoutes[0]);
-    expect(mainNavigation.find(entry => entry.name === ROUTE_NAMES.mdmPlants)).toMatchObject({
-      group: 'mdm', permissions: ['mdm:factory:read'],
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmUom)).toMatchObject({
+      group: 'mdm',
+      section: 'material-uom',
+      sectionTitleKey: 'navigation.mdmMaterialUom',
+      sectionOrder: 20,
+    });
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmLocations)).toMatchObject({
+      group: 'mdm',
+      section: 'warehouse-logistics',
+      sectionTitleKey: 'navigation.mdmWarehouseLogistics',
+      sectionOrder: 40,
+    });
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmFormulas)).toMatchObject({
+      section: 'manufacturing-definition',
+      permissions: ['mdm:manufacturing-definition:read'],
+    });
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmRoutings)).toMatchObject({
+      section: 'manufacturing-definition',
+      permissions: ['mdm:manufacturing-definition:read'],
+    });
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmProductionVersions)).toMatchObject({
+      section: 'manufacturing-definition', permissions: ['mdm:manufacturing-definition:read'],
+    });
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.qmsQualitySpecifications)).toMatchObject({
+      group: 'mdm', section: 'quality-definition', permissions: ['qms:quality-definition:read'],
+    });
+    expect(mainNavigation.find((item) => item.name === ROUTE_NAMES.mdmGovernanceChecks)).toMatchObject({
+      group: 'mdm', section: 'governance', permissions: ['mdm:governance:read'],
     });
   });
-  it.each([
-    ['mdmUom', 'master-data/uom', 'mdm:uom:read'],
-    ['mdmCategories', 'master-data/material-categories', 'mdm:material:read'],
-    ['mdmMaterials', 'master-data/materials', 'mdm:material:read'],
-    ['mdmWorkshops', 'master-data/workshops', 'mdm:factory:read'],
-    ['mdmProductionLines', 'master-data/production-lines', 'mdm:factory:read'],
-    ['mdmWorkstations', 'master-data/workstations', 'mdm:factory:read'],
-    ['mdmWarehouses', 'master-data/warehouses', 'mdm:warehouse:read'],
-    ['mdmWarehouseAreas', 'master-data/warehouse-areas', 'mdm:warehouse:read'],
-    ['mdmLocationTypes', 'master-data/location-types', 'mdm:location:read'],
-    ['mdmLocations', 'master-data/locations', 'mdm:location:read'],
-  ] as const)('将业务页面 %s 接入已有导航/路由，按读取权限可见', (routeName, path, authority) => {
-    const route = mdmRoutes.find(item => item.name === ROUTE_NAMES[routeName]);
-    expect(route).toMatchObject({ path, meta: { module: 'mdm', permissions: [authority], requiresAuth: true } });
-    expect(mainNavigation.find(item => item.name === ROUTE_NAMES[routeName])).toBeDefined();
-    expect(appRoutes[0]?.children).toContain(route);
+
+  it('未注册真实页面的板块不会伪装成可用导航', () => {
+    const renderedSections = new Set(
+      mainNavigation.filter((item) => item.group === 'mdm').map((item) => item.section),
+    );
+
+    expect(renderedSections).toEqual(new Set([
+      'organization-resources',
+      'material-uom',
+      'manufacturing-definition',
+      'warehouse-logistics',
+      'quality-definition',
+      'governance',
+    ]));
   });
 });

@@ -50,7 +50,7 @@ export function updateRole(id: string, request: UpdateRoleRequest): Promise<Role
 }
 
 export function setRoleEnabled(id: string, enabled: boolean, version: number): Promise<RoleResponse> {
-  return httpClient.result({ path: rolePath(id, enabled ? '/enable' : '/disable'), method: 'PUT', body: { version } });
+  return httpClient.result({ path: apiPath('auth', `/roles/${enabled ? 'enable' : 'disable'}/${encodeURIComponent(id)}`), method: 'PUT', body: { version } });
 }
 
 /** 删除契约没有版本条件；引用检查由 Auth 后端负责。 */

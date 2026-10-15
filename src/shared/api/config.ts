@@ -3,6 +3,7 @@ export const API_PATHS = {
   auth: '/auth',
   system: '/system',
   mdm: '/mdm',
+  qms: '/qms',
 } as const;
 
 export type ApiContext = keyof typeof API_PATHS;

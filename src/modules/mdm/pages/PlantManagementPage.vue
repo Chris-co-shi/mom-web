@@ -34,6 +34,7 @@ const pageSummary = computed(() => `${pageNo.value} / ${pageCount.value}`);
 const columns = computed<MomColumn[]>(() => [
   { key: 'code', title: t('mdm.plants.code'), minWidth: 180 },
   { key: 'name', title: t('mdm.plants.name'), minWidth: 200 },
+  { key: 'timeZoneId', title: t('mdm.plants.timeZone'), minWidth: 160 },
   { key: 'status', title: t('mdm.plants.status'), width: 122 },
   { key: 'updatedAt', title: t('mdm.plants.updatedAt'), minWidth: 200 },
   { key: 'actions', title: t('mdm.plants.actions'), width: 190, fixed: 'right', resizable: false },
@@ -93,6 +94,7 @@ onBeforeRouteLeave(() => !saving.value);
         <MomDataTable :rows="visibleRows" :columns="columns" :compact="compact"
           :empty-text="t(loading ? 'mdm.plants.loading' : search.trim() ? 'mdm.plants.noMatches' : 'mdm.plants.empty')">
           <template #cell-code="{ row }"><span class="mdm-plants__code">{{ row.code }}</span></template>
+          <template #cell-timeZoneId="{ row }">{{ row.timeZoneId ?? t('mdm.plants.timeZoneMissing') }}</template>
           <template #cell-status="{ row }">
             <span class="mom-management-status" :class="row.status === 'ENABLED' ? 'mom-management-status--enabled' : 'mom-management-status--disabled'">
               <span class="mom-management-status__dot" aria-hidden="true"></span>
@@ -134,6 +136,7 @@ onBeforeRouteLeave(() => !saving.value);
           <dl v-if="target && !detailLoading" class="mdm-plants__summary">
             <div><dt>{{ t('mdm.plants.code') }}</dt><dd class="mdm-plants__code">{{ target.code }}</dd></div>
             <div><dt>{{ t('mdm.plants.name') }}</dt><dd>{{ target.name }}</dd></div>
+            <div><dt>{{ t('mdm.plants.timeZone') }}</dt><dd>{{ target.timeZoneId ?? t('mdm.plants.timeZoneMissing') }}</dd></div>
             <div><dt>{{ t('mdm.plants.version') }}</dt><dd>{{ target.version }}</dd></div>
             <div v-if="action === 'detail'"><dt>{{ t('mdm.plants.createdAt') }}</dt><dd>{{ formatInstant(target.createdAt, { locale }) }}</dd></div>
           </dl>
@@ -146,6 +149,12 @@ onBeforeRouteLeave(() => !saving.value);
               <label>
                 <span>{{ t('mdm.plants.name') }} *</span>
                 <MomInput v-model="form.name" :disabled="saving || detailLoading" :max-length="200" />
+              </label>
+              <label>
+                <span>{{ t('mdm.plants.timeZone') }}{{ action === 'create' ? ' *' : '' }}</span>
+                <MomInput v-model="form.timeZoneId" :disabled="saving || detailLoading" :max-length="64"
+                  placeholder="Asia/Shanghai" />
+                <small>{{ t('mdm.plants.timeZoneHint') }}</small>
               </label>
               <label v-if="action === 'create'">
                 <span>{{ t('mdm.plants.status') }}</span>

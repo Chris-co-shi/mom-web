@@ -36,8 +36,8 @@ export function usePlantManagement() {
   const blocked = ref(false);
   const action = ref<PlantAction>();
   const target = ref<api.PlantView>();
-  const form = reactive<{ code: string; name: string; status: api.MasterStatus }>({
-    code: '', name: '', status: 'ENABLED',
+  const form = reactive<{ code: string; name: string; timeZoneId: string; status: api.MasterStatus }>({
+    code: '', name: '', timeZoneId: '', status: 'ENABLED',
   });
   const fieldError = ref(false);
   let listController: AbortController | undefined;
@@ -91,6 +91,7 @@ export function usePlantManagement() {
       if (!preserveDraft) {
         form.code = current.code;
         form.name = current.name;
+        form.timeZoneId = current.timeZoneId ?? '';
         form.status = current.status;
       }
       blocked.value = false;
@@ -116,7 +117,8 @@ export function usePlantManagement() {
     notice.value = undefined;
     blocked.value = false;
     fieldError.value = false;
-    Object.assign(form, { code: row?.code ?? '', name: row?.name ?? '', status: row?.status ?? 'ENABLED' });
+    Object.assign(form, { code: row?.code ?? '', name: row?.name ?? '',
+      timeZoneId: row?.timeZoneId ?? '', status: row?.status ?? 'ENABLED' });
     if (row) await readTarget(row.id);
   }
 
@@ -139,14 +141,17 @@ export function usePlantManagement() {
     const current = target.value;
     if (next === 'create' || next === 'edit') {
       fieldError.value = !form.name.trim() || form.name.length > 200 ||
-        (next === 'create' && (!form.code.trim() || form.code.length > 64));
+        (next === 'create' && (!form.code.trim() || form.code.length > 64)) ||
+        (next === 'create' && !form.timeZoneId.trim()) || form.timeZoneId.length > 64;
       if (fieldError.value) return;
     }
     saving.value = true;
     dialogError.value = undefined;
     try {
-      if (next === 'create') await api.createPlant({ code: form.code, name: form.name, status: form.status });
-      else if (current && next === 'edit') await api.updatePlant(current.id, { name: form.name, version: current.version });
+      if (next === 'create') await api.createPlant({ code: form.code, name: form.name,
+        timeZoneId: form.timeZoneId.trim(), status: form.status });
+      else if (current && next === 'edit') await api.updatePlant(current.id, { name: form.name,
+        timeZoneId: form.timeZoneId.trim() || null, version: current.version });
       else if (current && next === 'status') await api.setPlantEnabled(current.id, current.status !== 'ENABLED', current.version);
       if (disposed) return;
       action.value = undefined;

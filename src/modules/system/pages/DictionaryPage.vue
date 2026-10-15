@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
+import { focusAfterRender } from '../../../shared/ui/focus';
 import { Plus, RefreshCw } from '@lucide/vue';
 import { AuthorityGuard } from '../../auth';
 import { MomButton, MomCheckbox, MomInput, MomLoading, MomNumberInput, MomTextarea } from '../../../shared/ui';
@@ -22,6 +23,17 @@ type Kind = 'type' | 'item';
 const { t } = useLocale();
 const types = useSystemList(systemApi.listDictionaryTypes);
 const selectedId = ref<string | null>(null);
+const detailOpen = ref(false);
+function enterDetail(id: string, event: Event): void {
+  const workspace = (event.currentTarget as HTMLElement).closest('.system-page__workspace');
+  selectedId.value = id; detailOpen.value = true;
+  void focusAfterRender(workspace, '.system-page__back');
+}
+function leaveDetail(event: Event): void {
+  const workspace = (event.currentTarget as HTMLElement).closest('.system-page__workspace');
+  detailOpen.value = false;
+  void focusAfterRender(workspace, '.system-page__rail-item[aria-pressed="true"]');
+}
 const selected = computed(() => types.rows.value.find(row => row.id === selectedId.value) ?? null);
 const items = useSystemList(signal => selectedId.value ? systemApi.listDictionaryItems(selectedId.value, signal) : Promise.resolve([]));
 const typeSearch = ref(''); const itemSearch = ref('');
@@ -136,7 +148,7 @@ onBeforeRouteLeave(() => !saving.value);
         }}</small>
         <MomButton variant="outline" @click="refreshTypes">{{ t('system.common.refresh') }}</MomButton>
       </div>
-      <div class="system-page__workspace">
+      <div class="system-page__workspace" :class="{ 'system-page__workspace--detail': detailOpen }">
         <aside class="system-page__rail" :aria-label="t('system.dictionary.types')" :aria-busy="types.loading.value">
           <div class="system-page__rail-header"><strong>{{ t('system.dictionary.types') }}</strong>
             <MomButton variant="outline" size="icon" :aria-label="t('system.common.refresh')"
@@ -149,7 +161,7 @@ onBeforeRouteLeave(() => !saving.value);
           <div class="system-page__rail-list">
             <MomButton v-for="row in visibleTypes" :key="row.id" class="system-page__rail-item"
               :class="{ 'system-page__rail-item--active': selectedId === row.id }" :aria-pressed="selectedId === row.id"
-              :disabled="types.loading.value || saving" @click="selectedId = row.id"><strong>{{ row.name
+              :disabled="types.loading.value || saving" @click="enterDetail(row.id, $event)"><strong>{{ row.name
               }}</strong><small>{{
                   row.code }} · {{ t(row.enabled ? 'system.common.enabled' : 'system.common.disabled') }}</small>
             </MomButton>
@@ -170,7 +182,7 @@ onBeforeRouteLeave(() => !saving.value);
           </div>
           <MomLoading :model-value="types.loading.value" :text="t('system.common.loading')" />
         </aside>
-        <div class="system-page__detail">
+        <div class="system-page__detail"><MomButton class="system-page__back" variant="ghost" @click="leaveDetail($event)">{{ t('system.common.backDirectory') }}</MomButton>
           <template v-if="selected">
             <div class="system-page__detail-heading">
               <div>

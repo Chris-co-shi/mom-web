@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initializeFormData, validateCodeRule, validateFieldValue, validateFormSchema } from './schema';
+import { initializeDynamicFormData, initializeFormData, validateCodeRule, validateFieldValue, validateFormSchema } from './schema';
 import { defaultFieldRegistry, createFieldRegistry } from './field-registry';
 import type { FormSchema } from './types';
 import { localCodeSegmentCatalog } from './code-rule-catalog';
@@ -19,6 +19,11 @@ describe('FormSchema', () => {
       { ...schema.fields[0], id: 'same' }, { ...schema.fields[1], id: 'same', min: 5, max: 2 },
       { ...schema.fields[2], id: 'kind2', options: [] },
     ] })).toEqual(expect.arrayContaining([expect.stringContaining('重复'), expect.stringContaining('最小值'), expect.stringContaining('至少需要一个选项')]));
+  });
+  it('校验外部非法字段配置且宿主初始化明确失败', () => {
+    const invalid = { schemaVersion: 1, fields: [{ id: 'x', name: 'x', type: 'TEXT', label: '文本', minLength: 'bad', options: [null] }] };
+    expect(validateFormSchema(invalid)).toEqual(expect.arrayContaining([expect.stringContaining('minLength 必须是数字'), expect.stringContaining('选项配置无效')]));
+    expect(() => initializeDynamicFormData(invalid)).toThrow('FormSchema 无效');
   });
   it('拒绝重复下拉值和不匹配的默认值', () => {
     expect(validateFormSchema({ schemaVersion: 1, fields: [{

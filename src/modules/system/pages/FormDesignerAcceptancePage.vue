@@ -5,6 +5,7 @@ import LocaleSwitcher from '../../../shared/i18n/LocaleSwitcher.vue';
 import ThemeSwitcher from '../../../shared/theme/ThemeSwitcher.vue';
 import { CodeRuleDesigner, FormSchemaDesigner, localCodeSegmentCatalog } from '../../../shared/form-designer';
 import type { CodeRuleDefinition, FormSchema } from '../../../shared/form-designer';
+import './form-designer-acceptance.css';
 
 const active = ref<'form' | 'code'>('form');
 const formSchema = ref<FormSchema>({ schemaVersion: 1, fields: [

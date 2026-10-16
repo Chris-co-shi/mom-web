@@ -1,5 +1,7 @@
 import { MomInput, MomNumberInput, MomSelect, MomCheckbox } from '../ui';
-import type { FieldRegistry, FieldRegistryEntry, FormField, FormFieldType, FormValue } from './types';
+import { computed, defineComponent, h } from 'vue';
+import { MomButton } from '../ui';
+import type { FieldControlAdapter, FieldRegistry, FieldRegistryEntry, FormField, FormFieldType, FormValue } from './types';
 
 const common = [
   { key: 'name', label: '字段名', editor: 'text' }, { key: 'label', label: '标题', editor: 'text' },
@@ -10,6 +12,30 @@ const textOnly = [...common, { key: 'defaultValue', label: '默认值', editor: 
 const numberOnly = [...common, { key: 'defaultValue', label: '默认值', editor: 'number' }, { key: 'min', label: '最小值', editor: 'number' }, { key: 'max', label: '最大值', editor: 'number' }] as const;
 const selectOnly = [...common, { key: 'defaultValue', label: '默认值', editor: 'text' }] as const;
 const switchOnly = [...common, { key: 'defaultValue', label: '默认值', editor: 'checkbox' }] as const;
+
+const modelAdapter = (event = 'update:modelValue'): FieldControlAdapter => ({
+  event,
+  props: (field, value, context) => ({ id: `dynamic-${field.id}`, modelValue: value, readonly: field.readonly, disabled: context.disabled, 'aria-invalid': context.invalid, 'aria-describedby': context.describedBy }),
+  value: (payload, field) => normalizeFieldValue(defaultFieldRegistry, field.type, payload),
+});
+
+const selectPropertyEditor = defineComponent({
+  name: 'SelectFieldPropertyEditor',
+  props: { field: { type: Object, required: true } },
+  setup(props, { emit }) {
+    const field = computed(() => props.field as FormField);
+    function patchOptions(options: NonNullable<FormField['options']>): void { emit('update:field', { ...field.value, options }); }
+    return () => h('fieldset', { class: 'form-designer__property-editor' }, [
+      h('legend', '下拉选项'),
+      ...(field.value.options ?? []).map((option, index) => h('div', { class: 'form-designer__option', key: index }, [
+        h(MomInput, { modelValue: option.label, 'aria-label': `选项 ${index + 1} 显示文本`, 'onUpdate:modelValue': (label: string) => patchOptions((field.value.options ?? []).map((item, itemIndex) => itemIndex === index ? { ...item, label } : item)) }),
+        h(MomInput, { modelValue: option.value, 'aria-label': `选项 ${index + 1} 值`, 'onUpdate:modelValue': (value: string) => patchOptions((field.value.options ?? []).map((item, itemIndex) => itemIndex === index ? { ...item, value } : item)) }),
+        h(MomButton, { mode: 'text', 'aria-label': `删除选项 ${index + 1}`, onClick: () => patchOptions((field.value.options ?? []).filter((_, itemIndex) => itemIndex !== index)) }, () => '×'),
+      ])),
+      h(MomButton, { variant: 'outline', onClick: () => patchOptions([...(field.value.options ?? []), { label: '新选项', value: `option${(field.value.options?.length ?? 0) + 1}` }]) }, () => '添加选项'),
+    ]);
+  },
+});
 
 function entry(definition: Omit<FieldRegistryEntry, 'validateConfig' | 'validateValue'>): FieldRegistryEntry {
   return {
@@ -47,7 +73,7 @@ function entry(definition: Omit<FieldRegistryEntry, 'validateConfig' | 'validate
     },
     validateValue(field, value) {
       const empty = value === null || value === undefined || value === '';
-      if (field.required && (empty || (field.type === 'SWITCH' && value === false))) return `${field.label}为必填项`;
+      if (field.required && empty) return `${field.label}为必填项`;
       if (empty) return undefined;
       if (field.type === 'TEXT') {
         if (typeof value !== 'string') return `${field.label}必须是文本`;
@@ -76,10 +102,10 @@ export function createFieldRegistry(entries: readonly FieldRegistryEntry[]): Fie
 }
 
 export const defaultFieldRegistry = createFieldRegistry([
-  entry({ type: 'TEXT', label: '文本', description: '单行文本字段', preview: '请输入', control: MomInput, valueKind: 'text', properties: textOnly, create: (id, name) => ({ id, name, type: 'TEXT', label: '文本字段', required: false, defaultValue: '' }), normalize: (value) => value == null ? '' : String(value) }),
-  entry({ type: 'NUMBER', label: '数字', description: '数值字段', preview: '123', control: MomNumberInput, valueKind: 'number', properties: numberOnly, create: (id, name) => ({ id, name, type: 'NUMBER', label: '数字字段', required: false, defaultValue: 0 }), normalize: (value) => value == null || value === '' ? null : Number(value) }),
-  entry({ type: 'SELECT', label: '下拉', description: '枚举选项字段', preview: '下拉选择', control: MomSelect, valueKind: 'select', properties: selectOnly, create: (id, name) => ({ id, name, type: 'SELECT', label: '下拉字段', required: false, defaultValue: '', options: [{ label: '选项一', value: 'option1' }, { label: '选项二', value: 'option2' }] }), normalize: (value) => value == null ? '' : String(value) }),
-  entry({ type: 'SWITCH', label: '开关', description: '布尔开关字段', preview: '开 / 关', control: MomCheckbox, valueKind: 'boolean', modelProp: 'modelValue', modelEvent: 'update:modelValue', properties: switchOnly, create: (id, name) => ({ id, name, type: 'SWITCH', label: '开关字段', required: false, defaultValue: false }), normalize: (value) => value === true }),
+  entry({ type: 'TEXT', label: '文本', description: '单行文本字段', preview: '请输入', control: MomInput, adapter: { ...modelAdapter(), props: (field, value, context) => ({ ...modelAdapter().props(field, value, context), placeholder: '请输入' }) }, valueKind: 'text', properties: textOnly, create: (id, name) => ({ id, name, type: 'TEXT', label: '文本字段', required: false, defaultValue: '' }), normalize: (value) => value == null ? '' : String(value) }),
+  entry({ type: 'NUMBER', label: '数字', description: '数值字段', preview: '123', control: MomNumberInput, adapter: { ...modelAdapter(), props: (field, value, context) => ({ ...modelAdapter().props(field, value, context), min: field.min, max: field.max }) }, valueKind: 'number', properties: numberOnly, create: (id, name) => ({ id, name, type: 'NUMBER', label: '数字字段', required: false, defaultValue: 0 }), normalize: (value) => value == null || value === '' ? null : Number(value) }),
+  entry({ type: 'SELECT', label: '下拉', description: '枚举选项字段', preview: '下拉选择', control: MomSelect, adapter: { ...modelAdapter(), props: (field, value, context) => ({ ...modelAdapter().props(field, value, context), options: field.options ?? [], placeholder: `请选择${field.label}` }) }, valueKind: 'select', properties: selectOnly, propertyEditor: selectPropertyEditor, create: (id, name) => ({ id, name, type: 'SELECT', label: '下拉字段', required: false, defaultValue: '', options: [{ label: '选项一', value: 'option1' }, { label: '选项二', value: 'option2' }] }), normalize: (value) => value == null ? '' : String(value) }),
+  entry({ type: 'SWITCH', label: '开关', description: '布尔开关字段', preview: '开 / 关', control: MomCheckbox, adapter: { ...modelAdapter(), props: (field, value, context) => ({ ...modelAdapter().props(field, value, context), 'aria-label': field.label }) }, valueKind: 'boolean', properties: switchOnly, create: (id, name) => ({ id, name, type: 'SWITCH', label: '开关字段', required: false, defaultValue: false }), normalize: (value) => value === true }),
 ]);
 
 export function createField(registry: FieldRegistry, type: FormFieldType, id: string, name: string): FormField {

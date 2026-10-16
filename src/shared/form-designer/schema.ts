@@ -21,6 +21,9 @@ export function validateFormSchema(value: unknown, registry: FieldRegistry = def
     if (field.readonly !== undefined && typeof field.readonly !== 'boolean') errors.push(`${prefix}只读配置无效`);
     if (field.disabled !== undefined && typeof field.disabled !== 'boolean') errors.push(`${prefix}禁用配置无效`);
     const definition = registry.get(field.type);
+    if (field.defaultValue !== undefined && !['string', 'number', 'boolean'].includes(typeof field.defaultValue) && field.defaultValue !== null) errors.push(`${prefix}默认值无效`);
+    for (const key of ['minLength', 'maxLength', 'min', 'max'] as const) if (field[key] !== undefined && typeof field[key] !== 'number') errors.push(`${prefix}${key} 必须是数字`);
+    if (field.options !== undefined && (!Array.isArray(field.options) || field.options.some((option) => !option || typeof option !== 'object' || typeof option.label !== 'string' || typeof option.value !== 'string'))) errors.push(`${prefix}选项配置无效`);
     if (definition) errors.push(...(definition.validateConfig?.(field) ?? []).map((error) => `${prefix}${error}`));
   });
   return errors;
@@ -63,4 +66,11 @@ export function initializeFormData(schema: FormSchema, input: Record<string, unk
     const value = input[field.name] !== undefined ? input[field.name] : field.defaultValue;
     return [field.name, normalizeFieldValue(registry, field.type, value)];
   }));
+}
+
+/** 宿主表单初始化入口：以 Schema 默认值初始化业务 v-model 数据。 */
+export function initializeDynamicFormData(schema: unknown, input: Record<string, unknown> = {}, registry: FieldRegistry = defaultFieldRegistry): Record<string, FormValue> {
+  const errors = validateFormSchema(schema, registry);
+  if (errors.length) throw new Error(`FormSchema 无效：${errors.join('；')}`);
+  return initializeFormData(schema as FormSchema, input, registry);
 }

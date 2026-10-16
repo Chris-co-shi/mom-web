@@ -37,7 +37,17 @@ function addByKeyboard(type: FormFieldType): void { const field = createRegister
 function handleDrop(event: { newIndex?: number }): void { const index = event.newIndex ?? fields.value.length - 1; const field = fields.value[index]; if (field) { fields.value.splice(index, 1, createRegisteredField(field.type)); selectedId.value = fields.value[index].id; } }
 function removeField(id: string): void { fields.value = fields.value.filter((field) => field.id !== id); if (selectedId.value === id) selectedId.value = fields.value[0]?.id ?? null; }
 function moveField(id: string, delta: number): void { const index = fields.value.findIndex((field) => field.id === id); const target = index + delta; if (target < 0 || target >= fields.value.length) return; const [field] = fields.value.splice(index, 1); fields.value.splice(target, 0, field); }
-function updateProperty(field: FormField, key: string, value: unknown): void { (field as unknown as Record<string, unknown>)[key] = value; }
+type FormFieldPropertyKey = import('./types').FieldProperty;
+type PropertyValue = string | number | boolean | null | undefined;
+function updateProperty(field: FormField, key: FormFieldPropertyKey, value: PropertyValue): void {
+  switch (key) {
+    case 'name': case 'label': field[key] = String(value ?? ''); break;
+    case 'required': case 'readonly': case 'disabled': field[key] = Boolean(value); break;
+    case 'defaultValue': field[key] = value as FormField['defaultValue']; break;
+    case 'minLength': case 'maxLength': case 'min': case 'max': field[key] = value == null || value === '' ? undefined : Number(value); break;
+  }
+}
+function propertyValue(field: FormField, key: FormFieldPropertyKey): PropertyValue { return field[key]; }
 function importSchema(): void { importError.value = ''; try { const parsed = JSON.parse(importText.value) as FormSchema; const found = validateFormSchema(parsed, props.registry); if (found.length) { importError.value = found.join('；'); return; } fields.value = cloneFields(parsed.fields); selectedId.value = fields.value[0]?.id ?? null; previewData.value = {}; } catch { importError.value = 'JSON 格式无效'; } }
 async function copySchema(): Promise<void> { await navigator.clipboard?.writeText(JSON.stringify(schema.value, null, 2)); }
 </script>
@@ -69,11 +79,11 @@ async function copySchema(): Promise<void> { await navigator.clipboard?.writeTex
     </div>
     <aside class="form-designer__panel form-designer__properties"><h2>字段属性</h2><p v-if="!selected" class="form-designer__muted">选择画布字段以编辑属性</p>
       <template v-else><label v-for="property in selectedDefinition?.properties" :key="property.key" :class="{ 'form-designer__check': property.editor === 'checkbox' }">{{ property.editor === 'checkbox' ? '' : property.label }}
-        <MomInput v-if="property.editor === 'text'" :model-value="String((selected as any)[property.key] ?? '')" :aria-label="property.label" @update:model-value="updateProperty(selected!, property.key, $event)" />
-        <MomNumberInput v-else-if="property.editor === 'number'" :model-value="Number((selected as any)[property.key] ?? 0)" :aria-label="property.label" @update:model-value="updateProperty(selected!, property.key, $event)" />
-        <MomCheckbox v-else :model-value="Boolean((selected as any)[property.key])" :aria-label="property.label" @update:model-value="updateProperty(selected!, property.key, $event)" />{{ property.editor === 'checkbox' ? property.label : '' }}
+        <MomInput v-if="property.editor === 'text'" :model-value="String(propertyValue(selected!, property.key) ?? '')" :aria-label="property.label" @update:model-value="updateProperty(selected!, property.key, $event)" />
+        <MomNumberInput v-else-if="property.editor === 'number'" :model-value="Number(propertyValue(selected!, property.key) ?? 0)" :aria-label="property.label" @update:model-value="updateProperty(selected!, property.key, $event)" />
+        <MomCheckbox v-else :model-value="Boolean(propertyValue(selected!, property.key))" :aria-label="property.label" @update:model-value="updateProperty(selected!, property.key, $event)" />{{ property.editor === 'checkbox' ? property.label : '' }}
       </label>
-        <fieldset v-if="selected.type === 'SELECT'"><legend>下拉选项</legend><div v-for="(option, index) in selected.options" :key="index" class="form-designer__option"><MomInput v-model="option.label" :aria-label="`选项 ${index + 1} 显示文本`" /><MomInput v-model="option.value" :aria-label="`选项 ${index + 1} 值`" /><MomButton mode="text" :aria-label="`删除选项 ${index + 1}`" @click="selected.options?.splice(index, 1)">×</MomButton></div><MomButton variant="outline" @click="selected.options?.push({ label: '新选项', value: `option${(selected.options?.length ?? 0) + 1}` })">添加选项</MomButton></fieldset>
+        <component v-if="selectedDefinition?.propertyEditor" :is="selectedDefinition.propertyEditor" :field="selected" @update:field="fields[fields.findIndex((field) => field.id === selected!.id)] = $event" />
       </template>
     </aside>
   </section>

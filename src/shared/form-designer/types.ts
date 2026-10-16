@@ -12,10 +12,16 @@ export interface FormSchema { schemaVersion: 1; fields: FormField[] }
 export type FormData = Record<string, FormValue>;
 export type FieldProperty = 'name' | 'label' | 'required' | 'readonly' | 'disabled' | 'defaultValue' | 'minLength' | 'maxLength' | 'min' | 'max';
 export interface FieldPropertyDefinition { key: FieldProperty; label: string; editor: 'text' | 'number' | 'checkbox' }
+export interface FieldControlContext { field: FormField; disabled: boolean; invalid: boolean; describedBy?: string }
+export interface FieldControlAdapter {
+  props: (field: FormField, value: FormValue, context: FieldControlContext) => Record<string, unknown>;
+  event: string;
+  value: (payload: unknown, field: FormField) => FormValue;
+}
 export interface FieldRegistryEntry {
   type: FormFieldType; label: string; description: string; preview: string;
-  control: Component; modelProp?: string; modelEvent?: string; valueKind: 'text' | 'number' | 'boolean' | 'select';
-  properties: readonly FieldPropertyDefinition[]; create: (id: string, name: string) => FormField;
+  control: Component; adapter: FieldControlAdapter; valueKind: 'text' | 'number' | 'boolean' | 'select';
+  properties: readonly FieldPropertyDefinition[]; propertyEditor?: Component; create: (id: string, name: string) => FormField;
   validateConfig?: (field: FormField) => string[]; validateValue?: (field: FormField, value: FormValue) => string | undefined;
   normalize?: (value: unknown) => FormValue;
 }

@@ -30,6 +30,14 @@ async function runtime() {
   return import('./locale');
 }
 
+async function initialize(api: Awaited<ReturnType<typeof runtime>>) {
+  vi.spyOn(i18nRuntimeApi, 'locales').mockResolvedValue(['zh-CN', 'en-US'].map((localeCode) => ({
+    localeCode, displayName: localeCode, nativeName: localeCode, enabled: true,
+    defaultLocale: localeCode === 'zh-CN', sortOrder: 0,
+  })));
+  await api.initializeLocale();
+}
+
 describe('Owner 隔离翻译', () => {
   it.each(['zh-CN', 'en-US'])('Shell 取消/关闭文案在 %s 刷新启动、进入 MDM 和切换语言后保持正确 Owner', async (initialLocale) => {
     const api = await runtime();
@@ -78,6 +86,7 @@ describe('Owner 隔离翻译', () => {
 
   it.each([['system', 'mdm'], ['mdm', 'system']] as const)('加载顺序 %s → %s 不影响冲突读取', async (first, second) => {
     const api = await runtime();
+    await initialize(api);
     await api.ensureOwners([first]);
     await api.ensureOwners([second]);
     expect(api.translateForOwner('system', key, { current: 2, pages: 8 })).toBe('系统第 2 / 8 页');
@@ -88,6 +97,7 @@ describe('Owner 隔离翻译', () => {
 
   it('同名同译文及原有无冲突调用保持可用', async () => {
     const api = await runtime();
+    await initialize(api);
     bundles['zh-CN']!.mdm = { [key]: '系统第 {0} / {1} 页', 'mdm.plants.title': '工厂' };
     await api.ensureOwners(['system', 'mdm']);
     expect(api.translate(key, { current: 1, pages: 3 })).toBe('系统第 1 / 3 页');
@@ -97,6 +107,7 @@ describe('Owner 隔离翻译', () => {
 
   it('不存在的 Key、未加载 Owner 及目标 Owner 缺失 Key 均返回原 Key', async () => {
     const api = await runtime();
+    await initialize(api);
     await api.ensureOwners(['system']);
     expect(api.translateForOwner('mdm', key)).toBe(key);
     await api.ensureOwners(['auth']);
@@ -115,6 +126,7 @@ describe('Owner 隔离翻译', () => {
       'empty.message': '',
     };
     bundles['zh-CN']!.mdm = { 'mdm.plants.title': '其他 Owner 的译文' };
+    await initialize(api);
     await api.ensureOwners(['system', 'mdm']);
     expect(api.useLocale().tForOwner('system', key, { current: 2, pages: 5 })).toBe('页 2 / 5，重复 2');
     expect(api.translateForOwner('system', key, { Current: 2, pages: 5 })).toBe('页  / 5，重复 ');
@@ -125,9 +137,7 @@ describe('Owner 隔离翻译', () => {
 
   it('Locale 切换后响应式读取对应 Owner 的数据库译文', async () => {
     const api = await runtime();
-    api.useLocaleStore().supportedLocales = ['zh-CN', 'en-US'].map((localeCode) => ({
-      localeCode, displayName: localeCode, nativeName: localeCode, enabled: true, defaultLocale: localeCode === 'zh-CN', sortOrder: 0,
-    }));
+    await initialize(api);
     await api.ensureOwners(['system', 'mdm']);
     const text = computed(() => api.translateForOwner('mdm', key, { current: 4, pages: 9 }));
     expect(text.value).toBe('主数据第 4 / 9 页');
@@ -139,6 +149,7 @@ describe('Owner 隔离翻译', () => {
 
   it('单个 Owner SSE 刷新不污染另一个 Owner，移除的 Key 不跨 Owner 回退', async () => {
     const api = await runtime();
+    await initialize(api);
     await api.ensureOwners(['system', 'mdm']);
     bundles['zh-CN']!.system = { [key]: '刷新 {0} / {1}' };
     sources.get('/system/i18n/runtime/events')!.dispatchEvent(new MessageEvent('I18N_BUNDLE_CHANGED', { data: JSON.stringify({ locale: 'zh-CN' }) }));

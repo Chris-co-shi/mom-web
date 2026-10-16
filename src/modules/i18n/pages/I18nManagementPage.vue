@@ -27,8 +27,8 @@ interface TranslationRow { id: string; localeCode: string; displayName: string; 
 const { t } = useLocale();
 const textHint = computed(() => t('system.messages.textHint', { exampleZero: '{0}', exampleOne: '{1}' }));
 const activeOwner = ref<I18nOwner>('system');
-const availableOwners = computed(() => i18nOwners.filter((item) => hasAuthority(item.readAuthority)));
-const writeAuthority = computed(() => i18nOwner(activeOwner.value).writeAuthority);
+const availableOwners = computed(() => i18nOwners.filter((item) => hasAuthority(item.managementAuthority)));
+const writeAuthority = computed(() => i18nOwner(activeOwner.value).managementAuthority);
 const messages = useSystemList(signal => i18nManagementApi.listMessages(activeOwner.value, signal));
 const locales = useSystemList(i18nRuntimeApi.locales);
 const selectedId = ref<string | null>(null);
@@ -84,7 +84,7 @@ async function reloadTranslations(): Promise<void> {
   if (targetTranslation.value) targetTranslation.value = translationRows.value.find(row => row.localeCode === targetTranslation.value?.localeCode) ?? null;
 }
 async function switchOwner(value: string | number): Promise<void> {
-  const next = i18nOwners.find((item) => item.owner === value && hasAuthority(item.readAuthority));
+  const next = i18nOwners.find((item) => item.owner === value && hasAuthority(item.managementAuthority));
   if (!next || next.owner === activeOwner.value || saving.value) return;
   activeOwner.value = next.owner;
   search.value = ''; detailOpen.value = false;

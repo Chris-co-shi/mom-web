@@ -7,9 +7,9 @@ export const systemRoutes: RouteRecordRaw[] = [
       permissions: ['system:dictionary:read'], i18nOwners: ['system'], navigationGroup: 'system', navigationOrder: 10 } },
   { path: 'system/locales', name: ROUTE_NAMES.systemLocales, component: () => import('./pages/SupportedLocalePage.vue'),
     meta: { title: '支持语言', titleKey: 'system.locales.title', module: 'system', requiresAuth: true,
-      permissions: ['system:i18n:read'], i18nOwners: ['system'], navigationGroup: 'system', navigationOrder: 20 } },
+      permissions: ['system:i18n:write'], i18nOwners: ['system'], navigationGroup: 'system', navigationOrder: 20 } },
   { path: 'system/messages', name: ROUTE_NAMES.systemMessages, component: () => import('../i18n/pages/I18nManagementPage.vue'),
     meta: { title: '国际化管理', titleKey: 'system.messages.title', module: 'system', requiresAuth: true,
-      permissions: ['system:i18n:read', 'auth:i18n:read', 'mdm:i18n:read'], permissionMode: 'any',
+      permissions: ['system:i18n:write'],
       i18nOwners: ['system'], navigationGroup: 'system', navigationOrder: 30 } },
 ];

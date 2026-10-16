@@ -9,12 +9,10 @@ export type SupportedLocale = string;
 export type MessageParams = Readonly<Record<string, string | number>>;
 
 export const LOCALE_STORAGE_KEY = 'mom.locale.preference';
-export const DEFAULT_LOCALE = 'zh-CN';
-
 /** 数据库 Bundle 是权威；Vue I18n 只保存已加载 Owner 的当前标签页快照。 */
 export const i18n = createI18n({
   legacy: false,
-  locale: DEFAULT_LOCALE,
+  locale: '',
   fallbackLocale: false,
   missingWarn: false,
   fallbackWarn: false,
@@ -24,8 +22,8 @@ export const i18n = createI18n({
 export const useLocaleStore = defineStore('mom-locale', {
   state: () => ({
     supportedLocales: [] as SupportedLocaleInfo[],
-    defaultLocale: DEFAULT_LOCALE,
-    currentLocale: DEFAULT_LOCALE,
+    defaultLocale: '',
+    currentLocale: '',
     loadedOwners: {} as Record<string, I18nOwner[]>,
     loadingOwners: {} as Record<string, I18nOwner[]>,
     messagesByLocale: {} as Record<string, Partial<Record<I18nOwner, Record<string, string>>>>,

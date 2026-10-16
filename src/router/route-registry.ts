@@ -61,6 +61,12 @@ export const appRoutes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: '/dev/form-designer',
+    name: 'dev-form-designer',
+    component: () => import('../modules/system/pages/FormDesignerAcceptancePage.vue'),
+    meta: { title: '动态表单与编码规则设计器', titleKey: 'validation.title', module: 'system', requiresAuth: false, hideInMenu: true },
+  },
+  {
     path: '/login',
     component: () => import('../layouts/AuthLayout.vue'),
     meta: {

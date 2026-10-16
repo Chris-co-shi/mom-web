@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { initializeFormData, validateCodeRule, validateFieldValue, validateFormSchema } from './schema';
+import { defaultFieldRegistry, createFieldRegistry } from './field-registry';
 import type { FormSchema } from './types';
+import { localCodeSegmentCatalog } from './code-rule-catalog';
 
 const schema: FormSchema = { schemaVersion: 1, fields: [
   { id: 'title', name: 'title', type: 'TEXT', label: '标题', required: true, minLength: 2, maxLength: 5, defaultValue: '示例' },
@@ -37,6 +39,20 @@ describe('CodeRuleDefinition', () => {
       { id: 'lit', type: 'LITERAL', params: { value: 'P4' } },
       { id: 'seq', type: 'SEQUENCE', params: { width: 4, step: 2 } },
       { id: 'seq2', type: 'SEQUENCE', params: { width: 4, step: 1 } },
-    ] })).toEqual(expect.arrayContaining([expect.stringContaining('步长必须固定为 1'), expect.stringContaining('必须且只能包含一个流水号')]));
+    ] }, localCodeSegmentCatalog)).toEqual(expect.arrayContaining([expect.stringContaining('必须且只能包含一个流水号')]));
+  });
+});
+
+describe('FieldRegistry', () => {
+  it('支持 SWITCH，保留 false 且可验证布尔值', () => {
+    const field = defaultFieldRegistry.get('SWITCH')!.create('active', 'active');
+    expect(field.defaultValue).toBe(false);
+    expect(initializeFormData({ schemaVersion: 1, fields: [field] }, { active: false })).toEqual({ active: false });
+    expect(validateFieldValue(field, false)).toBeUndefined();
+    expect(validateFormSchema({ schemaVersion: 1, fields: [field] })).toEqual([]);
+  });
+  it('拒绝重复注册并安全报告未知类型', () => {
+    expect(() => createFieldRegistry([defaultFieldRegistry.get('TEXT')!, defaultFieldRegistry.get('TEXT')!])).toThrow('重复');
+    expect(validateFormSchema({ schemaVersion: 1, fields: [{ id: 'x', name: 'x', type: 'FUTURE', label: '未知' }] })).toContain('第 1 个字段类型未注册：FUTURE');
   });
 });

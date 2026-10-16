@@ -4,6 +4,7 @@ import DynamicFormRenderer from './DynamicFormRenderer.vue';
 import FormSchemaDesigner from './FormSchemaDesigner.vue';
 import CodeRuleDesigner from './CodeRuleDesigner.vue';
 import { localCodeSegmentCatalog } from './code-rule-catalog';
+import { defaultFieldRegistry } from './field-registry';
 import type { FormSchema } from './types';
 
 const schema: FormSchema = { schemaVersion: 1, fields: [{ id: 'name', name: 'name', type: 'TEXT', label: '名称', required: true, defaultValue: '默认' }] };
@@ -28,6 +29,19 @@ describe('DynamicFormRenderer', () => {
     expect(wrapper.text()).toContain('新字段');
     expect(wrapper.find('input').element.value).toBe('新值');
   });
+  it('SWITCH 可以新增、渲染并将 false 双向绑定', async () => {
+    const switchSchema: FormSchema = { schemaVersion: 1, fields: [{ id: 'enabled', name: 'enabled', type: 'SWITCH', label: '启用', defaultValue: false }] };
+    const wrapper = mount(DynamicFormRenderer, { props: { schema: switchSchema } });
+    const checkbox = wrapper.findComponent({ name: 'MomCheckbox' });
+    expect(checkbox.props('modelValue')).toBe(false);
+    await checkbox.vm.$emit('update:modelValue', true);
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual({ enabled: true });
+  });
+  it('非法 Schema 安全失败且不尝试渲染未知类型', () => {
+    const wrapper = mount(DynamicFormRenderer, { props: { schema: { schemaVersion: 1, fields: [{ id: 'bad', name: 'bad', type: 'MISSING', label: '未知' }] } as unknown as FormSchema } });
+    expect(wrapper.text()).toContain('类型未注册');
+    expect(wrapper.findAll('input')).toHaveLength(0);
+  });
 });
 
 describe('FormSchemaDesigner', () => {
@@ -44,6 +58,24 @@ describe('FormSchemaDesigner', () => {
   it('目录包含固定注册的三类编码算法参数表单', () => {
     expect(localCodeSegmentCatalog.map((entry) => entry.type)).toEqual(['LITERAL', 'DATE', 'SEQUENCE']);
     expect(localCodeSegmentCatalog.find((entry) => entry.type === 'DATE')?.parameterSchema.fields[0].type).toBe('SELECT');
+  });
+  it('注册元数据驱动 palette、属性面板和拖拽 clone 字段创建', async () => {
+    const wrapper = mount(FormSchemaDesigner);
+    expect(wrapper.find('[data-type="SWITCH"]').exists()).toBe(true);
+    await wrapper.get('[data-type="SWITCH"]').trigger('click');
+    expect(wrapper.text()).toContain('开关字段');
+    expect(wrapper.findAll('.form-designer__properties label')).toHaveLength(defaultFieldRegistry.get('SWITCH')!.properties.length);
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toMatchObject({ fields: [expect.objectContaining({ type: 'SWITCH', defaultValue: false })] });
+  });
+  it('允许外部 Catalog 添加新片段并按参数 Schema 渲染，未知片段安全报错', async () => {
+    const extra = { type: 'PREFIX', label: '前缀算法', description: '自定义前缀', catalogVersion: 1 as const, parameterSchema: { schemaVersion: 1 as const, fields: [{ id: 'prefix', name: 'prefix', type: 'TEXT', label: '前缀内容', defaultValue: 'X' }] } };
+    const wrapper = mount(CodeRuleDesigner, { props: { modelValue: { schemaVersion: 1, segments: [] }, catalog: [...localCodeSegmentCatalog, extra] } });
+    expect(wrapper.find('[data-type="PREFIX"]').exists()).toBe(true);
+    await wrapper.get('[data-type="PREFIX"]').trigger('click');
+    expect(wrapper.find('.form-designer__properties').text()).toContain('前缀内容');
+    expect(wrapper.text()).toContain('安全占位预览');
+    await wrapper.setProps({ modelValue: { schemaVersion: 1, segments: [{ id: 'unknown', type: 'MISSING', params: {} }] } });
+    expect(wrapper.text()).toContain('未注册片段类型：MISSING');
   });
 });
 

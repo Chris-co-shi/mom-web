@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
 import { MomButton } from '../ui';
 import DynamicFormRenderer from './DynamicFormRenderer.vue';
-import { defaultParams, localCodeSegmentCatalog } from './code-rule-catalog';
+import './form-designer.css';
+import { localCodeSegmentCatalog } from './code-rule-catalog';
 import { validateCodeRule } from './schema';
 import type { CodeRuleDefinition, CodeRuleSegment, CodeSegmentCatalogEntry, CodeSegmentType, FormSchema } from './types';
 
@@ -21,7 +22,7 @@ watch(() => props.catalog, (value) => { draggableCatalog.value = [...value]; }, 
 const selected = computed(() => segments.value.find((segment) => segment.id === selectedId.value));
 const selectedCatalog = computed(() => catalog.value.find((item) => item.type === selected.value?.type));
 const definition = computed<CodeRuleDefinition>(() => ({ schemaVersion: 1, segments: segments.value.map(({ id, type, params }) => ({ id, type, params: { ...params } })) }));
-const errors = computed(() => validateCodeRule(definition.value));
+const errors = computed(() => validateCodeRule(definition.value, catalog.value));
 const sample = computed(() => {
   const day = new Date();
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -29,7 +30,8 @@ const sample = computed(() => {
   return segments.value.map((segment) => {
     if (segment.type === 'LITERAL') return String(segment.params.value ?? '');
     if (segment.type === 'DATE') return ({ YYYYMMDD: `${year}${mm}${dd}`, YYMMDD: `${yy}${mm}${dd}`, YYYYMM: `${year}${mm}`, YYMM: `${yy}${mm}` }[String(segment.params.format)] ?? '日期格式无效');
-    return String(1).padStart(Number(segment.params.width) || 1, '0');
+    if (segment.type === 'SEQUENCE') return String(1).padStart(Number(segment.params.width) || 1, '0');
+    return `[${catalog.value.find((item) => item.type === segment.type)?.label ?? '未知片段'}]`;
   }).join('');
 });
 
@@ -49,11 +51,13 @@ watch(() => props.modelValue, (value) => {
 watch(segments, publish, { deep: true });
 function cloneType(type: CodeSegmentType): CodeRuleSegment {
   const entry = catalog.value.find((item) => item.type === type);
-  const params = entry?.parameterSchema.fields.reduce<Record<string, string | number | null>>((values, field) => {
-    values[field.name] = field.defaultValue ?? defaultParams[type][field.name] ?? '';
+  if (!entry) throw new Error(`未注册编码片段：${type}`);
+  const errors = validateCodeRule({ schemaVersion: 1, segments: [{ id: 'probe', type, params: {} }] }, catalog.value);
+  if (errors.some((error) => error.includes('Catalog 版本不兼容') || error.includes('参数 Schema 无效'))) throw new Error(errors.join('；'));
+  const params = entry.parameterSchema.fields.reduce<Record<string, string | number | boolean | null>>((values, field) => {
+    values[field.name] = field.defaultValue ?? (field.type === 'SWITCH' ? false : '');
     return values;
-  }, {}) ?? { ...defaultParams[type] };
-  if (type === 'SEQUENCE') params.step = 1;
+  }, {});
   return { id: `segment_${crypto.randomUUID().replaceAll('-', '').slice(0, 10)}`, type, params };
 }
 function remove(id: string): void { segments.value = segments.value.filter((segment) => segment.id !== id); if (selectedId.value === id) selectedId.value = segments.value[0]?.id ?? null; }
@@ -67,7 +71,7 @@ function handleDrop(event: { newIndex?: number }): void {
   const segment = segments.value[index];
   if (segment) { segments.value.splice(index, 1, cloneType(segment.type)); selectedId.value = segments.value[index].id; }
 }
-function updateParams(value: Record<string, string | number | null>): void { if (selected.value) selected.value.params = { ...selected.value.params, ...value }; }
+function updateParams(value: Record<string, string | number | boolean | null>): void { if (selected.value) selected.value.params = { ...selected.value.params, ...value }; }
 const parameterSchema = computed<FormSchema>(() => selectedCatalog.value?.parameterSchema ?? { schemaVersion: 1, fields: [] });
 </script>
 
@@ -88,8 +92,8 @@ const parameterSchema = computed<FormSchema>(() => selectedCatalog.value?.parame
           <article v-for="(segment, index) in segments" :key="segment.id" class="form-designer__field" :class="{ 'form-designer__field--selected': segment.id === selectedId }">
             <button type="button" class="form-designer__drag" :aria-label="`拖动排序 ${segment.type}`" @click="selectedId = segment.id">⠿</button>
             <button type="button" class="form-designer__field-select" :aria-pressed="segment.id === selectedId" @click="selectedId = segment.id">
-              <span><strong>{{ catalog.find((item) => item.type === segment.type)?.label }}</strong><small>{{ segment.type }}</small></span>
-              <code>{{ segment.type === 'LITERAL' ? segment.params.value : segment.type === 'DATE' ? segment.params.format : `样例流水 ${String(1).padStart(Number(segment.params.width) || 1, '0')}` }}</code>
+              <span><strong>{{ catalog.find((item) => item.type === segment.type)?.label ?? '未知片段' }}</strong><small>{{ segment.type }}</small></span>
+              <code>{{ segment.type === 'LITERAL' ? segment.params.value : segment.type === 'DATE' ? segment.params.format : segment.type === 'SEQUENCE' ? `样例流水 ${String(1).padStart(Number(segment.params.width) || 1, '0')}` : '安全占位预览' }}</code>
             </button>
             <div class="form-designer__field-actions"><MomButton mode="text" :aria-label="`上移片段 ${index + 1}`" :disabled="index === 0" @click="move(segment.id, -1)">↑</MomButton>
               <MomButton mode="text" :aria-label="`下移片段 ${index + 1}`" :disabled="index === segments.length - 1" @click="move(segment.id, 1)">↓</MomButton>
@@ -105,7 +109,8 @@ const parameterSchema = computed<FormSchema>(() => selectedCatalog.value?.parame
     <aside class="form-designer__panel form-designer__properties">
       <h2>片段参数</h2>
       <p v-if="!selected" class="form-designer__muted">选择编码片段以配置参数</p>
-      <template v-else><p>{{ selectedCatalog?.description }}</p><DynamicFormRenderer :schema="parameterSchema" :model-value="selected.params" @update:model-value="updateParams" /></template>
+          <template v-else-if="!selectedCatalog"><p class="designer-errors" role="alert">未注册片段类型：{{ selected.type }}</p></template>
+          <template v-else><p>{{ selectedCatalog.description }}</p><p v-if="selectedCatalog.catalogVersion !== 1" class="designer-errors" role="alert">Catalog 版本不兼容</p><DynamicFormRenderer v-else :schema="parameterSchema" :model-value="selected.params" @update:model-value="updateParams" /></template>
     </aside>
   </section>
 </template>

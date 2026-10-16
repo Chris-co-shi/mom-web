@@ -21,7 +21,7 @@ import {
 } from '../api/material-api';
 import './mdm-pages.css';
 
-const { t } = useLocale();
+const { t, tForOwner } = useLocale();
 const rows = ref<MaterialCategory[]>([]);
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
 const loading = ref(false), saving = ref(false), detailLoading = ref(false);
@@ -271,7 +271,7 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
             :disabled="loading || saving" @page="loadPage($event)" @size="loadPage(1,$event)" />
         </template>
       </MomListSurface>
-      <MomModal :open="!!action" :title="modalTitle" :close-label="t('mdm.struct.close')"
+      <MomModal :open="!!action" :title="modalTitle" :close-label="tForOwner('system', 'system.common.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -324,14 +324,14 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
             <p v-else class="mdm-plants__warning">{{ t(target?.status === 'ENABLED' ? 'mdm.material.cascadeWarning' : 'mdm.struct.statusHint') }}</p>
             <p v-if="formError" id="mdm-category-form-error" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer">
-              <MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
+              <MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || blocked || detailLoading || (action !== 'status' && optionError)">
                 {{ t('mdm.struct.confirm') }}
               </MomButton>
             </div>
           </form>
           <div v-else class="mdm-plants__footer">
-            <MomButton variant="outline" @click="close">{{ t('mdm.struct.close') }}</MomButton>
+            <MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.close') }}</MomButton>
           </div>
         </div>
       </MomModal>

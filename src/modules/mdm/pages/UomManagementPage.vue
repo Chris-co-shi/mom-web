@@ -24,7 +24,7 @@ import {
 } from '../api/uom-api';
 import './mdm-pages.css';
 
-const { t } = useLocale();
+const { t, tForOwner } = useLocale();
 const active = ref<UnitCatalogKind>('dimensions');
 const tabs: { kind: UnitCatalogKind; key: 'mdm.uom.dimensions' | 'mdm.uom.categories' | 'mdm.uom.units' }[] = [
   { kind: 'dimensions', key: 'mdm.uom.dimensions' },
@@ -376,7 +376,7 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
         </template>
       </MomListSurface>
 </MdmSectionTabs>
-      <MomModal :open="!!action" :title="`${currentLabel} · ${t(action === 'create' ? 'mdm.struct.create' : action === 'edit' ? 'mdm.struct.edit' : action === 'status' ? 'mdm.struct.changeStatus' : 'mdm.struct.detail')}`" :close-label="t('mdm.struct.close')"
+      <MomModal :open="!!action" :title="`${currentLabel} · ${t(action === 'create' ? 'mdm.struct.create' : action === 'edit' ? 'mdm.struct.edit' : action === 'status' ? 'mdm.struct.changeStatus' : 'mdm.struct.detail')}`" :close-label="tForOwner('system', 'system.common.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -443,15 +443,15 @@ onScopeDispose(() => { disposed = true; listController?.abort(); detailControlle
             <p v-else class="mdm-plants__warning">{{ t('mdm.uom.referenceGuard') }}</p>
             <p v-if="formError" id="mdm-uom-form-error" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer">
-              <MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
+              <MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || blocked || detailLoading || referencesError">{{ t('mdm.struct.confirm') }}</MomButton>
             </div>
           </form>
-          <div v-else class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{ t('mdm.struct.close') }}</MomButton></div>
+          <div v-else class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.close') }}</MomButton></div>
         </div>
       </MomModal>
 
-      <MomModal :open="ruleOpen" :title="t('mdm.uom.rules')" :close-label="t('mdm.struct.close')"
+      <MomModal :open="ruleOpen" :title="t('mdm.uom.rules')" :close-label="tForOwner('system', 'system.common.close')"
         :busy="ruleSaving" :busy-text="t('mdm.struct.saving')"
         @close="ruleOpen = false; ruleSequence++">
         <div class="mdm-plants__dialog">

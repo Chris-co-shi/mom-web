@@ -22,7 +22,7 @@ import { searchProductionVersions, getProductionVersion, createProductionVersion
   type ProductionVersion, type ProductionVersionDraft } from '../api/production-version-api';
 import './mdm-pages.css';
 
-const { t } = useLocale();
+const { t, tForOwner } = useLocale();
 const rows = ref<ProductionVersion[]>([]), target = ref<ProductionVersion>();
 const plants = ref<PlantView[]>([]), materials = ref<Material[]>([]);
 const formulas = ref<FormulaDetail[]>([]), routings = ref<RoutingDetail[]>([]);
@@ -154,7 +154,7 @@ onScopeDispose(()=>{disposed=true;++listNo;++detailNo;++referenceNo;listControll
       :page-size-label="t('mdm.struct.pageSize')" :previous-label="t('mdm.struct.previous')" :next-label="t('mdm.struct.next')" :jump-label="t('mdm.struct.jump')" :go-label="t('mdm.struct.go')"
       :disabled="loading||saving" @page="loadPage($event)" @size="loadPage(1,$event)" /></template>
   </MomListSurface>
-  <MomModal :open="!!action" :title="t('mdm.productionVersion.title')" :close-label="t('mdm.struct.close')" :busy="saving" :busy-text="t('mdm.struct.saving')" :width="720" @close="close">
+  <MomModal :open="!!action" :title="t('mdm.productionVersion.title')" :close-label="tForOwner('system', 'system.common.close')" :busy="saving" :busy-text="t('mdm.struct.saving')" :width="720" @close="close">
     <div class="mdm-plants__dialog"><p v-if="detailLoading||referenceLoading" role="status">{{t('mdm.struct.loading')}}</p>
       <div v-if="dialogError||referenceError" class="mdm-plants__error" role="alert">{{dialogError||t('mdm.material.referencesError')}} <MomButton variant="outline" @click="loadReferences">{{t('mdm.struct.retry')}}</MomButton></div>
       <dl v-if="target" class="mdm-plants__summary"><div><dt>{{t('mdm.struct.code')}}</dt><dd>{{target.code}}</dd></div><div><dt>{{t('mdm.productionVersion.businessVersion')}}</dt><dd>{{target.businessVersion}}</dd></div>
@@ -169,7 +169,7 @@ onScopeDispose(()=>{disposed=true;++listNo;++detailNo;++referenceNo;listControll
         <label><span>{{t('mdm.productionVersion.businessVersion')}} *</span><MomInput v-model="form.businessVersion" :max-length="64" /></label><label><span>{{t('mdm.productionVersion.plant')}} *</span><MomSelect v-model="form.plantId" :options="plantOptions" /></label>
         <label><span>{{t('mdm.productionVersion.output')}} *</span><MomSelect v-model="form.outputMaterialId" :options="materialOptions" /></label><label><span>{{t('mdm.productionVersion.formulaRevision')}} *</span><MomSelect v-model="form.formulaRevisionId" :options="formulaOptions" /></label>
         <label><span>{{t('mdm.productionVersion.routingRevision')}} *</span><MomSelect v-model="form.routingRevisionId" :options="routingOptions" /></label><div class="mdm-struct__form-grid"><label><span>{{t('mdm.productionVersion.validFrom')}} *</span><MomInput v-model="form.validFrom" type="date" /></label><label><span>{{t('mdm.productionVersion.validTo')}}</span><MomInput v-model="form.validTo" type="date" /></label></div>
-        <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{formError}}</p><div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{t('mdm.struct.cancel')}}</MomButton><MomButton type="submit" :disabled="saving||referenceLoading||referenceError">{{t('mdm.struct.confirm')}}</MomButton></div>
+        <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{formError}}</p><div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{tForOwner('system', 'system.common.cancel')}}</MomButton><MomButton type="submit" :disabled="saving||referenceLoading||referenceError">{{t('mdm.struct.confirm')}}</MomButton></div>
       </form></div>
   </MomModal>
 </section></PageContainer></template>

@@ -18,7 +18,7 @@ import './mdm-pages.css';
 
 const props=defineProps<{kind:'characteristics'|'methods'}>();
 type Row=InspectionCharacteristic|InspectionMethod;
-const {t}=useLocale(); const rows=ref<Row[]>([]),target=ref<Row>(); const uoms=ref<UomRow[]>([]);
+const {t, tForOwner}=useLocale(); const rows=ref<Row[]>([]),target=ref<Row>(); const uoms=ref<UomRow[]>([]);
 const pageNo=ref(1),pageSize=ref(20),total=ref(0),loading=ref(false),saving=ref(false),refsLoading=ref(false);
 const error=ref(''),formError=ref(''),notice=ref(''); const action=ref<'create'|'edit'>();
 const form=reactive({code:'',name:'',defaultUomId:'',description:'',enabled:'true',version:0});
@@ -69,14 +69,14 @@ watch(()=>props.kind,()=>{action.value=undefined;void load(1);});onMounted(()=>v
       :page-size-label="t('mdm.struct.pageSize')" :previous-label="t('mdm.struct.previous')" :next-label="t('mdm.struct.next')" :jump-label="t('mdm.struct.jump')" :go-label="t('mdm.struct.go')"
       :disabled="loading||saving" @page="load($event)" @size="load(1,$event)"/></template>
   </MomListSurface>
-  <MomModal :open="!!action" :title="title" :close-label="t('mdm.struct.close')" :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
+  <MomModal :open="!!action" :title="title" :close-label="tForOwner('system', 'system.common.close')" :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
     <form class="mdm-plants__form" @submit.prevent="save"><label v-if="action==='create'"><span>{{t('mdm.struct.code')}} *</span><MomInput v-model="form.code" :max-length="64"/></label>
       <label><span>{{t('mdm.struct.name')}} *</span><MomInput v-model="form.name" :max-length="200"/></label>
       <label v-if="isCharacteristic"><span>{{t('mdm.quality.common.defaultUom')}} *</span><MomSelect v-model="form.defaultUomId" :options="uomOptions"/></label>
       <label v-else><span>{{t('mdm.quality.common.methodDescription')}}</span><MomInput v-model="form.description" :max-length="1000"/></label>
       <label v-if="action==='edit'"><span>{{t('mdm.struct.status')}}</span><MomSelect v-model="form.enabled" :options="[{value:'true',label:t('mdm.struct.enabled')},{value:'false',label:t('mdm.struct.disabled')}]"/></label>
       <p v-if="refsLoading" role="status">{{t('mdm.struct.loading')}}</p><p v-if="formError" class="mdm-plants__field-error" role="alert">{{formError}}</p>
-      <div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{t('mdm.struct.cancel')}}</MomButton><MomButton type="submit" :disabled="saving||refsLoading">{{t('mdm.struct.confirm')}}</MomButton></div>
+      <div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{tForOwner('system', 'system.common.cancel')}}</MomButton><MomButton type="submit" :disabled="saving||refsLoading">{{t('mdm.struct.confirm')}}</MomButton></div>
     </form>
   </MomModal>
 </section></PageContainer></template>

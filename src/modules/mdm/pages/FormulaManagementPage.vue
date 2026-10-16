@@ -23,7 +23,7 @@ import {
 } from '../api/formula-api';
 import './mdm-pages.css';
 
-const { t } = useLocale();
+const { t, tForOwner } = useLocale();
 const rows = ref<FormulaIdentity[]>([]), detail = ref<FormulaDetail>();
 const plants = ref<PlantView[]>([]), materials = ref<Material[]>([]), uoms = ref<UomRow[]>([]);
 const optionPage = reactive({ plants: 1, materials: 1, uoms: 1 });
@@ -213,7 +213,7 @@ onScopeDispose(() => { disposed = true; ++requestNo; ++detailNo;
             :disabled="loading || saving" @page="loadPage($event)" @size="loadPage(1, $event)" />
         </template>
       </MomListSurface>
-      <MomModal :open="!!action" :title="t('mdm.formula.title')" :close-label="t('mdm.struct.close')"
+      <MomModal :open="!!action" :title="t('mdm.formula.title')" :close-label="tForOwner('system', 'system.common.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" :width="760" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -267,7 +267,7 @@ onScopeDispose(() => { disposed = true; ++requestNo; ++detailNo;
             </div>
             <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer">
-              <MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
+              <MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || optionLoading || optionError">{{ t('mdm.struct.confirm') }}</MomButton>
             </div>
           </form>

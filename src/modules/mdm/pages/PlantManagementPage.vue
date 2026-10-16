@@ -19,7 +19,7 @@ import type { PlantView } from '../api/factory-api';
 import { usePlantManagement, type PlantAction } from '../model/use-plant-management';
 import './mdm-pages.css';
 
-const { t, locale } = useLocale();
+const { t, tForOwner, locale } = useLocale();
 const management = usePlantManagement();
 const { rows, pageNo, pageSize, total, loading, saving, detailLoading, listError, dialogError,
   notice, blocked, action, target, form, fieldError, canSubmit, loadPage, open, close, reloadTarget, submit } = management;
@@ -123,7 +123,7 @@ onBeforeRouteLeave(() => !saving.value);
         </template>
       </MomListSurface>
 
-      <MomModal :open="!!action" :title="modalTitle" :close-label="t('mdm.plants.close')"
+      <MomModal :open="!!action" :title="modalTitle" :close-label="tForOwner('system', 'system.common.close')"
         :busy="saving" :busy-text="t('mdm.plants.saving')" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.plants.loading') }}</p>
@@ -168,12 +168,12 @@ onBeforeRouteLeave(() => !saving.value);
               {{ t(target?.status === 'ENABLED' ? 'mdm.plants.disableHint' : 'mdm.plants.enableHint') }}
             </p>
             <div class="mdm-plants__footer">
-              <MomButton type="button" variant="outline" :disabled="saving" @click="close">{{ t('mdm.plants.cancel') }}</MomButton>
+              <MomButton type="button" variant="outline" :disabled="saving" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="!canSubmit || blocked">{{ t('mdm.plants.confirm') }}</MomButton>
             </div>
           </form>
           <div v-else class="mdm-plants__footer">
-            <MomButton type="button" variant="outline" @click="close">{{ t('mdm.plants.close') }}</MomButton>
+            <MomButton type="button" variant="outline" @click="close">{{ tForOwner('system', 'system.common.close') }}</MomButton>
           </div>
         </div>
       </MomModal>

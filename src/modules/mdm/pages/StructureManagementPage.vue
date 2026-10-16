@@ -26,7 +26,7 @@ import './mdm-pages.css';
 
 const props = defineProps<{ kind: Exclude<CatalogKind, 'plants'> }>();
 const route = useRoute();
-const { t, locale } = useLocale();
+const { t, tForOwner, locale } = useLocale();
 const meta = computed<StructureCatalog>(() => structureCatalogs[props.kind]);
 const rows = ref<MasterRow[]>([]);
 const pageNo = ref(1);
@@ -390,7 +390,7 @@ onScopeDispose(() => {
             :disabled="loading || saving" @page="loadPage($event)" @size="loadPage(1, $event)" />
         </template>
       </MomListSurface>
-      <MomModal :open="!!action" :title="modalTitle" :close-label="t('mdm.struct.close')"
+      <MomModal :open="!!action" :title="modalTitle" :close-label="tForOwner('system', 'system.common.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -447,14 +447,14 @@ onScopeDispose(() => {
               {{ t(kind === 'location-types' ? 'mdm.struct.typeStatusHint' : 'mdm.struct.statusHint') }}
             </p>
             <div class="mdm-plants__footer">
-              <MomButton type="button" variant="outline" :disabled="saving" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
+              <MomButton type="button" variant="outline" :disabled="saving" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || detailLoading || blocked || (action === 'create' && refError)">
                 {{ t('mdm.struct.confirm') }}
               </MomButton>
             </div>
           </form>
           <div v-else class="mdm-plants__footer">
-            <MomButton type="button" variant="outline" @click="close">{{ t('mdm.struct.close') }}</MomButton>
+            <MomButton type="button" variant="outline" @click="close">{{ tForOwner('system', 'system.common.close') }}</MomButton>
           </div>
         </div>
       </MomModal>

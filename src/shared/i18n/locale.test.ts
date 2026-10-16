@@ -31,6 +31,51 @@ async function runtime() {
 }
 
 describe('Owner 隔离翻译', () => {
+  it.each(['zh-CN', 'en-US'])('Shell 取消/关闭文案在 %s 刷新启动、进入 MDM 和切换语言后保持正确 Owner', async (initialLocale) => {
+    const api = await runtime();
+    const locales = ['zh-CN', 'en-US'];
+    vi.spyOn(i18nRuntimeApi, 'locales').mockResolvedValue(locales.map((localeCode) => ({
+      localeCode, displayName: localeCode, nativeName: localeCode, enabled: true,
+      defaultLocale: localeCode === 'zh-CN', sortOrder: 0,
+    })));
+    for (const locale of locales) {
+      bundles[locale]!.system = {
+        'system.common.cancel': locale === 'zh-CN' ? '取消' : 'Cancel',
+        'system.common.close': locale === 'zh-CN' ? '关闭' : 'Close',
+      };
+      // 故意让 MDM 包含同名异义文案，验证公共 UI 不读取合并后的冲突 Key。
+      bundles[locale]!.mdm = {
+        'system.common.cancel': 'MDM 领域取消', 'system.common.close': 'MDM 领域关闭',
+      };
+    }
+    window.localStorage.setItem(api.LOCALE_STORAGE_KEY, initialLocale);
+    await api.initializeLocale();
+    const cancel = computed(() => api.useLocale().tForOwner('system', 'system.common.cancel'));
+    const close = computed(() => api.useLocale().tForOwner('system', 'system.common.close'));
+    const expectLabels = (locale: string) => {
+      expect(cancel.value).toBe(locale === 'zh-CN' ? '取消' : 'Cancel');
+      expect(close.value).toBe(locale === 'zh-CN' ? '关闭' : 'Close');
+    };
+    expect(api.useLocaleStore().ready).toBe(true);
+    expect(api.useLocaleStore().loadedOwners[initialLocale]).toEqual(['system', 'auth']);
+    expectLabels(initialLocale);
+    // 与路由进入/切换相同的加载入口，不增加新的 Owner 请求。
+    await api.ensureOwners(['mdm']);
+    await api.ensureOwners(['mdm']);
+    expectLabels(initialLocale);
+    expect(api.translate('system.common.cancel')).toBe('system.common.cancel');
+    const nextLocale = initialLocale === 'zh-CN' ? 'en-US' : 'zh-CN';
+    await api.setLocale(nextLocale);
+    expectLabels(nextLocale);
+    bundles[nextLocale]!.system!['system.common.cancel'] = 'Shell 更新';
+    sources.get('/system/i18n/runtime/events')!.dispatchEvent(new MessageEvent('I18N_BUNDLE_CHANGED', {
+      data: JSON.stringify({ locale: nextLocale }),
+    }));
+    await vi.waitFor(() => expect(cancel.value).toBe('Shell 更新'));
+    expect(api.translateForOwner('mdm', 'system.common.cancel')).toBe('MDM 领域取消');
+    expect(close.value).toBe(nextLocale === 'zh-CN' ? '关闭' : 'Close');
+  });
+
   it.each([['system', 'mdm'], ['mdm', 'system']] as const)('加载顺序 %s → %s 不影响冲突读取', async (first, second) => {
     const api = await runtime();
     await api.ensureOwners([first]);

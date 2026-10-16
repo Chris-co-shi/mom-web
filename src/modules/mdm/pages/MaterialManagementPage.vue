@@ -22,7 +22,7 @@ import {
 import { getUomCatalog, searchUomCatalog, type UomRow } from '../api/uom-api';
 import './mdm-pages.css';
 
-const { t } = useLocale();
+const { t, tForOwner } = useLocale();
 const rows = ref<Material[]>([]);
 const categories = ref<MaterialCategory[]>([]), uoms = ref<UomRow[]>([]);
 const categoryPage = ref(1), categoryTotal = ref(0), uomPage = ref(1), uomTotal = ref(0);
@@ -337,7 +337,7 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
         <MomButton v-if="uoms.length < uomTotal" variant="outline" :disabled="referencesLoading"
           @click="loadReferences('uoms', uomPage + 1)">{{ t('mdm.struct.loadMore') }} · {{ t('mdm.material.baseUom') }}</MomButton>
       </div>
-      <MomModal :open="!!action" :title="modalTitle" :close-label="t('mdm.struct.close')"
+      <MomModal :open="!!action" :title="modalTitle" :close-label="tForOwner('system', 'system.common.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -412,13 +412,13 @@ onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.a
             <p v-else class="mdm-plants__warning">{{ t('mdm.material.statusWarning') }}</p>
             <p v-if="formError" id="mdm-material-form-error" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer">
-              <MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
+              <MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || blocked || detailLoading || (action !== 'status' && referencesError)">
                 {{ t('mdm.struct.confirm') }}
               </MomButton>
             </div>
           </form>
-          <div v-else class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{ t('mdm.struct.close') }}</MomButton></div>
+          <div v-else class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.close') }}</MomButton></div>
         </div>
       </MomModal>
     </section>

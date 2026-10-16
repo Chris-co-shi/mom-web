@@ -20,7 +20,7 @@ import { searchRoutings, getRouting, createRouting, updateRoutingDraft, nextRout
   type RoutingStepInput } from '../api/routing-api';
 import './mdm-pages.css';
 
-const { t } = useLocale();
+const { t, tForOwner } = useLocale();
 const rows = ref<RoutingIdentity[]>([]), detail = ref<RoutingDetail>();
 const plants = ref<PlantView[]>([]), lines = ref<MasterRow[]>([]), stations = ref<MasterRow[]>([]);
 const optionPage = reactive({ plants: 1, lines: 1, stations: 1 });
@@ -186,7 +186,7 @@ onScopeDispose(() => { disposed = true; ++listNo; ++detailNo;
           :jump-label="t('mdm.struct.jump')" :go-label="t('mdm.struct.go')"
           :disabled="loading || saving" @page="loadPage($event)" @size="loadPage(1, $event)" /></template>
       </MomListSurface>
-      <MomModal :open="!!action" :title="t('mdm.routing.title')" :close-label="t('mdm.struct.close')"
+      <MomModal :open="!!action" :title="t('mdm.routing.title')" :close-label="tForOwner('system', 'system.common.close')"
         :busy="saving" :busy-text="t('mdm.struct.saving')" :width="760" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
@@ -238,7 +238,7 @@ onScopeDispose(() => { disposed = true; ++listNo; ++detailNo;
               <MomButton v-if="stations.length < optionTotal.stations" variant="outline" :disabled="optionLoading" @click="loadOptions('stations', optionPage.stations+1)">{{ t('mdm.struct.loadMore') }} · {{ t('mdm.routing.station') }}</MomButton>
             </div>
             <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
-            <div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{ t('mdm.struct.cancel') }}</MomButton>
+            <div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
               <MomButton type="submit" :disabled="saving || optionLoading || optionError">{{ t('mdm.struct.confirm') }}</MomButton></div>
           </form>
         </div>

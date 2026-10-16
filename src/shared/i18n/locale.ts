@@ -152,6 +152,21 @@ export function translate(key: MessageKey, params: MessageParams = {}): string {
   return value === runtimeKey ? key : value;
 }
 
+/**
+ * 只读取当前 Locale 的指定 Owner；Owner 未加载或 Key 缺失时返回原 Key。
+ * Bundle 使用后端数字位置占位符，复用既有参数顺序；不解析跨 Key 引用，避免串用其他 Owner。
+ */
+export function translateForOwner(owner: I18nOwner, key: string, params: MessageParams = {}): string {
+  const store = useLocaleStore();
+  const messages = store.messagesByLocale[store.currentLocale]?.[owner];
+  const normalizedKey = key.toLowerCase();
+  const entry = Object.entries(messages ?? {}).find(([candidate]) => candidate.toLowerCase() === normalizedKey);
+  if (!entry) return key;
+  const names = messageParameterOrder[key];
+  return entry[1].replace(/\{(\d+)\}/g, (_placeholder, index: string) =>
+    String(params[names?.[Number(index)] ?? index] ?? ''));
+}
+
 /** 加载失败时只提供极小应急文本，不回退整份静态业务词典。 */
 export function emergencyText(key: keyof typeof emergencyMessages['zh-CN']): string {
   const locale = useLocaleStore().currentLocale;
@@ -197,5 +212,5 @@ async function refreshSupportedLocales(): Promise<void> {
 export function useLocale() {
   const store = useLocaleStore();
   const { currentLocale: locale, supportedLocales } = storeToRefs(store);
-  return { locale: readonly(locale), supportedLocales: readonly(supportedLocales), setLocale, t: translate };
+  return { locale: readonly(locale), supportedLocales: readonly(supportedLocales), setLocale, t: translate, tForOwner: translateForOwner };
 }

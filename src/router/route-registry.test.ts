@@ -8,3 +8,12 @@ describe('开发验收路由', () => {
     else expect(route).toBeUndefined();
   });
 });
+
+describe('System 编码规则正式入口', () => {
+  it('路由与菜单使用 MDM 读取权限及 System 文案 Owner', () => {
+    const shell = appRoutes.find(entry => entry.path === '/');
+    const route = shell?.children?.find(entry => entry.name === 'system-code-rules');
+    expect(route?.path).toBe('system/code-rules');
+    expect(route?.meta).toMatchObject({ requiresAuth: true, navigationGroup: 'system', permissions: ['mdm:code-rule:read'], i18nOwners: ['system'] });
+  });
+});

@@ -66,10 +66,11 @@ function move(id: string, delta: number): void {
   if (target < 0 || target >= segments.value.length) return;
   const [segment] = segments.value.splice(index, 1); segments.value.splice(target, 0, segment);
 }
-function handleDrop(event: { newIndex?: number }): void {
-  const index = event.newIndex ?? segments.value.length - 1;
-  const segment = segments.value[index];
-  if (segment) { segments.value.splice(index, 1, cloneType(segment.type)); selectedId.value = segments.value[index].id; }
+// 拖拽库在画布更新之前调用克隆函数，避免 Catalog 元数据短暂成为缺少 id/params 的业务片段。
+function cloneCatalogEntry(entry: CodeSegmentCatalogEntry): CodeRuleSegment { return cloneType(entry.type); }
+function handleDrop(event: { newIndex?: number; newDraggableIndex?: number; clonedData?: CodeRuleSegment }): void {
+  const index = event.newDraggableIndex ?? event.newIndex ?? segments.value.length - 1;
+  selectedId.value = event.clonedData?.id ?? segments.value[index]?.id ?? null;
 }
 function updateParams(value: Record<string, string | number | boolean | null>): void { if (selected.value) selected.value.params = { ...selected.value.params, ...value }; }
 const parameterSchema = computed<FormSchema>(() => selectedCatalog.value?.parameterSchema ?? { schemaVersion: 1, fields: [] });
@@ -79,7 +80,7 @@ const parameterSchema = computed<FormSchema>(() => selectedCatalog.value?.parame
   <section class="code-rule-designer" aria-label="编码规则设计器">
     <aside class="form-designer__panel">
       <h2>编码片段</h2><p>拖入画布或用键盘操作</p>
-      <VueDraggable v-model="draggableCatalog" :group="{ name: 'code-segments', pull: 'clone', put: false }" :sort="false" item-key="type" class="form-designer__palette">
+      <VueDraggable v-model="draggableCatalog" :group="{ name: 'code-segments', pull: 'clone', put: false }" :sort="false" :clone="cloneCatalogEntry" item-key="type" class="form-designer__palette">
         <button v-for="item in catalog" :key="item.type" type="button" class="form-designer__palette-item" :data-type="item.type" @click="segments.push(cloneType(item.type)); selectedId = segments.at(-1)?.id ?? null">
           <strong>{{ item.label }}</strong><span>{{ item.description }}</span><small>拖动或按 Enter 添加</small>
         </button>

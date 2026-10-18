@@ -24,6 +24,7 @@ export const ROUTE_NAMES = {
   systemDictionaries: 'system-dictionaries',
   systemLocales: 'system-locales',
   systemMessages: 'system-messages',
+  systemCodeRules: 'system-code-rules',
   foundationOverview: 'foundation-overview',
   login: 'login',
   account: 'account',

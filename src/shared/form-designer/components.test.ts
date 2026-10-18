@@ -7,7 +7,7 @@ import CodeRuleDesigner from './CodeRuleDesigner.vue';
 import { localCodeSegmentCatalog } from './code-rule-catalog';
 import { createFieldRegistry, defaultFieldRegistry } from './field-registry';
 import { initializeDynamicFormData } from './schema';
-import type { FormSchema } from './types';
+import type { CodeRuleSegment, CodeSegmentCatalogEntry, FormSchema } from './types';
 
 const schema: FormSchema = { schemaVersion: 1, fields: [{ id: 'name', name: 'name', type: 'TEXT', label: '名称', required: true, defaultValue: '默认' }] };
 
@@ -134,5 +134,26 @@ describe('CodeRuleDesigner', () => {
     expect(emitted.segments).toHaveLength(1);
     expect(emitted.segments[0]).toMatchObject({ type: 'LITERAL', params: { value: 'P4' } });
     expect(emitted.segments[0]).not.toHaveProperty('selectedId');
+  });
+});
+
+
+describe('CodeRuleDesigner 拖拽对象契约', () => {
+  it('克隆时即提供完整片段，model 更新先于 add 事件也能安全渲染，且 add 不重建 ID', async () => {
+    const wrapper = mount(CodeRuleDesigner, { props: { catalog: localCodeSegmentCatalog } });
+    const [palette, canvas] = wrapper.findAllComponents({ name: 'VueDraggable' });
+    const clone = palette.props('clone') as (entry: CodeSegmentCatalogEntry) => CodeRuleSegment;
+    expect(clone).toBeTypeOf('function');
+    const segment = clone(localCodeSegmentCatalog[0]);
+    expect(segment).toMatchObject({ id: expect.stringMatching(/^segment_/), type: 'LITERAL', params: { value: 'P4' } });
+    canvas.vm.$emit('update:modelValue', [segment]);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.form-designer__code').text()).toContain(segment.id);
+    canvas.vm.$emit('add', { newDraggableIndex: 0, clonedData: segment });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual({ schemaVersion: 1, segments: [segment] });
+    expect(wrapper.find('.form-designer__properties').text()).toContain('固定内容');
+    expect(clone(localCodeSegmentCatalog[0]).id).not.toBe(segment.id);
+    wrapper.unmount();
   });
 });

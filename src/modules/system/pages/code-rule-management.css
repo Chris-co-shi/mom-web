@@ -1,0 +1,41 @@
+.code-rule-management__owner { display: grid; gap: var(--mom-space-2); max-width: 18rem; }
+.code-rule-management__context { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mom-space-4); margin-bottom: var(--mom-space-4); }
+.code-rule-management__context label { display: flex; align-items: center; gap: var(--mom-space-2); }
+.code-rule-management__json, .code-rule-management__segments pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.code-rule-management__segments { display: grid; gap: var(--mom-space-3); padding-inline-start: var(--mom-space-6); }
+/* 查询区独占一行，避免与目录说明争抢宽度。 */
+.code-rule-management__list .mom-list-surface__toolbar { align-items: stretch; flex-direction: column; }
+.code-rule-management__filters { display: grid; grid-template-columns: minmax(14rem, 24rem) minmax(10rem, 12rem) auto 1fr; align-items: end; gap: var(--mom-space-3); }
+.code-rule-management__field { display: grid; min-width: 0; gap: var(--mom-space-2); font-size: var(--mom-font-size-sm); color: var(--mom-color-text-secondary); }
+.code-rule-management__field .mom-crud-search { width: 100%; }
+.code-rule-management__filters > .mom-management-count { align-self: center; justify-self: end; margin-top: var(--mom-space-6); }
+.code-rule-management__history-tools { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--mom-space-3); }
+.code-rule-management__overview h3 { margin-bottom: var(--mom-space-2); }
+.code-rule-definition__segments { display: grid; gap: var(--mom-space-3); list-style: none; padding: 0; margin: var(--mom-space-4) 0; }
+.code-rule-definition__segment { display: flex; align-items: start; gap: var(--mom-space-4); padding: var(--mom-space-4); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-control); background: var(--mom-color-bg-subtle); }
+.code-rule-definition__number { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: var(--mom-radius-round); color: var(--mom-color-brand); background: var(--mom-color-bg-surface); font-weight: 600; }
+.code-rule-definition__content { min-width: 0; width: 100%; overflow-wrap: anywhere; }
+.code-rule-definition__parameters { margin: var(--mom-space-3) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--mom-space-3); }
+.code-rule-definition__parameters dt { color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.code-rule-definition__parameters dd { margin: var(--mom-space-1) 0 0; font-weight: 500; white-space: pre-wrap; }
+.code-rule-definition__parameters small { display: block; color: var(--mom-color-text-secondary); font-weight: 400; margin-top: var(--mom-space-1); }
+.code-rule-definition--compact .code-rule-definition__segments { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mom-space-2); margin: 0; }
+.code-rule-definition--compact .code-rule-definition__segment { border: 0; background: transparent; border-radius: 0; padding: 0; gap: var(--mom-space-2); }
+.code-rule-definition--compact .code-rule-definition__segment + .code-rule-definition__segment::before { content: '→'; color: var(--mom-color-text-muted); }
+.code-rule-definition--compact .code-rule-definition__content { display: flex; flex-wrap: wrap; gap: var(--mom-space-1); font-size: var(--mom-font-size-sm); }
+.code-rule-definition__values { color: var(--mom-color-text-secondary); }
+.code-rule-management__technical { margin-top: var(--mom-space-5); padding-top: var(--mom-space-4); border-top: 1px solid var(--mom-color-border); color: var(--mom-color-text-secondary); }
+.code-rule-management__technical summary { cursor: pointer; }
+.code-rule-management__technical-meta { display: grid; gap: var(--mom-space-2); }
+.code-rule-management__technical-meta > div { display: flex; flex-wrap: wrap; gap: var(--mom-space-3); }
+.code-rule-management__technical-meta dd { margin: 0; font-family: var(--mom-font-family-mono); overflow-wrap: anywhere; }
+@media (max-width: 800px) { .code-rule-management__filters { grid-template-columns: minmax(0, 1fr) minmax(8rem, 1fr); } .code-rule-management__filters > .mom-management-count { margin-top: 0; } }
+@media (max-width: 480px) { .code-rule-management__filters { grid-template-columns: minmax(0, 1fr); } }
+.code-rule-management__identity { display: grid; gap: var(--mom-space-1); overflow-wrap: anywhere; }
+.code-rule-management__identity code, .code-rule-management__code { color: var(--mom-color-text-secondary); font-family: var(--mom-font-family-mono); font-size: var(--mom-font-size-sm); }
+.code-rule-management__identity > span { color: var(--mom-color-text-secondary); white-space: pre-wrap; font-size: var(--mom-font-size-sm); }
+.code-rule-management__metadata { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--mom-space-4); margin-bottom: var(--mom-space-4); }
+.code-rule-management__description { grid-column: 1 / -1; }
+.code-rule-management__metadata-readonly { display: grid; gap: var(--mom-space-3); margin-bottom: var(--mom-space-4); }
+.code-rule-management__metadata-readonly dt { color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.code-rule-management__metadata-readonly dd { margin: var(--mom-space-1) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }

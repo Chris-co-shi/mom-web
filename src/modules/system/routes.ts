@@ -2,6 +2,9 @@ import type { RouteRecordRaw } from 'vue-router';
 import { ROUTE_NAMES } from '../../router/route-names';
 
 export const systemRoutes: RouteRecordRaw[] = [
+  { path: 'system/code-rules', name: ROUTE_NAMES.systemCodeRules, component: () => import('./pages/CodeRuleManagementPage.vue'),
+    meta: { title: '编码规则', titleKey: 'system.coderules.title', module: 'system', requiresAuth: true,
+      permissions: ['mdm:code-rule:read'], i18nOwners: ['system'], navigationGroup: 'system', navigationOrder: 40 } },
   { path: 'system/dictionaries', name: ROUTE_NAMES.systemDictionaries, component: () => import('./pages/DictionaryPage.vue'),
     meta: { title: '平台字典', titleKey: 'system.dictionary.title', module: 'system', requiresAuth: true,
       permissions: ['system:dictionary:read'], i18nOwners: ['system'], navigationGroup: 'system', navigationOrder: 10 } },

@@ -3,6 +3,7 @@ export const API_PATHS = {
   auth: '/auth',
   system: '/system',
   mdm: '/mdm',
+  wms: '/wms',
   qms: '/qms',
 } as const;
 

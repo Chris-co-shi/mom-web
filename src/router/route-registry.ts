@@ -6,6 +6,7 @@ import { iamRoutes } from '../modules/iam';
 import { mdmRoutes } from '../modules/mdm/routes';
 import { mdmQualityRoutes } from '../modules/mdm/quality-routes';
 import { systemRoutes } from '../modules/system/routes';
+import { wmsRoutes } from '../modules/wms/routes';
 import { ROUTE_NAMES, type MomRouteName } from './route-names';
 
 export interface NavigationItem {
@@ -45,6 +46,7 @@ export const appRoutes: RouteRecordRaw[] = [
       ...systemRoutes,
       ...mdmRoutes,
       ...mdmQualityRoutes,
+      ...wmsRoutes,
       {
         path: 'account',
         name: ROUTE_NAMES.account,
@@ -180,7 +182,7 @@ function isNavigationRoute(route: RouteRecordRaw): route is RouteRecordRaw & {
 }
 
 /** 主导航直接由已注册路由派生，避免路由与菜单维护两份显示配置。 */
-export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes, ...mdmRoutes, ...mdmQualityRoutes]
+export const mainNavigation: NavigationItem[] = [...foundationRoutes, ...iamRoutes, ...systemRoutes, ...mdmRoutes, ...mdmQualityRoutes, ...wmsRoutes]
   .filter(isNavigationRoute)
   .map((route) => ({
     name: route.name,

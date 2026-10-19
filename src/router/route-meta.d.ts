@@ -3,7 +3,7 @@ import type { MessageKey } from '../locales/zh-CN';
 import type { AuthorityMatchMode } from '../modules/auth/model/auth-permissions';
 import type { I18nOwner } from '../shared/i18n/runtime-api';
 
-export type MomRouteModule = 'auth' | 'iam' | 'system' | 'mdm' | 'qms' | 'foundation' | 'shell';
+export type MomRouteModule = 'auth' | 'iam' | 'system' | 'mdm' | 'qms' | 'wms' | 'foundation' | 'shell';
 
 declare module 'vue-router' {
   interface RouteMeta {

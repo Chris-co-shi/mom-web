@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath, URL } from "node:url";
 
 /** 浏览器到 Gateway 的稳定前缀；代理原样转发路径，禁止注入或移除 /api。 */
-export const browserGatewayContexts = ["/auth", "/system", "/mdm"] as const;
+export const browserGatewayContexts = ["/auth", "/system", "/mdm", "/wms"] as const;
 
 /** 页面路由与 API 共用模块前缀；只将浏览器 HTML 导航交回 SPA，JSON/SSE 继续代理。 */
 export function gatewayDocumentBypass(request: { method?: string; headers: { accept?: string } }): string | undefined {

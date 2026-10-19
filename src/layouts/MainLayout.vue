@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useWindowSize } from '@vueuse/core';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import {
@@ -33,7 +33,7 @@ import AccountMenu from '../modules/auth/components/AccountMenu.vue';
 import { mainNavigation, type NavigationItem } from '../router/route-registry';
 import { ROUTE_NAMES, type MomRouteName } from '../router/route-names';
 import LocaleSwitcher from '../shared/i18n/LocaleSwitcher.vue';
-import { useLocale } from '../shared/i18n/locale';
+import { ensureOwners, useLocale } from '../shared/i18n/locale';
 import ThemeSwitcher from '../shared/theme/ThemeSwitcher.vue';
 import MomButton from '../shared/ui/MomButton.vue';
 import MomModal from '../shared/components/MomModal.vue';
@@ -56,6 +56,10 @@ const expandedNavigationSection = ref<string | null>(null);
 const loggingOut = ref(false);
 const { t } = useLocale();
 const { user, authorities } = useAuthSession();
+// WMS 菜单只在有库存读权限时预取所属 Owner；服务离线不阻断其他导航。
+onMounted(() => {
+  if (hasAuthorities(['wms:inventory:read'], 'all')) void ensureOwners(['wms']).catch(() => {});
+});
 const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('navigation.currentUser'));
 const navigationIcons = {
   [ROUTE_NAMES.mdmPlants]: Factory,
@@ -69,6 +73,7 @@ const navigationIcons = {
   [ROUTE_NAMES.mdmUom]: Ruler,
   [ROUTE_NAMES.mdmCategories]: ListTree,
   [ROUTE_NAMES.mdmMaterials]: Package,
+  [ROUTE_NAMES.wmsInventoryOverview]: Warehouse,
   [ROUTE_NAMES.iamUsers]: UsersRound,
   [ROUTE_NAMES.iamRoles]: ShieldCheck,
   [ROUTE_NAMES.iamPermissions]: KeyRound,
@@ -80,6 +85,7 @@ const navigationIcons = {
 const navigationGroupIcons = {
   iam: ShieldCheck,
   mdm: Boxes,
+  wms: Warehouse,
   system: Settings2,
   foundation: Gauge,
 };
@@ -116,6 +122,7 @@ function buildNavigationSections(items: NavigationItem[]): NavigationSection[] {
 const navigationGroups = computed(() => [
   { id: 'iam', title: t('navigation.iam'), icon: navigationGroupIcons.iam, items: visibleNavigation.value.filter((item) => item.group === 'iam') },
   { id: 'mdm', title: t('navigation.mdm'), icon: navigationGroupIcons.mdm, items: visibleNavigation.value.filter((item) => item.group === 'mdm') },
+  { id: 'wms', title: 'WMS', icon: navigationGroupIcons.wms, items: visibleNavigation.value.filter((item) => item.group === 'wms') },
   { id: 'system', title: t('system.navigation'), icon: navigationGroupIcons.system, items: visibleNavigation.value.filter((item) => item.group === 'system') },
   { id: 'foundation', title: t('shell.foundationGroup'), icon: navigationGroupIcons.foundation, items: visibleNavigation.value.filter((item) => item.group === 'foundation') },
 ].filter((group) => group.items.length > 0).map((group) => ({

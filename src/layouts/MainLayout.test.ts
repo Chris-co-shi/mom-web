@@ -15,6 +15,7 @@ vi.mock('../modules/auth/model/auth-session', () => ({
   }),
 }));
 vi.mock('../shared/i18n/locale', () => ({
+  ensureOwners: vi.fn().mockResolvedValue(undefined),
   useLocale: () => ({ t: (key: string) => key }),
 }));
 

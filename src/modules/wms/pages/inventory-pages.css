@@ -1,0 +1,5 @@
+.inventory-page { display: grid; gap: 1.25rem; }
+.inventory-page__filters { display: flex; align-items: end; flex-wrap: wrap; gap: 0.75rem; }
+.inventory-page__filters label { display: grid; gap: 0.3rem; min-width: 11rem; flex: 1 1 11rem; }
+.inventory-page__filters button { flex: 0 0 auto; }
+.inventory-page__error { display: flex; align-items: center; gap: 0.75rem; }

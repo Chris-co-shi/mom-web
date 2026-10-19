@@ -199,7 +199,13 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
     <section class="inventory-page" aria-labelledby="wms-details-title">
       <MomManagementHeader title-id="wms-details-title" :title="t('wms.inventory.details')"
         :description="t('wms.inventory.detailsHint')">
-        <template #actions><MomButton variant="outline" @click="back">{{ t('wms.inventory.back') }}</MomButton></template>
+        <template #actions>
+          <MomButton variant="outline" @click="router.push({ name: ROUTE_NAMES.wmsInventoryHistory,
+            query: { materialId: filter.materialId || undefined, batchCode: filter.batchCode || undefined,
+              snCode: filter.snCode || undefined, warehouseId: filter.warehouseId || undefined,
+              locationId: filter.locationId || undefined } })">{{ t('wms.inventory.history.open') }}</MomButton>
+          <MomButton variant="outline" @click="back">{{ t('wms.inventory.back') }}</MomButton>
+        </template>
       </MomManagementHeader>
       <form class="inventory-page__filters" @submit.prevent="search">
         <label>{{ t('wms.inventory.materialId') }}<MomInput v-model="filter.materialId" /></label>
@@ -226,6 +232,9 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
           <template #cell-qualityStatus="{ row }">{{ t(`wms.inventory.quality.${row.qualityStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
           <template #cell-warehouseStatus="{ row }">{{ t(`wms.inventory.warehouse.${row.warehouseStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
           <template #cell-actions="{ row }">
+            <MomButton mode="text" @click="router.push({ name: ROUTE_NAMES.wmsInventoryHistory,
+              query: { materialId: row.materialId, batchCode: row.batchCode || undefined,
+                snCode: row.snCode || undefined, warehouseId: row.warehouseId, locationId: row.locationId } })">{{ t('wms.inventory.history.open') }}</MomButton>
             <MomButton mode="text" @click="openManagement(row)">{{ t('wms.inventory.freeze.action') }}</MomButton>
             <MomButton v-if="canTransfer && row.warehouseStatus === 'NORMAL'" mode="text"
               @click="transferSelected = row">{{ t('wms.inventory.transfer.action') }}</MomButton>

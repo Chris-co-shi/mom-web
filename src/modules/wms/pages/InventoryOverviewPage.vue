@@ -64,7 +64,10 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
     <section class="inventory-page" aria-labelledby="wms-overview-title">
       <MomManagementHeader title-id="wms-overview-title" :title="t('wms.inventory.overview')"
         :description="t('wms.inventory.overviewHint')">
-        <template #actions><MomButton variant="outline" :disabled="loading" @click="load()"><RefreshCw :size="16" />{{ tForOwner('system', 'system.common.refresh') }}</MomButton></template>
+        <template #actions>
+          <MomButton variant="outline" @click="router.push({ name: ROUTE_NAMES.wmsInventoryHistory })">{{ t('wms.inventory.history.open') }}</MomButton>
+          <MomButton variant="outline" :disabled="loading" @click="load()"><RefreshCw :size="16" />{{ tForOwner('system', 'system.common.refresh') }}</MomButton>
+        </template>
       </MomManagementHeader>
       <form class="inventory-page__filters" @submit.prevent="search">
         <label>{{ t('wms.inventory.material') }}<MomInput v-model="filter.keyword" :placeholder="t('wms.inventory.materialSearch')" /></label>

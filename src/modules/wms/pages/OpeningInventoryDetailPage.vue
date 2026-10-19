@@ -126,6 +126,8 @@ onMounted(async () => { await load(); if (canWrite.value) await lookup(); });
         <div v-if="detail.document.transactionId" class="opening-detail__transaction">
           <dt>{{ t('wms.opening.transaction') }}</dt>
           <dd><code>{{ detail.document.transactionId }}</code></dd>
+          <dd><MomButton v-if="hasAuthority('wms:inventory:read')" variant="outline" @click="router.push({ name: ROUTE_NAMES.wmsInventoryHistory,
+            query: { transactionType: 'OPENING', sourceType: 'OPENING_DOCUMENT', sourceId: id } })">{{ t('wms.inventory.history.open') }}</MomButton></dd>
         </div>
       </dl>
     </section>

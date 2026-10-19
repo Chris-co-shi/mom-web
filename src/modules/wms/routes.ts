@@ -29,4 +29,10 @@ export const wmsRoutes: RouteRecordRaw[] = [
     meta: { title: '实时库存明细', titleKey: 'wms.inventory.details', module: 'wms',
       requiresAuth: true, permissions: ['wms:inventory:read'], i18nOwners: ['wms'], hideInMenu: true },
   },
+  {
+    path: 'wms/inventory/history', name: ROUTE_NAMES.wmsInventoryHistory,
+    component: () => import('./pages/InventoryHistoryPage.vue'),
+    meta: { title: '库存历史查询', titleKey: 'wms.inventory.history.title', module: 'wms',
+      requiresAuth: true, permissions: ['wms:inventory:read'], i18nOwners: ['wms'], hideInMenu: true },
+  },
 ];

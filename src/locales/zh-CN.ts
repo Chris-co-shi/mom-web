@@ -1,5 +1,13 @@
 /** Web 仅保留稳定 Key 契约；展示文本由 System/Auth 数据库管理。 */
 export type MessageKey =
+  | 'wms.inventory.history.title' | 'wms.inventory.history.hint' | 'wms.inventory.history.open'
+  | 'wms.inventory.history.transaction' | 'wms.inventory.history.occurred' | 'wms.inventory.history.type'
+  | 'wms.inventory.history.source' | 'wms.inventory.history.sourceid' | 'wms.inventory.history.actor'
+  | 'wms.inventory.history.start' | 'wms.inventory.history.end' | 'wms.inventory.history.delta'
+  | 'wms.inventory.history.before' | 'wms.inventory.history.after' | 'wms.inventory.history.reason'
+  | 'wms.inventory.history.note' | 'wms.inventory.history.lineno' | 'wms.inventory.history.missing'
+  | 'wms.inventory.history.queryfirst' | 'wms.inventory.history.invalidrange'
+  | 'wms.inventory.history.detailfailed' | 'wms.inventory.history.reset' | 'wms.inventory.history.alltypes'
   | 'wms.inventory.overview'
   | 'wms.inventory.overviewHint'
   | 'wms.inventory.details'

@@ -1,17 +1,20 @@
 import { apiPath } from '../../../shared/api/config';
 import { httpClient } from '../../../shared/api/http-client';
 
+/** 登录请求；密码只发送给 Auth 登录端点，不进入会话存储。 */
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
+/** Auth 签发的 Opaque Token 响应。 */
 export interface LoginResponse {
   accessToken: string;
   tokenType: string;
   expiresAt: string;
 }
 
+/** 当前认证用户快照；version 用于自助修改的乐观并发控制。 */
 export interface CurrentUser {
   userId: string;
   username: string;
@@ -19,17 +22,20 @@ export interface CurrentUser {
   version: number;
 }
 
+/** Resource Server 已验证的当前会话及 authority 快照。 */
 export interface CurrentSessionResponse {
   user: CurrentUser;
   authorization: { authorities: string[] };
   session: { expiresAt: string };
 }
 
+/** 自助修改展示名称请求。 */
 export interface UpdateOwnProfileRequest {
   displayName: string;
   version: number;
 }
 
+/** 自助修改密码请求；必须同时携带当前密码和读取到的 version。 */
 export interface ChangeOwnPasswordRequest {
   currentPassword: string;
   newPassword: string;

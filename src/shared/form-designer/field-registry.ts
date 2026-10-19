@@ -3,6 +3,7 @@ import { computed, defineComponent, h } from 'vue';
 import { MomButton } from '../ui';
 import type { FieldControlAdapter, FieldRegistry, FieldRegistryEntry, FormField, FormFieldType, FormValue } from './types';
 
+/** 所有动态字段都支持的通用属性。 */
 const common = [
   { key: 'name', label: '字段名', editor: 'text' }, { key: 'label', label: '标题', editor: 'text' },
   { key: 'required', label: '必填', editor: 'checkbox' }, { key: 'readonly', label: '只读', editor: 'checkbox' },
@@ -13,6 +14,7 @@ const numberOnly = [...common, { key: 'defaultValue', label: '默认值', editor
 const selectOnly = [...common, { key: 'defaultValue', label: '默认值', editor: 'text' }] as const;
 const switchOnly = [...common, { key: 'defaultValue', label: '默认值', editor: 'checkbox' }] as const;
 
+/** 将动态字段统一适配到受控组件的 modelValue 事件。 */
 const modelAdapter = (event = 'update:modelValue'): FieldControlAdapter => ({
   event,
   props: (field, value, context) => ({ id: `dynamic-${field.id}`, modelValue: value, readonly: field.readonly, disabled: context.disabled, 'aria-invalid': context.invalid, 'aria-describedby': context.describedBy }),
@@ -37,6 +39,7 @@ const selectPropertyEditor = defineComponent({
   },
 });
 
+/** 为字段定义补齐配置和值校验，保持设计器与运行时渲染共用同一规则。 */
 function entry(definition: Omit<FieldRegistryEntry, 'validateConfig' | 'validateValue'>): FieldRegistryEntry {
   return {
     ...definition,
@@ -92,6 +95,7 @@ function entry(definition: Omit<FieldRegistryEntry, 'validateConfig' | 'validate
   };
 }
 
+/** 建立字段类型到字段能力定义的唯一注册表，并拒绝重复类型。 */
 export function createFieldRegistry(entries: readonly FieldRegistryEntry[]): FieldRegistry {
   const registry = new Map<FormFieldType, FieldRegistryEntry>();
   for (const definition of entries) {
@@ -108,11 +112,13 @@ export const defaultFieldRegistry = createFieldRegistry([
   entry({ type: 'SWITCH', label: '开关', description: '布尔开关字段', preview: '开 / 关', control: MomCheckbox, adapter: { ...modelAdapter(), props: (field, value, context) => ({ ...modelAdapter().props(field, value, context), 'aria-label': field.label }) }, valueKind: 'boolean', properties: switchOnly, create: (id, name) => ({ id, name, type: 'SWITCH', label: '开关字段', required: false, defaultValue: false }), normalize: (value) => value === true }),
 ]);
 
+/** 按注册类型创建带稳定 ID 的字段定义。 */
 export function createField(registry: FieldRegistry, type: FormFieldType, id: string, name: string): FormField {
   const definition = registry.get(type);
   if (!definition) throw new Error(`未注册字段类型：${type}`);
   return definition.create(id, name);
 }
+/** 按字段类型把组件事件值规范化为表单模型值。 */
 export function normalizeFieldValue(registry: FieldRegistry, type: FormFieldType, value: unknown): FormValue {
   const definition = registry.get(type);
   if (!definition) throw new Error(`未注册字段类型：${type}`);

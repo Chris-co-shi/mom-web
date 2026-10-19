@@ -14,6 +14,7 @@ import {
 
 export const AUTH_SESSION_STORAGE_KEY = 'mom.auth.session';
 
+/** 当前标签页内的认证状态；本地恢复只信任 Token，用户与权限需再次向服务端确认。 */
 interface AuthSession {
   accessToken: string;
   tokenType: 'Bearer';

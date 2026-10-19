@@ -1,5 +1,9 @@
 import type { CodeSegmentCatalogEntry } from './types';
 
+/**
+ * 本地设计器使用的 V1 编码段目录。
+ * SEQUENCE 仅用于样例预览，不能在浏览器端分配真实业务编号。
+ */
 export const localCodeSegmentCatalog: readonly CodeSegmentCatalogEntry[] = [
   { type: 'LITERAL', label: '固定字符', description: '写入固定前缀或分隔符', catalogVersion: 1, parameterSchema: { schemaVersion: 1, fields: [
     { id: 'literal_value', name: 'value', type: 'TEXT', label: '固定内容', required: true, defaultValue: 'P4' },

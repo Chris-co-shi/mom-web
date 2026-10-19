@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 import { ROUTE_NAMES } from '../../router/route-names';
 
+/** IAM 管理页面路由；前端权限仅控制可见性，后端仍执行最终授权。 */
 export const iamRoutes: RouteRecordRaw[] = [
   {
     path: 'iam/users',

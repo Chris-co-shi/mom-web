@@ -2,7 +2,9 @@ import { apiPath } from '../../../shared/api/config';
 import type { PageResult } from '../../../shared/api/contracts';
 import { httpClient } from '../../../shared/api/http-client';
 
+/** UOM 主数据目录类型；三类目录共享分页查询入口。 */
 export type UnitCatalogKind = 'dimensions' | 'uom-categories' | 'uoms';
+/** 维度、单位类别或单位的统一列表行。 */
 export interface UomRow {
   id: string; code: string; name: string; status: 'ENABLED' | 'DISABLED'; version: number;
   createdAt: string; updatedAt: string;
@@ -12,27 +14,32 @@ export interface UomRow {
   electricCurrentExponent?: number; temperatureExponent?: number;
   amountExponent?: number; luminousIntensityExponent?: number;
 }
+/** 创建量纲请求；指数共同定义量纲维度。 */
 export interface CreateDimensionRequest {
   code: string; name: string; status: UomRow['status'];
   timeExponent: number; lengthExponent: number; massExponent: number;
   electricCurrentExponent: number; temperatureExponent: number;
   amountExponent: number; luminousIntensityExponent: number;
 }
+/** 创建单位类别及其基准单位的原子请求。 */
 export interface CreateUomCategoryRequest {
   code: string; name: string; dimensionId: string; status: UomRow['status'];
   referenceCode: string; referenceName: string; referenceSymbol: string;
   referenceUcumNotApplicableReason: string | null;
 }
+/** 创建单位及首版换算规则请求；Decimal 字段保持字符串。 */
 export interface CreateUomRequest {
   code: string; name: string; symbol: string; categoryId: string; status: UomRow['status'];
   ucumNotApplicableReason: string | null;
   multiplier: string; offset: string; calculationPrecision: number; roundingMode: string;
 }
+/** 当前单位换算规则及其发布状态。 */
 export interface UomRule {
   id: string; uomId: string; versionNo: number; algorithmType: 'AFFINE';
   multiplier: string; offset: string; calculationPrecision: number; roundingMode: string;
   status: 'ENABLED' | 'DISABLED'; lockVersion: number;
 }
+/** 发布下一版 AFFINE 换算规则的请求。 */
 export interface PublishRuleRequest {
   expectedCurrentVersion: number;
   multiplier: string; offset: string; calculationPrecision: number; roundingMode: string;

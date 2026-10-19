@@ -1,3 +1,7 @@
+/**
+ * 前端路由稳定名称目录。
+ * 路由跳转和权限守卫依赖这些名称，页面路径变化时不应在业务代码中散落字符串。
+ */
 export const ROUTE_NAMES = {
   wmsInventoryOverview: 'wms-inventory-overview',
   wmsInventoryDetails: 'wms-inventory-details',
@@ -36,4 +40,5 @@ export const ROUTE_NAMES = {
   notFound: 'not-found',
 } as const;
 
+/** 路由名称联合类型，限制导航目标只能引用已登记的名称。 */
 export type MomRouteName = (typeof ROUTE_NAMES)[keyof typeof ROUTE_NAMES];

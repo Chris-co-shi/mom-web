@@ -1,3 +1,4 @@
+/** System 管理页复用的反馈类型与本地校验入口。 */
 export { managementFeedback as systemFeedback, validDisplayText } from '../../../shared/management/management-feedback';
 export type { ManagementFeedback as SystemFeedback } from '../../../shared/management/management-feedback';
 

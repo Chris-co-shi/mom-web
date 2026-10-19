@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router';
 import { ROUTE_NAMES } from '../../router/route-names';
 
+/** System 管理页面路由；页面可见权限不替代后端最终授权。 */
 export const systemRoutes: RouteRecordRaw[] = [
   { path: 'system/code-rules', name: ROUTE_NAMES.systemCodeRules, component: () => import('./pages/CodeRuleManagementPage.vue'),
     meta: { title: '编码规则', titleKey: 'system.coderules.title', module: 'system', requiresAuth: true,

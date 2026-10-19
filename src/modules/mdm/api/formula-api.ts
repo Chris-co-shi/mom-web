@@ -4,20 +4,26 @@ import { httpClient } from '../../../shared/api/http-client';
 
 /** 数量一律使用 Decimal String；number 会在浏览器端提前丢失精度。 */
 export interface FormulaItemInput { sequenceNo: number; materialId: string; quantity: string; uomId: string }
+/** 带持久化 ID 的配方行。 */
 export interface FormulaItem extends FormulaItemInput { id: string }
+/** 配方身份及基础批次数量。 */
 export interface FormulaIdentity {
   id: string; code: string; name: string; plantId: string; outputMaterialId: string;
   baseBatchQuantity: string; baseUomId: string; createdAt: string; updatedAt: string;
 }
+/** 配方修订及其发布生命周期。 */
 export interface FormulaRevision {
   id: string; formulaId: string; revisionNo: number; status: 'DRAFT' | 'RELEASED' | 'OBSOLETE';
   lockVersion: number; releasedAt: string | null; obsoleteAt: string | null;
 }
+/** 配方详情，包含身份、修订和配方行。 */
 export interface FormulaDetail { formula: FormulaIdentity; revision: FormulaRevision; items: FormulaItem[] }
+/** 创建配方请求；数量使用 Decimal String。 */
 export interface CreateFormulaRequest {
   code: string; name: string; plantId: string; outputMaterialId: string;
   baseBatchQuantity: string; baseUomId: string; items: FormulaItemInput[];
 }
+/** 配方服务端筛选条件。 */
 export interface FormulaFilter { plantId?: string; outputMaterialId?: string }
 
 const path = (suffix = '') => apiPath('mdm', `/formulas${suffix}`);

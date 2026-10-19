@@ -7,13 +7,18 @@ export interface RoutingStepInput {
   sequenceNo: number; operationCode: string; name: string;
   resourceType: 'PRODUCTION_LINE' | 'WORKSTATION'; resourceId: string;
 }
+/** 带持久化 ID 的工艺路线步骤。 */
 export interface RoutingStep extends RoutingStepInput { id: string }
+/** 工艺路线身份摘要。 */
 export interface RoutingIdentity { id: string; code: string; name: string; plantId: string; createdAt: string; updatedAt: string }
+/** 工艺路线修订及其乐观锁版本。 */
 export interface RoutingRevision {
   id: string; routingId: string; revisionNo: number; status: 'DRAFT' | 'RELEASED' | 'OBSOLETE';
   lockVersion: number; releasedAt: string | null; obsoleteAt: string | null;
 }
+/** 工艺路线详情，包含身份、修订和有序步骤。 */
 export interface RoutingDetail { routing: RoutingIdentity; revision: RoutingRevision; steps: RoutingStep[] }
+/** 创建工艺路线请求；步骤顺序和资源类型由后端校验。 */
 export interface CreateRoutingRequest { code: string; name: string; plantId: string; steps: RoutingStepInput[] }
 
 const path = (suffix = '') => apiPath('mdm', `/routings${suffix}`);

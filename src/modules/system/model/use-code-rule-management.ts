@@ -7,7 +7,9 @@ import { validateFormSchema } from '../../../shared/form-designer/schema';
 import type { CodeRuleDefinition, CodeSegmentCatalogEntry } from '../../../shared/form-designer/types';
 
 const emptyDefinition = (): CodeRuleDefinition => ({ schemaVersion: 1, segments: [] });
+/** 深拷贝规则定义，避免编辑态修改列表或详情响应中的嵌套对象。 */
 const clone = (value: CodeRuleDefinition): CodeRuleDefinition => JSON.parse(JSON.stringify(value)) as CodeRuleDefinition;
+/** 编码规则允许的管理动作。 */
 export type CodeRuleAction = 'revise' | 'enable' | 'disable';
 
 /** 管理页持有 Owner、分页和编辑上下文；读请求取消并防乱序，写请求只执行一次。 */
@@ -38,6 +40,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
   let catalogRequest: AbortController | undefined; let listRequest: AbortController | undefined; let detailRequest: AbortController | undefined;
   let uncertain: { owner: CodeRuleOwner; revisionId?: string; ruleCode: string } | undefined;
 
+  /** 当前 Owner 目录无法解释的段或参数；存在时禁止提交，保留原始定义供查看。 */
   const unsupported = computed(() => definition.value.segments.filter(segment => {
     const entry = catalog.value.find(item => item.type === segment.type);
     if (!entry) return true;
@@ -45,8 +48,10 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
       && segment.params[field.name] != null && segment.params[field.name] !== ''
       && !field.options?.some(option => option.value === segment.params[field.name]));
   }).map(segment => segment.id));
+  /** 只有权限、目录、并发阻断和生命周期状态均满足时才允许编辑写入。 */
   const editable = computed(() => canWrite.value && catalogReady.value && !detailLoading.value
     && !saving.value && !writeBlocked.value && !unsupported.value.length && (!target.value || target.value.status === 'DRAFT'));
+  /** 保存当前编辑快照，用于判断切换或关闭前是否存在未保存修改。 */
   function snapshot(): void { saved.value = JSON.stringify({ ruleCode: ruleCode.value, usageScenario: usageScenario.value, description: description.value, definition: definition.value }); }
   function apply(row: CodeRuleView): void {
     target.value = row; ruleCode.value = row.ruleCode; usageScenario.value = row.usageScenario ?? ''; description.value = row.description ?? ''; definition.value = clone(row.definition); snapshot();
@@ -65,6 +70,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
   function resolveDiscard(discard: boolean): void {
     discardPending.value = false; discardResolver?.(discard); discardResolver = undefined;
   }
+  /** 读取并校验 Owner 目录；目录版本或 Schema 不可接受时不开放编辑。 */
   async function loadCatalog(): Promise<void> {
     catalogRequest?.abort(); const current = ++catalogId; const selected = owner.value;
     catalogRequest = new AbortController(); catalog.value = []; catalogError.value = null; catalogReady.value = false;
@@ -81,6 +87,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
     } catch (error) { if (current === catalogId) catalogError.value = managementFeedback(error); }
     finally { if (current === catalogId) catalogLoading.value = false; }
   }
+  /** 读取当前 Owner 的规则列表，并在末页失效时回退到最后有效页。 */
   async function loadList(): Promise<void> {
     listRequest?.abort(); const current = ++listId; const selected = owner.value;
     listRequest = new AbortController(); listError.value = null; rows.value = []; total.value = 0; totalPages.value = 0;
@@ -103,6 +110,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
     feedback.value = null; notice.value = false; writeBlocked.value = !!uncertain;
     await reload();
   }
+  /** 打开新建或现有修订编辑态；切换前必须处理未保存草稿。 */
   async function open(row?: CodeRuleView): Promise<void> {
     if (saving.value || !canRead.value || !await confirmDiscard()) return;
     resetEditor(); feedback.value = null; notice.value = false;
@@ -132,6 +140,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
     writeBlocked.value = unknown || isApiError(error) && ['conflict', 'not_found', 'forbidden', 'unauthenticated'].includes(error.kind);
     if (unknown) uncertain = { owner: { ...owner.value }, revisionId: target.value?.id, ruleCode: ruleCode.value };
   }
+  /** 保存规则草稿；未知写入结果会阻断后续写操作，等待显式核对。 */
   async function save(): Promise<void> {
     if (!editorOpen.value || !editable.value || saving.value) return;
     if (!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(ruleCode.value)) { feedback.value = { key: 'system.coderules.invalidcode' }; return; }
@@ -149,6 +158,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
     } catch (error) { writeError(error); }
     finally { saving.value = false; }
   }
+  /** 执行修订、发布或停用，并携带读取到的 ruleVersion。 */
   async function act(action: CodeRuleAction): Promise<void> {
     const current = target.value;
     if (!canWrite.value || !current || saving.value || writeBlocked.value || dirty.value || detailLoading.value) return;

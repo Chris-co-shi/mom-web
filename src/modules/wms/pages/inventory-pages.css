@@ -3,3 +3,9 @@
 .inventory-page__filters label { display: grid; gap: 0.3rem; min-width: 11rem; flex: 1 1 11rem; }
 .inventory-page__filters button { flex: 0 0 auto; }
 .inventory-page__error { display: flex; align-items: center; gap: 0.75rem; }
+.inventory-freeze { display: grid; gap: 0.8rem; }
+.inventory-freeze__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); align-items: end; gap: 0.75rem; }
+.inventory-freeze__form label { display: grid; gap: 0.3rem; }
+.inventory-freeze__item { display: grid; gap: 0.5rem; padding: 0.85rem 0; border-top: 1px solid var(--border); }
+.inventory-freeze__item p { margin: 0; }
+.inventory-freeze__item small { color: var(--muted-foreground); }

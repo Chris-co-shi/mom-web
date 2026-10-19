@@ -40,6 +40,41 @@ export interface DetailFilter {
   warehouseStatus?: InventoryDetail['warehouseStatus'];
 }
 
+export type FreezeReason = 'PACKAGE_DAMAGE' | 'STOCK_DISCREPANCY' | 'WAREHOUSE_CHECK' | 'SAFETY_HOLD' | 'OTHER';
+
+/** 独立的仓储冻结限制事实。 */
+export interface InventoryFreeze {
+  id: string;
+  transactionId: string;
+  originalBalanceId: string;
+  materialId: string;
+  materialCode: string;
+  materialName: string;
+  uomCode: string;
+  batchCode: string | null;
+  snCode: string | null;
+  warehouseId: string;
+  warehouseCode: string;
+  locationId: string;
+  locationCode: string;
+  qualityStatus: InventoryDetail['qualityStatus'];
+  reasonCode: FreezeReason;
+  note: string | null;
+  originalQuantity: string;
+  remainingQuantity: string;
+  sourceType: string;
+  sourceId: string;
+  operatorId: string;
+  frozenAt: string;
+}
+
+/** 按明确冻结限制返回的解冻交易结果。 */
+export interface InventoryUnfreezeResult {
+  transactionId: string;
+  freezeId: string;
+  remainingQuantity: string;
+}
+
 /** 按 Material 查询实时汇总。 */
 export function searchInventoryOverview(pageNo: number, pageSize: number, params: OverviewFilter,
                                         signal?: AbortSignal): Promise<PageResult<InventoryOverview>> {
@@ -52,4 +87,23 @@ export function searchInventoryDetails(pageNo: number, pageSize: number, params:
                                        signal?: AbortSignal): Promise<PageResult<InventoryDetail>> {
   return httpClient.result({ path: apiPath('wms', '/inventory/details/search'), method: 'POST',
     body: { params, pageNo, pageSize }, signal });
+}
+
+/** 查询选中库存维度的所有有效限制。 */
+export function searchActiveFreezes(balanceId: string): Promise<InventoryFreeze[]> {
+  return httpClient.result({ path: apiPath('wms', '/inventory/freezes/query'), method: 'POST',
+    body: { balanceId } });
+}
+
+/** 对指定余额执行仓储冻结；写入失败时由调用方根据错误结果提示刷新核对，不自动重试。 */
+export function freezeInventory(input: { requestKey: string; balanceId: string; quantity: string;
+  reason: FreezeReason; note?: string }): Promise<InventoryFreeze> {
+  return httpClient.result({ path: apiPath('wms', '/inventory/freezes'), method: 'POST', body: input });
+}
+
+/** 对明确冻结限制执行全部或部分解冻；请求不自动重试。 */
+export function unfreezeInventory(freezeId: string, input: { requestKey: string; quantity: string;
+  note?: string }): Promise<InventoryUnfreezeResult> {
+  return httpClient.result({ path: apiPath('wms', `/inventory/freezes/${encodeURIComponent(freezeId)}/unfreeze`),
+    method: 'POST', body: input });
 }

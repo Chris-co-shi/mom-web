@@ -5,36 +5,37 @@ import MomManagementHeader from '../../../shared/components/MomManagementHeader.
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
+import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
-import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
+import { hasAuthority } from '../../auth/model/auth-permissions';
+import { MomButton, MomInput, MomSelect, MomTextarea } from '../../../shared/ui';
 import { isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
-import { searchInventoryDetails, type DetailFilter, type InventoryDetail } from '../api/inventory-api';
+import { freezeInventory, searchActiveFreezes, searchInventoryDetails, unfreezeInventory,
+  type DetailFilter, type FreezeReason, type InventoryDetail, type InventoryFreeze } from '../api/inventory-api';
 import './inventory-pages.css';
 
 const route = useRoute(), router = useRouter();
 const { t, tForOwner } = useLocale();
 const rows = ref<InventoryDetail[]>([]);
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
-const loading = ref(false), error = ref('');
+const loading = ref(false), saving = ref(false), error = ref(''), notice = ref('');
+const selected = ref<InventoryDetail>();
+const activeFreezes = ref<InventoryFreeze[]>([]);
+const freezeQuantity = ref(''), freezeNote = ref(''), freezeReason = ref<FreezeReason>('WAREHOUSE_CHECK');
+const releaseQuantities = ref<Record<string, string>>({}), releaseNotes = ref<Record<string, string>>({});
+const unknownWrite = ref(false);
 const filter = reactive({
   materialId: typeof route.query.materialId === 'string' ? route.query.materialId : '',
-  warehouseId: '', locationId: '', batchCode: '', snCode: '',
-  qualityStatus: '', warehouseStatus: '',
+  warehouseId: typeof route.query.warehouseId === 'string' ? route.query.warehouseId : '',
+  locationId: '', batchCode: '', snCode: '', qualityStatus: '', warehouseStatus: '',
 });
 let controller: AbortController | undefined, sequence = 0;
-const qualityOptions = computed(() => [
-  { value: '', label: t('wms.inventory.all') },
-  ...(['PENDING', 'QUALIFIED', 'RESTRICTED', 'REJECTED'] as const).map(value => ({
-    value, label: t(`wms.inventory.quality.${value.toLowerCase()}` as Parameters<typeof t>[0]),
-  })),
-]);
-const warehouseOptions = computed(() => [
-  { value: '', label: t('wms.inventory.all') },
-  { value: 'NORMAL', label: t('wms.inventory.warehouse.normal') },
-  { value: 'FROZEN', label: t('wms.inventory.warehouse.frozen') },
-]);
+const canFreeze = computed(() => hasAuthority('wms:inventory:freeze'));
+const canUnfreeze = computed(() => hasAuthority('wms:inventory:unfreeze'));
+const reasonOptions = computed(() => (['PACKAGE_DAMAGE', 'STOCK_DISCREPANCY', 'WAREHOUSE_CHECK', 'SAFETY_HOLD', 'OTHER'] as const)
+  .map(value => ({ value, label: reasonLabel(value) })));
 const columns = computed<MomColumn[]>(() => [
   { key: 'materialCode', title: t('wms.inventory.materialCode'), minWidth: 150 },
   { key: 'materialName', title: t('wms.inventory.materialName'), minWidth: 180 },
@@ -46,29 +47,145 @@ const columns = computed<MomColumn[]>(() => [
   { key: 'warehouseStatus', title: t('wms.inventory.warehouseStatus'), minWidth: 130 },
   { key: 'quantity', title: t('wms.inventory.quantity'), minWidth: 130 },
   { key: 'uomCode', title: t('wms.inventory.uom'), width: 100 },
+  { key: 'actions', title: tForOwner('system', 'system.common.actions'), width: 150, resizable: false },
 ]);
+
+function reasonLabel(reason: FreezeReason): string {
+  const keys: Record<FreezeReason, Parameters<typeof t>[0]> = {
+    PACKAGE_DAMAGE: 'wms.inventory.reason.package_damage',
+    STOCK_DISCREPANCY: 'wms.inventory.reason.stock_discrepancy',
+    WAREHOUSE_CHECK: 'wms.inventory.reason.warehouse_check',
+    SAFETY_HOLD: 'wms.inventory.reason.safety_hold',
+    OTHER: 'wms.inventory.reason.other',
+  };
+  return t(keys[reason]);
+}
+
 function params(): DetailFilter {
   return Object.fromEntries(Object.entries(filter).filter(([, value]) => value.trim())) as DetailFilter;
 }
-async function load(next = pageNo.value, size = pageSize.value): Promise<void> {
+
+function decimalUnits(value: string): bigint | undefined {
+  if (!/^\d+(?:\.\d{1,6})?$/.test(value.trim())) return undefined;
+  const [whole, fraction = ''] = value.trim().split('.');
+  return BigInt(whole!) * 1_000_000n + BigInt(fraction.padEnd(6, '0'));
+}
+
+function validQuantity(value: string, maximum: string): boolean {
+  const quantity = decimalUnits(value), max = decimalUnits(maximum);
+  return quantity !== undefined && max !== undefined && quantity > 0n && quantity <= max;
+}
+
+async function load(next = pageNo.value, size = pageSize.value): Promise<boolean> {
   const current = ++sequence;
   controller?.abort(); controller = new AbortController();
   loading.value = true; error.value = '';
   pageNo.value = next; pageSize.value = size;
   try {
     const result = await searchInventoryDetails(next, size, params(), controller.signal);
-    if (current !== sequence) return;
+    if (current !== sequence) return false;
     rows.value = result.records; pageNo.value = result.pageNo; total.value = result.total;
+    if (selected.value) {
+      const refreshed = rows.value.find(row => row.id === selected.value?.id);
+      selected.value = refreshed ?? (selected.value.warehouseStatus === 'NORMAL'
+        ? { ...selected.value, quantity: '0' } : selected.value);
+    }
+    return true;
   } catch (cause) {
     if (current === sequence && !controller.signal.aborted) {
       error.value = isApiError(cause) && cause.kind === 'forbidden'
         ? t('wms.inventory.forbidden') : t('wms.inventory.loadFailed');
       rows.value = [];
     }
+    return false;
   } finally { if (current === sequence) loading.value = false; }
 }
+
+async function loadActive(balanceId: string): Promise<boolean> {
+  try {
+    activeFreezes.value = await searchActiveFreezes(balanceId);
+    releaseQuantities.value = Object.fromEntries(activeFreezes.value.map(freeze => [freeze.id, freeze.remainingQuantity]));
+    releaseNotes.value = Object.fromEntries(activeFreezes.value.map(freeze => [freeze.id, '']));
+    return true;
+  } catch (cause) {
+    activeFreezes.value = [];
+    error.value = isApiError(cause) && cause.kind === 'forbidden'
+      ? t('wms.inventory.forbidden') : t('wms.inventory.loadFailed');
+    return false;
+  }
+}
+
+async function openManagement(row: InventoryDetail): Promise<void> {
+  selected.value = row; error.value = ''; notice.value = '';
+  freezeQuantity.value = row.warehouseStatus === 'NORMAL' ? row.quantity : '';
+  freezeNote.value = ''; freezeReason.value = 'WAREHOUSE_CHECK'; activeFreezes.value = [];
+  await loadActive(row.id);
+}
+
 function search(): void { void load(1); }
 function back(): void { void router.push({ name: ROUTE_NAMES.wmsInventoryOverview }); }
+function writeFailure(cause: unknown): void {
+  if (isApiError(cause) && cause.resultUnknown) {
+    unknownWrite.value = true;
+    error.value = t('wms.inventory.freeze.unknown');
+  } else if (isApiError(cause) && cause.kind === 'forbidden') error.value = t('wms.inventory.forbidden');
+  else if (isApiError(cause) && cause.kind === 'conflict') error.value = t('wms.inventory.freeze.conflict');
+  else error.value = t('wms.inventory.freeze.failed');
+}
+
+async function submitFreeze(): Promise<void> {
+  const row = selected.value;
+  if (!row || !canFreeze.value || saving.value || unknownWrite.value || row.warehouseStatus !== 'NORMAL') return;
+  if (!validQuantity(freezeQuantity.value, row.quantity)) {
+    error.value = t('wms.inventory.freeze.failed'); return;
+  }
+  if (freezeReason.value === 'OTHER' && !freezeNote.value.trim()) {
+    error.value = t('wms.inventory.freeze.otherNoteRequired'); return;
+  }
+  saving.value = true; error.value = ''; notice.value = '';
+  try {
+    await freezeInventory({ requestKey: crypto.randomUUID(), balanceId: row.id, quantity: freezeQuantity.value,
+      reason: freezeReason.value, note: freezeNote.value.trim() || undefined });
+    notice.value = t('wms.inventory.freeze.success');
+    await load();
+    await loadActive(row.id);
+    freezeQuantity.value = selected.value?.warehouseStatus === 'NORMAL' ? selected.value.quantity : '';
+  } catch (cause) { writeFailure(cause); }
+  finally { saving.value = false; }
+}
+
+async function submitUnfreeze(freeze: InventoryFreeze): Promise<void> {
+  if (!selected.value || !canUnfreeze.value || saving.value || unknownWrite.value) return;
+  const quantity = releaseQuantities.value[freeze.id] ?? '';
+  if (!validQuantity(quantity, freeze.remainingQuantity)) {
+    error.value = t('wms.inventory.freeze.failed'); return;
+  }
+  if (!releaseNotes.value[freeze.id]?.trim()) {
+    error.value = t('wms.inventory.freeze.failed'); return;
+  }
+  saving.value = true; error.value = ''; notice.value = '';
+  try {
+    await unfreezeInventory(freeze.id, { requestKey: crypto.randomUUID(), quantity,
+      note: releaseNotes.value[freeze.id]?.trim() || undefined });
+    notice.value = t('wms.inventory.freeze.success');
+    await load();
+    await loadActive(selected.value.id);
+  } catch (cause) { writeFailure(cause); }
+  finally { saving.value = false; }
+}
+
+async function refreshUnknown(): Promise<void> {
+  if (loading.value || saving.value) return;
+  const row = selected.value;
+  const inventoryLoaded = await load();
+  const holdsLoaded = row ? await loadActive(row.id) : true;
+  if (inventoryLoaded && holdsLoaded) {
+    unknownWrite.value = false;
+    error.value = '';
+    freezeQuantity.value = selected.value?.warehouseStatus === 'NORMAL' ? selected.value.quantity : '';
+  }
+}
+
 onMounted(() => { void load(); });
 onScopeDispose(() => { ++sequence; controller?.abort(); });
 </script>
@@ -86,16 +203,25 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
         <label>{{ t('wms.inventory.locationId') }}<MomInput v-model="filter.locationId" /></label>
         <label>{{ t('wms.inventory.batch') }}<MomInput v-model="filter.batchCode" /></label>
         <label>{{ t('wms.inventory.sn') }}<MomInput v-model="filter.snCode" /></label>
-        <label>{{ t('wms.inventory.qualityStatus') }}<MomSelect v-model="filter.qualityStatus" :options="qualityOptions" /></label>
-        <label>{{ t('wms.inventory.warehouseStatus') }}<MomSelect v-model="filter.warehouseStatus" :options="warehouseOptions" /></label>
+        <label>{{ t('wms.inventory.qualityStatus') }}<MomSelect v-model="filter.qualityStatus" :options="[
+          { value: '', label: t('wms.inventory.all') }, ...(['PENDING','QUALIFIED','RESTRICTED','REJECTED'] as const).map(value => ({ value, label: t(`wms.inventory.quality.${value.toLowerCase()}` as Parameters<typeof t>[0]) }))]" /></label>
+        <label>{{ t('wms.inventory.warehouseStatus') }}<MomSelect v-model="filter.warehouseStatus" :options="[
+          { value: '', label: t('wms.inventory.all') }, { value: 'NORMAL', label: t('wms.inventory.warehouse.normal') },
+          { value: 'FROZEN', label: t('wms.inventory.warehouse.frozen') }]" /></label>
         <MomButton type="submit" :disabled="loading">{{ tForOwner('system', 'system.common.search') }}</MomButton>
       </form>
-      <div v-if="error" role="alert" class="inventory-page__error">{{ error }} <MomButton variant="outline" @click="load()">{{ t('wms.inventory.retry') }}</MomButton></div>
+      <div v-if="error" role="alert" class="inventory-page__error">
+        {{ error }}
+        <MomButton v-if="unknownWrite" variant="outline" :disabled="loading || saving" @click="refreshUnknown">{{ t('wms.inventory.retry') }}</MomButton>
+        <MomButton v-else variant="outline" :disabled="loading" @click="load()">{{ t('wms.inventory.retry') }}</MomButton>
+      </div>
+      <p v-if="notice" role="status">{{ notice }}</p>
       <MomListSurface :title="t('wms.inventory.details')" :hint="t('wms.inventory.detailsHint')"
         :loading="loading" :loading-text="tForOwner('system', 'system.common.loading')">
         <MomDataTable :rows="rows" :columns="columns" :empty-text="tForOwner('system', 'system.common.empty')">
           <template #cell-qualityStatus="{ row }">{{ t(`wms.inventory.quality.${row.qualityStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
           <template #cell-warehouseStatus="{ row }">{{ t(`wms.inventory.warehouse.${row.warehouseStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
+          <template #cell-actions="{ row }"><MomButton mode="text" @click="openManagement(row)">{{ t('wms.inventory.freeze.action') }}</MomButton></template>
         </MomDataTable>
         <template #footer><MomCrudPagination :page-no="pageNo" :page-size="pageSize" :total="total"
           :summary="`${total}`" :page-size-label="tForOwner('system', 'system.common.pageSize')"
@@ -103,6 +229,33 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
           :jump-label="tForOwner('system', 'system.common.jump')" :go-label="tForOwner('system', 'system.common.go')" :disabled="loading"
           @page="load($event)" @size="load(1, $event)" /></template>
       </MomListSurface>
+
+      <MomModal :open="!!selected" :title="t('wms.inventory.freeze.active')"
+        :close-label="tForOwner('system', 'system.common.close')" :busy="saving" @close="selected = undefined">
+        <div v-if="selected" class="inventory-freeze">
+          <p>{{ selected.materialCode }} · {{ selected.warehouseCode }} · {{ selected.locationCode }} · {{ selected.snCode || selected.batchCode || '' }}</p>
+          <p>{{ t('wms.inventory.freeze.available') }}：{{ selected.warehouseStatus === 'NORMAL' ? selected.quantity : '0' }} {{ selected.uomCode }}</p>
+          <form v-if="canFreeze && selected.warehouseStatus === 'NORMAL'" class="inventory-freeze__form" @submit.prevent="submitFreeze">
+            <label>{{ t('wms.inventory.freeze.quantity') }}<MomInput v-model="freezeQuantity" :disabled="saving || unknownWrite" /></label>
+            <label>{{ t('wms.inventory.freeze.reason') }}<MomSelect v-model="freezeReason" :options="reasonOptions" :disabled="saving || unknownWrite" /></label>
+            <label>{{ t('wms.inventory.freeze.note') }}<MomTextarea v-model="freezeNote" :maxlength="500" :disabled="saving || unknownWrite" /></label>
+            <MomButton type="submit" :disabled="saving || unknownWrite">{{ t('wms.inventory.freeze.submit') }}</MomButton>
+          </form>
+          <h3>{{ t('wms.inventory.freeze.active') }}</h3>
+          <p v-if="!activeFreezes.length">{{ t('wms.inventory.freeze.empty') }}</p>
+          <article v-for="freeze in activeFreezes" :key="freeze.id" class="inventory-freeze__item">
+            <p><strong>{{ reasonLabel(freeze.reasonCode) }}</strong> · {{ freeze.remainingQuantity }} / {{ freeze.originalQuantity }} {{ freeze.uomCode }}</p>
+            <p v-if="freeze.note">{{ freeze.note }}</p>
+            <small>{{ freeze.operatorId }} · {{ freeze.frozenAt }}</small>
+            <form v-if="canUnfreeze" class="inventory-freeze__form" @submit.prevent="submitUnfreeze(freeze)">
+              <label>{{ t('wms.inventory.freeze.quantity') }}<MomInput v-model="releaseQuantities[freeze.id]" :disabled="saving || unknownWrite" /></label>
+              <label>{{ t('wms.inventory.freeze.unfreezeNote') }}<MomInput v-model="releaseNotes[freeze.id]" required :maxlength="500" :disabled="saving || unknownWrite" /></label>
+              <MomButton type="submit" variant="outline" :disabled="saving || unknownWrite">{{ t('wms.inventory.freeze.unfreeze') }}</MomButton>
+            </form>
+          </article>
+        </div>
+        <template #footer><MomButton variant="outline" :disabled="saving" @click="selected = undefined">{{ tForOwner('system', 'system.common.close') }}</MomButton></template>
+      </MomModal>
     </section>
   </PageContainer>
 </template>

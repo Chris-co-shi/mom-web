@@ -1,8 +1,41 @@
 .inventory-page { display: grid; gap: 1.25rem; }
-.inventory-page__filters { display: flex; align-items: end; flex-wrap: wrap; gap: 0.75rem; }
-.inventory-page__filters label { display: grid; gap: 0.3rem; min-width: 11rem; flex: 1 1 11rem; }
-.inventory-page__filters button { flex: 0 0 auto; }
 .inventory-page__error { display: flex; align-items: center; gap: 0.75rem; }
+.opening-detail { min-width: 0; }
+.opening-detail__summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--mom-space-5); padding: var(--mom-space-4) var(--mom-space-5); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-surface); background: var(--mom-color-bg-surface); box-shadow: var(--mom-shadow-surface); }
+.opening-detail__document { display: grid; min-width: 0; gap: var(--mom-space-1); }
+.opening-detail__document > span, .opening-detail__states dt { color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); }
+.opening-detail__document code, .opening-detail__states code { color: var(--mom-color-text-primary); font-family: var(--mom-font-family-mono); font-size: var(--mom-font-size-sm); overflow-wrap: anywhere; }
+.opening-detail__states { display: flex; flex-wrap: wrap; gap: var(--mom-space-6); margin: 0; }
+.opening-detail__states > div { display: grid; min-width: 7rem; gap: var(--mom-space-1); }
+.opening-detail__states dt, .opening-detail__states dd { margin: 0; }
+.opening-detail__states dd { color: var(--mom-color-text-primary); font-size: var(--mom-font-size-sm); }
+.opening-detail__status { display: inline-flex; align-items: center; width: fit-content; min-height: 1.6rem; padding: 0 var(--mom-space-2); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-control); background: var(--mom-color-bg-subtle); }
+.opening-detail__status--draft, .opening-detail__status--initializing { color: var(--mom-color-warning); }
+.opening-detail__status--posted, .opening-detail__status--active { color: var(--mom-color-success); }
+.opening-detail__status--pending_activation { color: var(--mom-color-info); }
+.opening-detail__editor { display: grid; gap: var(--mom-space-5); padding: var(--mom-space-5) var(--mom-space-6); border-bottom: 1px solid var(--mom-color-border); }
+.opening-detail__fields { display: grid; min-width: 0; align-items: end; gap: var(--mom-space-4); }
+.opening-detail__fields--reference { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.opening-detail__fields--inventory { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.opening-detail__field { display: grid; min-width: 0; gap: var(--mom-space-2); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.opening-detail__search-control { display: flex; min-width: 0; align-items: center; gap: var(--mom-space-2); }
+.opening-detail__search-control > :first-child { min-width: 0; flex: 1 1 auto; }
+.opening-detail__search-control > :last-child { flex: 0 0 auto; }
+.opening-detail__form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--mom-space-2); }
+.opening-detail__post-hint { margin: 0; padding: var(--mom-space-3) var(--mom-space-6); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+@media (max-width: 1100px) {
+  .opening-detail__fields--inventory { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .opening-detail__fields--inventory { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .opening-detail__summary { align-items: flex-start; padding: var(--mom-space-4); }
+  .opening-detail__states { width: 100%; gap: var(--mom-space-4); }
+  .opening-detail__editor { padding: var(--mom-space-4); }
+  .opening-detail__fields--reference, .opening-detail__fields--inventory { grid-template-columns: minmax(0, 1fr); }
+}
+.opening-detail .mom-list-surface__table-wrap { min-width: 0; }
 .inventory-freeze { display: grid; gap: 0.8rem; }
 .inventory-freeze__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); align-items: end; gap: 0.75rem; }
 .inventory-freeze__form label { display: grid; gap: 0.3rem; }

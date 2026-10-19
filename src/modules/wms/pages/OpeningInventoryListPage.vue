@@ -46,7 +46,11 @@ async function create(): Promise<void> {
   if (!canCreate.value || saving.value || !warehouseId.value) return;
   saving.value = true; error.value = ''; success.value = '';
   try { const result = await createOpeningDocument(warehouseId.value); await router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: result.document.id } }); }
-  catch (cause) { error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.writeFailed'); }
+  catch (cause) {
+    error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden')
+      : isApiError(cause) && cause.code === 'wms.opening.reference_invalid' ? cause.message
+        : t('wms.opening.writeFailed');
+  }
   finally { saving.value = false; }
 }
 function open(row: OpeningDocument): void { void router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: row.id } }); }

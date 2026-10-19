@@ -100,8 +100,8 @@ onMounted(async () => { await load(); if (canWrite.value) await lookup(); });
 </script>
 
 <template>
-  <PageContainer><section class="inventory-page">
-    <MomManagementHeader title-id="wms-opening-detail-title" :title="detail?.document.documentNo || t('wms.opening.detail')" :description="`${t('wms.opening.warehouse')}: ${detail?.document.warehouseCode || ''}`">
+  <PageContainer><section class="inventory-page opening-detail">
+    <MomManagementHeader title-id="wms-opening-detail-title" :title="t('wms.opening.title')" :description="`${t('wms.opening.warehouse')}: ${detail?.document.warehouseCode || ''}`">
       <template #actions>
         <MomButton variant="outline" @click="router.push({ name: ROUTE_NAMES.wmsOpeningDocuments })">{{ t('wms.opening.back') }}</MomButton>
         <MomButton v-if="canPost" :disabled="saving || !detail?.lines.length" @click="post">{{ t('wms.opening.confirmPost') }}</MomButton>
@@ -109,22 +109,49 @@ onMounted(async () => { await load(); if (canWrite.value) await lookup(); });
         <MomButton v-if="detail?.document.status === 'POSTED'" variant="outline" @click="verifyInventory">{{ t('wms.opening.verifyInventory') }}</MomButton>
       </template>
     </MomManagementHeader>
+    <section v-if="detail" class="opening-detail__summary" :aria-label="t('wms.opening.detail')">
+      <div class="opening-detail__document">
+        <span>{{ t('wms.opening.documentNo') }}</span>
+        <code>{{ detail.document.documentNo }}</code>
+      </div>
+      <dl class="opening-detail__states">
+        <div>
+          <dt>{{ t('wms.opening.status') }}</dt>
+          <dd><span class="opening-detail__status" :class="`opening-detail__status--${detail.document.status.toLowerCase()}`">{{ t(detail.document.status === 'DRAFT' ? 'wms.opening.draft' : 'wms.opening.posted') }}</span></dd>
+        </div>
+        <div>
+          <dt>{{ t('wms.opening.warehouseStatus') }}</dt>
+          <dd><span class="opening-detail__status" :class="`opening-detail__status--${detail.document.warehouseState.toLowerCase()}`">{{ t(detail.document.warehouseState === 'INITIALIZING' ? 'wms.opening.initializing' : detail.document.warehouseState === 'PENDING_ACTIVATION' ? 'wms.opening.pendingActivation' : 'wms.opening.active') }}</span></dd>
+        </div>
+        <div v-if="detail.document.transactionId" class="opening-detail__transaction">
+          <dt>{{ t('wms.opening.transaction') }}</dt>
+          <dd><code>{{ detail.document.transactionId }}</code></dd>
+        </div>
+      </dl>
+    </section>
     <p v-if="error" role="alert" class="inventory-page__error">{{ error }}</p><p v-if="notice" role="status">{{ notice }}</p>
-    <p v-if="detail?.document.transactionId">{{ t('wms.opening.transaction') }}: {{ detail.document.transactionId }}</p>
     <MomListSurface :title="t('wms.opening.lines')" :hint="t('wms.opening.hint')" :loading="loading" :loading-text="tForOwner('system', 'system.common.loading')">
-      <form v-if="canWrite" class="inventory-page__filters" @submit.prevent="saveLine()">
-        <label>{{ t('wms.opening.material') }}<MomSelect v-model="form.materialId" :options="materials.map(m => ({ value: m.id, label: `${m.code} · ${m.name}` }))" :placeholder="t('wms.opening.selectMaterial')" /></label>
-        <label>{{ t('wms.opening.materialSearch') }}<MomInput v-model="materialKeyword" :maxlength="200" /></label><MomButton type="button" variant="outline" :disabled="loading" @click="searchMaterialOptions">{{ tForOwner('system', 'system.common.search') }}</MomButton>
-        <label>{{ t('wms.opening.locationSearch') }}<MomInput v-model="locationKeyword" :maxlength="200" /></label>
-        <label>{{ t('wms.opening.location') }}<MomSelect v-model="form.locationId" :options="visibleLocations.map(l => ({ value: l.id, label: `${l.code} · ${l.name}` }))" :placeholder="t('wms.opening.selectLocation')" /></label>
-        <label>{{ t('wms.opening.batch') }}<MomInput v-model="form.batchCode" :maxlength="128" /></label><label>{{ t('wms.opening.sn') }}<MomInput v-model="form.snCode" :maxlength="128" /></label>
-        <label>{{ t('wms.opening.quantity') }}<MomInput v-model="form.quantity" type="number" min="0.000001" step="0.000001" /></label>
-        <label>{{ t('wms.opening.quality') }}<MomSelect v-model="form.qualityStatus" :options="['PENDING','QUALIFIED','RESTRICTED','REJECTED'].map(value => ({ value, label: t(`wms.inventory.quality.${value.toLowerCase()}` as Parameters<typeof t>[0]) }))" /></label>
-        <label>{{ t('wms.opening.warehouseStatus') }}<MomSelect v-model="form.warehouseStatus" :options="[{ value:'NORMAL',label:t('wms.inventory.warehouse.normal') },{ value:'FROZEN',label:t('wms.inventory.warehouse.frozen') }]" /></label>
-        <MomButton type="submit" :disabled="saving">{{ editingLineId ? tForOwner('system', 'system.common.save') : t('wms.opening.addLine') }}</MomButton>
-        <MomButton v-if="editingLineId" type="button" variant="outline" :disabled="saving" @click="clear">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
+      <form v-if="canWrite" class="opening-detail__editor" @submit.prevent="saveLine()">
+        <div class="opening-detail__fields opening-detail__fields--reference">
+          <label class="opening-detail__field opening-detail__field--wide">{{ t('wms.opening.material') }}<MomSelect v-model="form.materialId" :options="materials.map(m => ({ value: m.id, label: `${m.code} · ${m.name}` }))" :placeholder="t('wms.opening.selectMaterial')" /></label>
+          <label class="opening-detail__field opening-detail__search-field">{{ t('wms.opening.materialSearch') }}<span class="opening-detail__search-control"><MomInput v-model="materialKeyword" :maxlength="200" /><MomButton type="button" variant="outline" :disabled="loading" @click="searchMaterialOptions">{{ tForOwner('system', 'system.common.search') }}</MomButton></span></label>
+          <label class="opening-detail__field">{{ t('wms.opening.location') }}<MomSelect v-model="form.locationId" :options="visibleLocations.map(l => ({ value: l.id, label: `${l.code} · ${l.name}` }))" :placeholder="t('wms.opening.selectLocation')" /></label>
+          <label class="opening-detail__field">{{ t('wms.opening.locationSearch') }}<MomInput v-model="locationKeyword" :maxlength="200" /></label>
+        </div>
+        <div class="opening-detail__fields opening-detail__fields--inventory">
+          <label class="opening-detail__field">{{ t('wms.opening.batch') }}<MomInput v-model="form.batchCode" :maxlength="128" /></label>
+          <label class="opening-detail__field">{{ t('wms.opening.sn') }}<MomInput v-model="form.snCode" :maxlength="128" /></label>
+          <label class="opening-detail__field">{{ t('wms.opening.quantity') }}<MomInput v-model="form.quantity" type="number" min="0.000001" step="0.000001" /></label>
+          <label class="opening-detail__field">{{ t('wms.opening.quality') }}<MomSelect v-model="form.qualityStatus" :options="['PENDING','QUALIFIED','RESTRICTED','REJECTED'].map(value => ({ value, label: t(`wms.inventory.quality.${value.toLowerCase()}` as Parameters<typeof t>[0]) }))" /></label>
+          <label class="opening-detail__field">{{ t('wms.opening.warehouseStatus') }}<MomSelect v-model="form.warehouseStatus" :options="[{ value:'NORMAL',label:t('wms.inventory.warehouse.normal') },{ value:'FROZEN',label:t('wms.inventory.warehouse.frozen') }]" /></label>
+        </div>
+        <div class="opening-detail__form-actions">
+          <MomButton type="submit" :disabled="saving">{{ editingLineId ? tForOwner('system', 'system.common.save') : t('wms.opening.addLine') }}</MomButton>
+          <MomButton v-if="editingLineId" type="button" variant="outline" :disabled="saving" @click="clear">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
+        </div>
       </form>
-      <MomDataTable :rows="detail?.lines ?? []" :columns="columns" :empty-text="tForOwner('system', 'system.common.empty')">
+      <p v-if="canPost && !detail?.lines.length" class="opening-detail__post-hint" role="status">{{ t('wms.opening.postRequiresLines') }}</p>
+      <MomDataTable v-if="detail" :rows="detail.lines" :columns="columns" :empty-text="detail.lines.length ? tForOwner('system', 'system.common.empty') : t('wms.opening.emptyLines')">
         <template #cell-qualityStatus="{ row }">{{ t(`wms.inventory.quality.${row.qualityStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
         <template #cell-warehouseStatus="{ row }">{{ t(`wms.inventory.warehouse.${row.warehouseStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
         <template #cell-actions="{ row }"><template v-if="canWrite"><MomButton mode="text" :disabled="saving" @click="edit(row)">{{ tForOwner('system', 'system.common.edit') }}</MomButton><MomButton mode="text" :disabled="saving" @click="deleting = row">{{ tForOwner('system', 'system.common.delete') }}</MomButton></template></template>

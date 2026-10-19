@@ -78,7 +78,7 @@ export type MessageKey =
   | 'wms.opening.postedResult' | 'wms.opening.postFailed' | 'wms.opening.activate'
   | 'wms.opening.activated' | 'wms.opening.activateFailed' | 'wms.opening.verifyInventory'
   | 'wms.opening.lines' | 'wms.opening.initializing' | 'wms.opening.pendingActivation' | 'wms.opening.active'
-  | 'wms.opening.materialSearch' | 'wms.opening.locationSearch'
+  | 'wms.opening.materialSearch' | 'wms.opening.locationSearch' | 'wms.opening.emptyLines' | 'wms.opening.postRequiresLines'
   | 'wms.opening.activationConfirm' | 'wms.opening.activationHint'
   | 'wms.opening.deleteDocumentConfirm'
   | 'system.coderules.composition'

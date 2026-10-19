@@ -32,7 +32,7 @@ export interface InventoryDetail {
   quantity: string;
 }
 
-export interface OverviewFilter { materialId?: string; keyword?: string; warehouseId?: string }
+export interface OverviewFilter { materialId?: string; keyword?: string; warehouseId?: string; warehouseCode?: string }
 export interface DetailFilter {
   materialId?: string; warehouseId?: string; locationId?: string;
   batchCode?: string; snCode?: string;

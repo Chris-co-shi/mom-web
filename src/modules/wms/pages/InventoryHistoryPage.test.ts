@@ -20,8 +20,8 @@ function mountPage() {
   return mount(InventoryHistoryPage, { global: { stubs: {
     PageContainer: { template: '<div><slot /></div>' },
     MomManagementHeader: { template: '<div><slot name="actions" /></div>' },
-    MomListSurface: { template: '<div><slot /><slot name="footer" /></div>' },
-    MomDataTable: { props: ['rows'], template: '<div><div v-for="row in rows" :key="row.id"><slot name="cell-deltaQuantity" :row="row" /><slot name="cell-actions" :row="row" /></div></div>' },
+    MomListSurface: { template: '<div data-test="history-surface"><slot name="toolbar" /><slot /><slot name="footer" /></div>' },
+    MomDataTable: { props: ['rows'], template: '<div><div v-for="row in rows" :key="row.id"><slot name="cell-materialCode" :row="row" /><slot name="cell-beforeQuantity" :row="row" /><slot name="cell-afterQuantity" :row="row" /><slot name="cell-deltaQuantity" :row="row" /><slot name="cell-actions" :row="row" /></div></div>' },
     MomCrudPagination: { emits: ['page', 'size'], template: '<button data-test="next" @click="$emit(\'page\', 2)">next</button>' },
     MomModal: { props: ['open'], template: '<div v-if="open"><slot /><slot name="footer" /></div>' },
     MomButton: { template: '<button><slot /></button>' },
@@ -39,7 +39,8 @@ beforeEach(() => {
 it('深链接预填但首次不请求，主动查询后保留负号并打开全部分录', async () => {
   const wrapper = mountPage();
   expect(vi.mocked(searchInventoryHistory)).not.toHaveBeenCalled();
-  expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('1001');
+  expect(wrapper.find('[data-test="history-surface"] form').exists()).toBe(true);
+  expect(wrapper.findAll('label').some(label => label.text() === 'wms.inventory.materialId')).toBe(false);
   await wrapper.get('form').trigger('submit'); await flushPromises();
   expect(searchInventoryHistory).toHaveBeenCalledWith(1, 20, expect.objectContaining({ materialId: '1001', batchCode: 'B1' }), expect.any(AbortSignal));
   expect(wrapper.text()).toContain('-2.000000');
@@ -57,12 +58,25 @@ it('翻页仍由服务端查询，重置清空条件及结果', async () => {
   expect(wrapper.text()).toContain('wms.inventory.history.queryfirst');
   expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('');
 });
+it('可按物料名称或编码、仓库编码和库位编码查询，修改物料会解除深链接 ID 限定', async () => {
+  const wrapper = mountPage();
+  const inputs = wrapper.findAll('label');
+  await inputs.find(label => label.text() === 'wms.inventory.material')!.find('input').setValue('MAT-1');
+  await inputs.find(label => label.text() === 'wms.inventory.warehouse')!.find('input').setValue('WH-1');
+  await inputs.find(label => label.text() === 'wms.inventory.location')!.find('input').setValue('LOC-1');
+  await wrapper.get('form').trigger('submit'); await flushPromises();
+  expect(searchInventoryHistory).toHaveBeenCalledWith(1, 20, expect.objectContaining({
+    materialKeyword: 'MAT-1', warehouseCode: 'WH-1', locationCode: 'LOC-1', batchCode: 'B1',
+  }), expect.any(AbortSignal));
+  expect(vi.mocked(searchInventoryHistory).mock.calls[0]![2]).not.toHaveProperty('materialId');
+});
 it('查询失败与权限不足提供不同反馈', async () => {
   vi.mocked(searchInventoryHistory).mockRejectedValueOnce(new ApiError('forbidden', { kind: 'forbidden', code: 'forbidden' }))
     .mockRejectedValueOnce(new Error('database unavailable'));
   const wrapper = mountPage();
   await wrapper.get('form').trigger('submit'); await flushPromises();
   expect(wrapper.get('[role="alert"]').text()).toContain('wms.inventory.forbidden');
+  expect(wrapper.find('[data-test="next"]').exists()).toBe(false);
   await wrapper.get('form').trigger('submit'); await flushPromises();
   expect(wrapper.get('[role="alert"]').text()).toContain('wms.inventory.loadFailed');
 });
@@ -76,4 +90,21 @@ it('连续查询时较旧响应不能覆盖新页结果', async () => {
   resolveOld({ records: [], pageNo: 1, pageSize: 20, total: 0, totalPages: 0 });
   await flushPromises();
   expect(wrapper.text()).toContain('-2.000000');
+});
+it('旧历史快照的 NULL 显示未知占位，Decimal String 保留原精度', async () => {
+  const oldEntry = { ...entry, materialId: null, materialCode: null, beforeQuantity: null,
+    afterQuantity: null, deltaQuantity: '-0.000001' };
+  vi.mocked(searchInventoryHistory).mockResolvedValueOnce({ records: [oldEntry], pageNo: 1,
+    pageSize: 20, total: 1, totalPages: 1 });
+  vi.mocked(getInventoryHistoryTransaction).mockResolvedValueOnce({ id: '123', transactionType: null,
+    sourceType: null, sourceId: null, operatorId: null, occurredAt: entry.occurredAt,
+    reasonCode: null, note: null, entries: [oldEntry] });
+  const wrapper = mountPage();
+  await wrapper.get('form').trigger('submit'); await flushPromises();
+  expect(wrapper.text()).toContain('-0.000001');
+  expect(wrapper.text().match(/wms\.inventory\.history\.missing/g)?.length).toBeGreaterThanOrEqual(3);
+  await wrapper.findAll('button').find(button => button.text() === 'wms.inventory.history.transaction')!.trigger('click');
+  await flushPromises();
+  expect(wrapper.text()).toContain('-0.000001');
+  expect(wrapper.text()).toContain('wms.inventory.history.before wms.inventory.history.missing');
 });

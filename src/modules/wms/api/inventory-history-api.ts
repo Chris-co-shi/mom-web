@@ -2,9 +2,10 @@ import { apiPath } from '../../../shared/api/config';
 import type { PageResult } from '../../../shared/api/contracts';
 import { httpClient } from '../../../shared/api/http-client';
 
-/** 时间区间左闭右开，最长 366 天；所有过滤字段为精确匹配。 */
+/** 时间区间左闭右开，最长 366 天；关键字按历史快照模糊匹配，其余字段精确匹配。 */
 export interface InventoryHistoryFilter {
   materialId?: string; batchCode?: string; snCode?: string; warehouseId?: string; locationId?: string;
+  materialKeyword?: string; warehouseCode?: string; locationCode?: string;
   transactionType?: string; sourceType?: string; sourceId?: string; actor?: string;
   startTime: string; endTime: string;
 }

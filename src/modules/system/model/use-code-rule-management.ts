@@ -14,7 +14,8 @@ export type CodeRuleAction = 'revise' | 'enable' | 'disable';
 
 /** 管理页持有 Owner、分页和编辑上下文；读请求取消并防乱序，写请求只执行一次。 */
 export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuthority) {
-  const owner = ref<CodeRuleOwner>(owners[0]);
+  const visibleOwners = owners.filter(item => allowed(item.readAuthority));
+  const owner = ref<CodeRuleOwner>(visibleOwners[0] ?? owners[0]);
   const canRead = computed(() => allowed(owner.value.readAuthority));
   const canWrite = computed(() => canRead.value && allowed(owner.value.writeAuthority));
   const catalog = ref<CodeSegmentCatalogEntry[]>([]);
@@ -104,7 +105,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
   }
   async function reload(): Promise<void> { await Promise.all([loadCatalog(), loadList()]); }
   async function changeOwner(id: string): Promise<void> {
-    const next = owners.find(item => item.id === id);
+    const next = visibleOwners.find(item => item.id === id);
     if (!next || next.id === owner.value.id || saving.value || !await confirmDiscard()) return;
     resetEditor(); owner.value = next; filters.value = {}; historyCode.value = ''; pageNo.value = 1;
     feedback.value = null; notice.value = false; writeBlocked.value = !!uncertain;
@@ -193,7 +194,7 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
     finally { if (current === detailId) detailLoading.value = false; }
   }
   onBeforeUnmount(() => { catalogRequest?.abort(); listRequest?.abort(); detailRequest?.abort(); catalogId++; listId++; detailId++; resolveDiscard(false); });
-  return { owners, owner, canRead, canWrite, catalog, catalogLoading, catalogError, catalogReady, rows, loading, listError,
+  return { owners: visibleOwners, owner, canRead, canWrite, catalog, catalogLoading, catalogError, catalogReady, rows, loading, listError,
     pageNo, pageSize, total, totalPages, filters, historyCode, editorOpen, detailLoading, target, ruleCode, usageScenario, description, definition,
     dirty, saving, writeBlocked, feedback, notice, discardPending, unsupported, editable,
     reload, loadList, loadCatalog, changeOwner, open, close, search, page, size, showHistory, save, act, reconcile, confirmDiscard, resolveDiscard };

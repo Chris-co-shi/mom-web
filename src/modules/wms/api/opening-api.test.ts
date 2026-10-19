@@ -17,10 +17,13 @@ describe('opening inventory API', () => {
     expect(fetchMock.mock.calls[1]![0]).toBe('/wms/opening-documents/search');
     expect(JSON.parse(String(fetchMock.mock.calls[1]![1]?.body))).toEqual({ params: {}, pageNo: 2, pageSize: 20 });
 
+    await listOpeningDocuments(1, 20, '2001');
+    expect(JSON.parse(String(fetchMock.mock.calls[2]![1]?.body))).toEqual({ params: { warehouseId: '2001' }, pageNo: 1, pageSize: 20 });
+
     await addOpeningLine('doc/1', { materialId: '1001', locationId: '3001', batchCode: 'REAL-LOT',
       snCode: null, quantity: '2.50', qualityStatus: 'QUALIFIED', warehouseStatus: 'NORMAL' });
-    expect(fetchMock.mock.calls[2]![0]).toBe('/wms/opening-documents/doc%2F1/lines');
-    expect(JSON.parse(String(fetchMock.mock.calls[2]![1]?.body))).toEqual({ materialId: '1001', locationId: '3001',
+    expect(fetchMock.mock.calls[3]![0]).toBe('/wms/opening-documents/doc%2F1/lines');
+    expect(JSON.parse(String(fetchMock.mock.calls[3]![1]?.body))).toEqual({ materialId: '1001', locationId: '3001',
       batchCode: 'REAL-LOT', snCode: null, quantity: '2.50', qualityStatus: 'QUALIFIED', warehouseStatus: 'NORMAL' });
   });
 

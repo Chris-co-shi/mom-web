@@ -105,6 +105,17 @@ describe('Owner 隔离翻译', () => {
     expect(api.translateForOwner('mdm', key, { current: 1, pages: 3 })).toBe('系统第 1 / 3 页');
   });
 
+  it.each([false, true])('点号 Key 同时作为译文和父路径时仍显示译文（父 Key 后置：%s）', async parentLast => {
+    const api = await runtime();
+    await initialize(api);
+    bundles['zh-CN']!.wms = parentLast
+      ? { 'wms.inventory.warehouse.normal': '正常', 'wms.inventory.warehouse': '仓库' }
+      : { 'wms.inventory.warehouse': '仓库', 'wms.inventory.warehouse.normal': '正常' };
+    await api.ensureOwners(['wms']);
+    expect(api.translate('wms.inventory.warehouse')).toBe('仓库');
+    expect(api.translate('wms.inventory.warehouse.normal')).toBe('正常');
+  });
+
   it('不存在的 Key、未加载 Owner 及目标 Owner 缺失 Key 均返回原 Key', async () => {
     const api = await runtime();
     await initialize(api);

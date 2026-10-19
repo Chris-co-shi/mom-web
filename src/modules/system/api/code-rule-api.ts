@@ -17,6 +17,7 @@ export interface CodeRuleOwner {
 }
 export const codeRuleOwners: readonly CodeRuleOwner[] = [
   { id: 'mdm', label: 'MDM', basePath: '/mdm/code-rules', readAuthority: 'mdm:code-rule:read', writeAuthority: 'mdm:code-rule:write' },
+  { id: 'wms', label: 'WMS', basePath: '/wms/code-rules', readAuthority: 'wms:code-rule:read', writeAuthority: 'wms:code-rule:write' },
 ];
 const revisionPath = (owner: CodeRuleOwner, revisionId: string) => `${owner.basePath}/${encodeURIComponent(revisionId)}`;
 

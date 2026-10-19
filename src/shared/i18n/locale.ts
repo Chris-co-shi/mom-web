@@ -27,6 +27,7 @@ export const useLocaleStore = defineStore('mom-locale', {
     loadedOwners: {} as Record<string, I18nOwner[]>,
     loadingOwners: {} as Record<string, I18nOwner[]>,
     messagesByLocale: {} as Record<string, Partial<Record<I18nOwner, Record<string, string>>>>,
+    resolvedMessagesByLocale: {} as Record<string, Record<string, string>>,
     ready: false,
   }),
 });
@@ -63,6 +64,7 @@ function publishMessages(locale: string): void {
   }
   const merged = Object.fromEntries([...byKey].flatMap(([key, values]) =>
     values.size === 1 ? [[key, [...values][0]]] : []));
+  store.resolvedMessagesByLocale[locale] = merged;
   i18n.global.setLocaleMessage(locale, nestedMessages(merged));
 }
 
@@ -147,7 +149,12 @@ export function translate(key: MessageKey, params: MessageParams = {}): string {
   const value = names
     ? i18n.global.t(runtimeKey, names.map((name) => params[name] ?? ''))
     : i18n.global.t(runtimeKey);
-  return value === runtimeKey ? key : value;
+  if (value !== runtimeKey) return value;
+  const store = useLocaleStore();
+  const flatValue = store.resolvedMessagesByLocale[store.currentLocale]?.[normalizedKey];
+  if (flatValue === undefined) return key;
+  return flatValue.replace(/\{(\d+)\}/g, (_placeholder, index: string) =>
+    String(params[names?.[Number(index)] ?? index] ?? ''));
 }
 
 /**

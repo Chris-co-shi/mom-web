@@ -14,6 +14,6 @@ describe('System 编码规则正式入口', () => {
     const shell = appRoutes.find(entry => entry.path === '/');
     const route = shell?.children?.find(entry => entry.name === 'system-code-rules');
     expect(route?.path).toBe('system/code-rules');
-    expect(route?.meta).toMatchObject({ requiresAuth: true, navigationGroup: 'system', permissions: ['mdm:code-rule:read'], i18nOwners: ['system'] });
+    expect(route?.meta).toMatchObject({ requiresAuth: true, navigationGroup: 'system', permissions: ['mdm:code-rule:read', 'wms:code-rule:read'], permissionMode: 'any', i18nOwners: ['system'] });
   });
 });

@@ -5,7 +5,7 @@ vi.mock('../../../shared/api/http-client', () => ({ httpClient: { result: vi.fn(
 
 describe('编码规则真实 API 契约', () => {
   it('V1 只开放 MDM，所有动作使用 revision ID 和规则级版本', async () => {
-    expect(codeRuleOwners.map(owner => owner.id)).toEqual(['mdm']);
+    expect(codeRuleOwners.map(owner => owner.id)).toEqual(['mdm', 'wms']);
     const owner = codeRuleOwners[0];
     const definition = { schemaVersion: 1 as const, segments: [{ id: 'seg_1', type: 'LITERAL', params: { value: 'M-' } }] };
     await codeRuleApi.catalog(owner);

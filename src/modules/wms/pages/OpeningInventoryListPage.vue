@@ -20,6 +20,7 @@ const router = useRouter(), { t, tForOwner } = useLocale();
 const rows = ref<OpeningDocument[]>([]), warehouses = ref<MasterRow[]>([]), warehouseId = ref('');
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
 const loading = ref(false), saving = ref(false), error = ref(''), success = ref('');
+const unknownWarehouseId = ref('');
 const deleting = ref<OpeningDocument>();
 const canCreate = computed(() => hasAuthority('wms:opening:write') && hasAuthority('mdm:warehouse:read'));
 const columns = computed<MomColumn[]>(() => [
@@ -31,7 +32,7 @@ const columns = computed<MomColumn[]>(() => [
   { key: 'actions', title: tForOwner('system', 'system.common.actions'), width: 120, resizable: false },
 ]);
 async function load(next = pageNo.value, size = pageSize.value): Promise<void> {
-  loading.value = true; error.value = '';
+  loading.value = true; error.value = unknownWarehouseId.value ? t('wms.opening.createUnknown') : '';
   try {
     const [documentPage, warehousePage] = await Promise.all([
       listOpeningDocuments(next, size), canCreate.value ? searchCatalog('warehouses', 1, 100, { status: 'ENABLED' }) : Promise.resolve({ records: [] as MasterRow[] }),
@@ -43,15 +44,30 @@ async function load(next = pageNo.value, size = pageSize.value): Promise<void> {
   } finally { loading.value = false; }
 }
 async function create(): Promise<void> {
-  if (!canCreate.value || saving.value || !warehouseId.value) return;
+  if (!canCreate.value || saving.value || !warehouseId.value || unknownWarehouseId.value) return;
   saving.value = true; error.value = ''; success.value = '';
   try { const result = await createOpeningDocument(warehouseId.value); await router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: result.document.id } }); }
   catch (cause) {
-    error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden')
+    if (isApiError(cause) && cause.resultUnknown) unknownWarehouseId.value = warehouseId.value;
+    error.value = unknownWarehouseId.value ? t('wms.opening.createUnknown')
+      : isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden')
       : isApiError(cause) && cause.code === 'wms.opening.reference_invalid' ? cause.message
         : t('wms.opening.writeFailed');
   }
   finally { saving.value = false; }
+}
+async function reconcile(): Promise<void> {
+  if (!unknownWarehouseId.value || loading.value) return;
+  loading.value = true;
+  try {
+    const page = await listOpeningDocuments(1, 20, unknownWarehouseId.value);
+    if (page.records.length) {
+      const document = page.records[0];
+      unknownWarehouseId.value = ''; error.value = '';
+      await router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: document.id } });
+    }
+  } catch { error.value = t('wms.opening.createUnknown'); }
+  finally { loading.value = false; }
 }
 function open(row: OpeningDocument): void { void router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: row.id } }); }
 async function remove(): Promise<void> {
@@ -69,11 +85,11 @@ onMounted(() => { void load(); });
     <MomManagementHeader title-id="wms-opening-title" :title="t('wms.opening.title')" :description="t('wms.opening.hint')">
       <template #actions>
         <MomSelect v-if="canCreate" v-model="warehouseId" :options="warehouses.map(w => ({ value: w.id, label: `${w.code} · ${w.name}` }))" :placeholder="t('wms.opening.selectWarehouse')" :disabled="saving || loading" />
-        <MomButton v-if="canCreate" :disabled="saving || loading || !warehouseId" @click="create">{{ t('wms.opening.create') }}</MomButton>
-        <MomButton variant="outline" :disabled="loading" @click="load">{{ tForOwner('system', 'system.common.refresh') }}</MomButton>
+        <MomButton v-if="canCreate" :disabled="saving || loading || !warehouseId || !!unknownWarehouseId" @click="create">{{ t('wms.opening.create') }}</MomButton>
+        <MomButton variant="outline" :disabled="loading" @click="load()">{{ tForOwner('system', 'system.common.refresh') }}</MomButton>
       </template>
     </MomManagementHeader>
-    <p v-if="error" role="alert" class="inventory-page__error">{{ error }}</p><p v-if="success" role="status">{{ success }}</p>
+    <p v-if="error" role="alert" class="inventory-page__error">{{ error }} <MomButton v-if="unknownWarehouseId" variant="outline" :disabled="loading" @click="reconcile">{{ tForOwner('system', 'system.common.refresh') }}</MomButton></p><p v-if="success" role="status">{{ success }}</p>
     <MomListSurface :title="t('wms.opening.title')" :hint="t('wms.opening.hint')" :loading="loading" :loading-text="tForOwner('system', 'system.common.loading')">
       <MomDataTable :rows="rows" :columns="columns" :empty-text="tForOwner('system', 'system.common.empty')">
         <template #cell-status="{ row }">{{ t(row.status === 'DRAFT' ? 'wms.opening.draft' : 'wms.opening.posted') }}</template>

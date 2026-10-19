@@ -20,14 +20,17 @@ const queryValue = (key: string) => typeof route.query[key] === 'string' ? route
 const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const today = new Date(), monthAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 29);
 const defaultStart = localDate(monthAgo), defaultEnd = localDate(today);
-const filter = reactive({ materialId: queryValue('materialId'), batchCode: queryValue('batchCode'),
-  snCode: queryValue('snCode'), warehouseId: queryValue('warehouseId'), locationId: queryValue('locationId'),
+const filter = reactive({ materialId: queryValue('materialId'), materialKeyword: queryValue('materialKeyword'),
+  batchCode: queryValue('batchCode'), snCode: queryValue('snCode'),
+  warehouseId: queryValue('warehouseId'), warehouseCode: queryValue('warehouseCode'),
+  locationId: queryValue('locationId'), locationCode: queryValue('locationCode'),
   transactionType: queryValue('transactionType'), sourceType: queryValue('sourceType'),
   sourceId: queryValue('sourceId'), actor: queryValue('actor'),
   startDate: defaultStart, endDate: defaultEnd });
 const rows = ref<InventoryHistoryEntry[]>([]), pageNo = ref(1), pageSize = ref(20), total = ref(0);
 const searched = ref(false), loading = ref(false), error = ref('');
 const selected = ref<InventoryHistoryTransaction>(), detailLoading = ref(false), detailError = ref('');
+const inheritedScope = computed(() => !!(filter.materialId || filter.warehouseId || filter.locationId));
 let controller: AbortController | undefined, detailController: AbortController | undefined, sequence = 0, detailSequence = 0;
 const text = (value: string | null | undefined) => value || t('wms.inventory.history.missing');
 const tagText = (value: string | null, materialId: string | null) => value || (materialId ? '—' : text(value));
@@ -91,6 +94,7 @@ function reset(): void {
   filter.startDate = defaultStart; filter.endDate = defaultEnd;
   rows.value = []; total.value = 0; pageNo.value = 1;
 }
+function clearTechnicalScope(key: 'materialId' | 'warehouseId' | 'locationId'): void { filter[key] = ''; }
 async function openTransaction(id: string): Promise<void> {
   const current = ++detailSequence;
   detailController?.abort(); detailController = new AbortController();
@@ -109,33 +113,48 @@ onScopeDispose(() => { ++sequence; ++detailSequence; controller?.abort(); detail
 
 <template>
   <PageContainer>
-    <section class="inventory-page" aria-labelledby="wms-history-title">
+    <section class="inventory-page inventory-page--history" aria-labelledby="wms-history-title">
       <MomManagementHeader title-id="wms-history-title" :title="t('wms.inventory.history.title')"
         :description="t('wms.inventory.history.hint')">
         <template #actions><MomButton variant="outline" @click="router.push({ name: ROUTE_NAMES.wmsInventoryOverview })">{{ t('wms.inventory.back') }}</MomButton></template>
       </MomManagementHeader>
-      <form class="inventory-page__filters" @submit.prevent="load(1)">
-        <label>{{ t('wms.inventory.materialId') }}<MomInput v-model="filter.materialId" /></label>
-        <label>{{ t('wms.inventory.batch') }}<MomInput v-model="filter.batchCode" /></label>
-        <label>{{ t('wms.inventory.sn') }}<MomInput v-model="filter.snCode" /></label>
-        <label>{{ t('wms.inventory.warehouseId') }}<MomInput v-model="filter.warehouseId" /></label>
-        <label>{{ t('wms.inventory.locationId') }}<MomInput v-model="filter.locationId" /></label>
-        <label>{{ t('wms.inventory.history.type') }}<MomSelect v-model="filter.transactionType" :options="[
-          { value: '', label: t('wms.inventory.history.alltypes') },
-          ...['OPENING','FREEZE','UNFREEZE','LOCATION_TRANSFER','RECEIPT'].map(value => ({ value, label: value }))]" /></label>
-        <label>{{ t('wms.inventory.history.source') }}<MomInput v-model="filter.sourceType" /></label>
-        <label>{{ t('wms.inventory.history.sourceid') }}<MomInput v-model="filter.sourceId" /></label>
-        <label>{{ t('wms.inventory.history.actor') }}<MomInput v-model="filter.actor" /></label>
-        <label>{{ t('wms.inventory.history.start') }}<MomInput v-model="filter.startDate" type="date" required /></label>
-        <label>{{ t('wms.inventory.history.end') }}<MomInput v-model="filter.endDate" type="date" required /></label>
-        <MomButton type="submit" :disabled="loading">{{ tForOwner('system', 'system.common.search') }}</MomButton>
-        <MomButton type="button" variant="outline" @click="reset">{{ t('wms.inventory.history.reset') }}</MomButton>
-      </form>
       <p v-if="error" role="alert" class="inventory-page__error">{{ error }}</p>
-      <p v-if="!searched" role="status">{{ t('wms.inventory.history.queryfirst') }}</p>
-      <MomListSurface v-if="searched" :title="t('wms.inventory.history.title')" :hint="t('wms.inventory.history.hint')"
+      <MomListSurface :title="t('wms.inventory.history.title')" :hint="t('wms.inventory.history.hint')"
         :loading="loading" :loading-text="tForOwner('system', 'system.common.loading')">
-        <MomDataTable :rows="rows" :columns="columns" :empty-text="tForOwner('system', 'system.common.empty')">
+        <template #toolbar>
+          <form class="inventory-history__filters" @submit.prevent="load(1)">
+            <div class="inventory-history__primary">
+              <label>{{ t('wms.inventory.material') }}<MomInput v-model="filter.materialKeyword" type="search"
+                :placeholder="t('wms.inventory.materialSearch')" @update:model-value="clearTechnicalScope('materialId')" /></label>
+              <label>{{ t('wms.inventory.warehouse') }}<MomInput v-model="filter.warehouseCode" type="search"
+                :placeholder="t('wms.inventory.warehouseCodeSearch')" @update:model-value="clearTechnicalScope('warehouseId')" /></label>
+              <label>{{ t('wms.inventory.batch') }}<MomInput v-model="filter.batchCode" /></label>
+              <label>{{ t('wms.inventory.sn') }}<MomInput v-model="filter.snCode" /></label>
+              <label>{{ t('wms.inventory.history.start') }}<MomInput v-model="filter.startDate" type="date" required /></label>
+              <label>{{ t('wms.inventory.history.end') }}<MomInput v-model="filter.endDate" type="date" required /></label>
+            </div>
+            <details class="inventory-history__advanced">
+              <summary>{{ t('wms.inventory.history.morefilters') }}</summary>
+              <div class="inventory-history__advanced-fields">
+                <label>{{ t('wms.inventory.location') }}<MomInput v-model="filter.locationCode" type="search"
+                  :placeholder="t('wms.inventory.locationCodeSearch')" @update:model-value="clearTechnicalScope('locationId')" /></label>
+                <label>{{ t('wms.inventory.history.type') }}<MomSelect v-model="filter.transactionType" :options="[
+                  { value: '', label: t('wms.inventory.history.alltypes') },
+                  ...['OPENING','FREEZE','UNFREEZE','LOCATION_TRANSFER','RECEIPT'].map(value => ({ value, label: value }))]" /></label>
+                <label>{{ t('wms.inventory.history.source') }}<MomInput v-model="filter.sourceType" /></label>
+                <label>{{ t('wms.inventory.history.sourceid') }}<MomInput v-model="filter.sourceId" /></label>
+                <label>{{ t('wms.inventory.history.actor') }}<MomInput v-model="filter.actor" /></label>
+              </div>
+            </details>
+            <div class="inventory-history__actions">
+              <span v-if="inheritedScope" class="inventory-history__scope">{{ t('wms.inventory.history.inherited') }}</span>
+              <MomButton type="button" variant="outline" @click="reset">{{ t('wms.inventory.history.reset') }}</MomButton>
+              <MomButton type="submit" :disabled="loading">{{ tForOwner('system', 'system.common.search') }}</MomButton>
+            </div>
+          </form>
+        </template>
+        <p v-if="!searched" role="status" class="inventory-history__empty">{{ t('wms.inventory.history.queryfirst') }}</p>
+        <MomDataTable v-else-if="!error" :rows="rows" :columns="columns" :empty-text="tForOwner('system', 'system.common.empty')">
           <template #cell-transactionType="{ row }">{{ text(row.transactionType) }}</template>
           <template #cell-materialCode="{ row }">{{ text(row.materialCode) }}</template>
           <template #cell-materialName="{ row }">{{ text(row.materialName) }}</template>
@@ -153,7 +172,7 @@ onScopeDispose(() => { ++sequence; ++detailSequence; controller?.abort(); detail
           <template #cell-operatorId="{ row }">{{ text(row.operatorId) }}</template>
           <template #cell-actions="{ row }"><MomButton mode="text" @click="openTransaction(row.transactionId)">{{ t('wms.inventory.history.transaction') }}</MomButton></template>
         </MomDataTable>
-        <template #footer><MomCrudPagination :page-no="pageNo" :page-size="pageSize" :total="total"
+        <template v-if="searched && !error" #footer><MomCrudPagination :page-no="pageNo" :page-size="pageSize" :total="total"
           :summary="`${total}`" :page-size-label="tForOwner('system', 'system.common.pageSize')"
           :previous-label="tForOwner('system', 'system.common.previous')" :next-label="tForOwner('system', 'system.common.next')"
           :jump-label="tForOwner('system', 'system.common.jump')" :go-label="tForOwner('system', 'system.common.go')"

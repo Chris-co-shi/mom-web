@@ -1,5 +1,23 @@
 .inventory-page { display: grid; gap: 1.25rem; }
+.inventory-page__overview-filters { flex: 0 1 auto; }
 .inventory-page__error { display: flex; align-items: center; gap: 0.75rem; }
+.inventory-page--history .mom-list-surface__toolbar { display: grid; align-items: start; }
+.inventory-history__filters { display: grid; width: 100%; max-width: 76rem; min-width: 0; gap: var(--mom-space-4); }
+.inventory-history__primary, .inventory-history__advanced-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--mom-space-3) var(--mom-space-4); }
+.inventory-history__filters label { display: grid; min-width: 0; gap: var(--mom-space-2); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.inventory-history__filters label > * { min-width: 0; width: 100%; }
+.inventory-history__advanced { min-width: 0; }
+.inventory-history__advanced summary { width: fit-content; color: var(--mom-color-brand); cursor: pointer; font-size: var(--mom-font-size-sm); }
+.inventory-history__advanced-fields { padding-top: var(--mom-space-3); }
+.inventory-history__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--mom-space-2); }
+.inventory-history__scope { margin-right: auto; color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.inventory-history__empty { margin: 0; padding: var(--mom-space-6); color: var(--mom-color-text-secondary); text-align: center; }
+@media (max-width: 1000px) {
+  .inventory-history__primary, .inventory-history__advanced-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .inventory-history__primary, .inventory-history__advanced-fields { grid-template-columns: minmax(0, 1fr); }
+}
 .opening-detail { min-width: 0; }
 .opening-detail__summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--mom-space-5); padding: var(--mom-space-4) var(--mom-space-5); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-surface); background: var(--mom-color-bg-surface); box-shadow: var(--mom-shadow-surface); }
 .opening-detail__document { display: grid; min-width: 0; gap: var(--mom-space-1); }

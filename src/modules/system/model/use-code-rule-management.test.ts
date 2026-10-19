@@ -30,6 +30,14 @@ function setup(allowed: (authority: string) => boolean = () => true) {
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; }
 
 describe('编码规则编辑生命周期与失败语义', () => {
+  it('只有 WMS 规则权限时默认选择 WMS Owner', async () => {
+    const { state, wrapper } = setup(authority => authority.startsWith('wms:'));
+    await state.reload();
+    expect(state.owner.value.id).toBe('wms');
+    expect(state.owners.map(item => item.id)).toEqual(['wms']);
+    expect(codeRuleApi.search).toHaveBeenLastCalledWith(codeRuleOwners[1], expect.anything(), expect.any(AbortSignal));
+    wrapper.unmount();
+  });
   it('使用场景必填、说明限长，纯元信息编辑也参与未保存保护', async () => {
     const { state, wrapper } = setup(); await state.reload(); await state.open(); state.ruleCode.value = 'metadata';
     const before = vi.mocked(codeRuleApi.create).mock.calls.length;
@@ -53,8 +61,8 @@ describe('编码规则编辑生命周期与失败语义', () => {
     expect(state.definition.value).toEqual(definition);
     await state.changeOwner('test_owner');
     expect(state.target.value).toBeNull();
-    expect(codeRuleApi.catalog).toHaveBeenLastCalledWith(owners[1], expect.any(AbortSignal));
-    expect(codeRuleApi.search).toHaveBeenLastCalledWith(owners[1], expect.objectContaining({ params: {} }), expect.any(AbortSignal));
+    expect(codeRuleApi.catalog).toHaveBeenLastCalledWith(owners[2], expect.any(AbortSignal));
+    expect(codeRuleApi.search).toHaveBeenLastCalledWith(owners[2], expect.objectContaining({ params: {} }), expect.any(AbortSignal));
     expect(state.owner.value.readAuthority).toBe('test_owner:rules:read');
     wrapper.unmount();
   });

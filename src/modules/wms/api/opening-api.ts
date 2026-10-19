@@ -21,8 +21,8 @@ export interface OpeningLineInput {
   qualityStatus: QualityStatus; warehouseStatus: WarehouseStatus; quantity: string;
 }
 const path = (suffix = '') => apiPath('wms', `/opening-documents${suffix}`);
-export function listOpeningDocuments(pageNo: number, pageSize: number): Promise<PageResult<OpeningDocument>> {
-  return httpClient.result({ path: path('/search'), method: 'POST', body: { params: {}, pageNo, pageSize } });
+export function listOpeningDocuments(pageNo: number, pageSize: number, warehouseId?: string): Promise<PageResult<OpeningDocument>> {
+  return httpClient.result({ path: path('/search'), method: 'POST', body: { params: warehouseId ? { warehouseId } : {}, pageNo, pageSize } });
 }
 export function getOpeningDocument(id: string): Promise<OpeningDetail> {
   return httpClient.result({ path: path(`/${encodeURIComponent(id)}`) });

@@ -9,10 +9,10 @@ beforeEach(() => { vi.mocked(httpClient.result).mockReset(); });
 describe('WMS 库存只读契约', () => {
   it('总览沿 Gateway 原路径提交物料和仓库筛选', async () => {
     vi.mocked(httpClient.result).mockResolvedValue({ records: [], pageNo: 1, pageSize: 20, total: 0, totalPages: 0 });
-    await searchInventoryOverview(1, 20, { materialId: '1001', warehouseId: '2001' });
+    await searchInventoryOverview(1, 20, { keyword: 'MAT', warehouseCode: 'WH-1' });
     expect(httpClient.result).toHaveBeenCalledWith(expect.objectContaining({
       path: '/wms/inventory/overview/search', method: 'POST',
-      body: { params: { materialId: '1001', warehouseId: '2001' }, pageNo: 1, pageSize: 20 },
+      body: { params: { keyword: 'MAT', warehouseCode: 'WH-1' }, pageNo: 1, pageSize: 20 },
     }));
   });
 

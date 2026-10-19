@@ -5,6 +5,8 @@
 export const ROUTE_NAMES = {
   wmsInventoryOverview: 'wms-inventory-overview',
   wmsInventoryDetails: 'wms-inventory-details',
+  wmsOpeningDocuments: 'wms-opening-documents',
+  wmsOpeningDetail: 'wms-opening-detail',
   mdmPlants: 'mdm-plants',
   mdmUom: 'mdm-uom',
   mdmCategories: 'mdm-categories',

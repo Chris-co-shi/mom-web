@@ -6,6 +6,7 @@ import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
+import InventoryTransferModal from './InventoryTransferModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { hasAuthority } from '../../auth/model/auth-permissions';
 import { MomButton, MomInput, MomSelect, MomTextarea } from '../../../shared/ui';
@@ -22,6 +23,7 @@ const rows = ref<InventoryDetail[]>([]);
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
 const loading = ref(false), saving = ref(false), error = ref(''), notice = ref('');
 const selected = ref<InventoryDetail>();
+const transferSelected = ref<InventoryDetail>();
 const activeFreezes = ref<InventoryFreeze[]>([]);
 const freezeQuantity = ref(''), freezeNote = ref(''), freezeReason = ref<FreezeReason>('WAREHOUSE_CHECK');
 const releaseQuantities = ref<Record<string, string>>({}), releaseNotes = ref<Record<string, string>>({});
@@ -34,6 +36,8 @@ const filter = reactive({
 let controller: AbortController | undefined, sequence = 0;
 const canFreeze = computed(() => hasAuthority('wms:inventory:freeze'));
 const canUnfreeze = computed(() => hasAuthority('wms:inventory:unfreeze'));
+const canTransfer = computed(() => hasAuthority('wms:inventory:transfer')
+  && hasAuthority('mdm:location:read') && hasAuthority('mdm:warehouse:read'));
 const reasonOptions = computed(() => (['PACKAGE_DAMAGE', 'STOCK_DISCREPANCY', 'WAREHOUSE_CHECK', 'SAFETY_HOLD', 'OTHER'] as const)
   .map(value => ({ value, label: reasonLabel(value) })));
 const columns = computed<MomColumn[]>(() => [
@@ -221,7 +225,11 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
         <MomDataTable :rows="rows" :columns="columns" :empty-text="tForOwner('system', 'system.common.empty')">
           <template #cell-qualityStatus="{ row }">{{ t(`wms.inventory.quality.${row.qualityStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
           <template #cell-warehouseStatus="{ row }">{{ t(`wms.inventory.warehouse.${row.warehouseStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
-          <template #cell-actions="{ row }"><MomButton mode="text" @click="openManagement(row)">{{ t('wms.inventory.freeze.action') }}</MomButton></template>
+          <template #cell-actions="{ row }">
+            <MomButton mode="text" @click="openManagement(row)">{{ t('wms.inventory.freeze.action') }}</MomButton>
+            <MomButton v-if="canTransfer && row.warehouseStatus === 'NORMAL'" mode="text"
+              @click="transferSelected = row">{{ t('wms.inventory.transfer.action') }}</MomButton>
+          </template>
         </MomDataTable>
         <template #footer><MomCrudPagination :page-no="pageNo" :page-size="pageSize" :total="total"
           :summary="`${total}`" :page-size-label="tForOwner('system', 'system.common.pageSize')"
@@ -256,6 +264,10 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
         </div>
         <template #footer><MomButton variant="outline" :disabled="saving" @click="selected = undefined">{{ tForOwner('system', 'system.common.close') }}</MomButton></template>
       </MomModal>
+      <InventoryTransferModal v-if="transferSelected" :balance="transferSelected"
+        @close="transferSelected = undefined"
+        @done="transferSelected = undefined; notice = t('wms.inventory.transfer.success'); load()"
+        @refresh="transferSelected = undefined; load()" />
     </section>
   </PageContainer>
 </template>

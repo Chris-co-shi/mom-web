@@ -107,3 +107,9 @@ export function unfreezeInventory(freezeId: string, input: { requestKey: string;
   return httpClient.result({ path: apiPath('wms', `/inventory/freezes/${encodeURIComponent(freezeId)}/unfreeze`),
     method: 'POST', body: input });
 }
+
+/** 同仓库库位移动；写请求由调用方使用稳定请求键，网络结果未知时不自动重试。 */
+export function transferInventory(input: { requestKey: string; balanceId: string;
+  targetLocationId: string; quantity: string }): Promise<{ transactionId: string }> {
+  return httpClient.result({ path: apiPath('wms', '/inventory/transfers'), method: 'POST', body: input });
+}

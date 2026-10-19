@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { httpClient } from '../../../shared/api/http-client';
-import { freezeInventory, searchActiveFreezes, searchInventoryDetails, searchInventoryOverview, unfreezeInventory } from './inventory-api';
+import { freezeInventory, searchActiveFreezes, searchInventoryDetails, searchInventoryOverview, transferInventory, unfreezeInventory } from './inventory-api';
 
 vi.mock('../../../shared/api/http-client', () => ({ httpClient: { result: vi.fn() } }));
 
@@ -45,5 +45,14 @@ describe('WMS 库存只读契约', () => {
       path: '/wms/inventory/freezes/freeze-1/unfreeze', method: 'POST',
       body: { requestKey: 'release-key', quantity: '1' },
     }));
+  });
+
+  it('库内移动走 /wms Gateway 路径并原样传递请求键', async () => {
+    vi.mocked(httpClient.result).mockResolvedValue({ transactionId: 'tx-1' });
+    await transferInventory({ requestKey: 'move-1', balanceId: 'balance-1', targetLocationId: 'location-2', quantity: '2.5' });
+    expect(httpClient.result).toHaveBeenCalledExactlyOnceWith({
+      path: '/wms/inventory/transfers', method: 'POST',
+      body: { requestKey: 'move-1', balanceId: 'balance-1', targetLocationId: 'location-2', quantity: '2.5' },
+    });
   });
 });

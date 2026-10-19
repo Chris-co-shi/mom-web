@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import InventoryDetailsPage from './InventoryDetailsPage.vue';
 import { searchActiveFreezes, searchInventoryDetails, freezeInventory, unfreezeInventory } from '../api/inventory-api';
 import { ApiError } from '../../../shared/api/errors';
+import { hasAuthority } from '../../auth/model/auth-permissions';
 
 const push = vi.fn();
 const detail = { id: 'balance-1', materialId: '1001', materialCode: 'MAT-1', materialName: '材料一', uomCode: 'kg',
@@ -12,7 +13,7 @@ vi.mock('vue-router', async original => ({ ...(await original<typeof import('vue
   useRouter: () => ({ push }), useRoute: () => ({ query: { warehouseId: '2001' } }) }));
 vi.mock('../../../shared/i18n/locale', () => ({ useLocale: () => ({ t: (key: string) => key,
   tForOwner: (_owner: string, key: string) => key }) }));
-vi.mock('../../auth/model/auth-permissions', () => ({ hasAuthority: () => true }));
+vi.mock('../../auth/model/auth-permissions', () => ({ hasAuthority: vi.fn(() => true) }));
 vi.mock('../api/inventory-api', () => ({ searchInventoryDetails: vi.fn(), searchActiveFreezes: vi.fn(),
   freezeInventory: vi.fn(), unfreezeInventory: vi.fn() }));
 
@@ -32,6 +33,7 @@ function mountPage() {
 }
 
 beforeEach(() => {
+  vi.mocked(hasAuthority).mockImplementation(() => true);
   push.mockReset();
   vi.mocked(searchInventoryDetails).mockResolvedValue({ records: [detail], pageNo: 1, pageSize: 20, total: 1, totalPages: 1 });
   vi.mocked(searchActiveFreezes).mockResolvedValue([]);
@@ -40,6 +42,11 @@ beforeEach(() => {
 });
 
 describe('WMS 实时库存明细冻结交互', () => {
+  it('只读用户看不到库内移动入口', async () => {
+    vi.mocked(hasAuthority).mockImplementation(authority => authority !== 'wms:inventory:transfer');
+    const wrapper = mountPage(); await flushPromises();
+    expect(wrapper.text()).not.toContain('wms.inventory.transfer.action');
+  });
   it('从期初跳转参数预填 warehouseId，并按明细余额查询有效限制', async () => {
     const wrapper = mountPage();
     await flushPromises();

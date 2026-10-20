@@ -43,3 +43,23 @@ it('创建结果未知时停止提交，手动刷新后复用原请求键安全�
   expect(createCount).toHaveBeenNthCalledWith(2,'fixed-request-key','2001',{locationIds:[],materialIds:[]});
   expect(push).toHaveBeenCalledWith({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:'count-1'}});
 });
+
+it('仓库库存未启用时展示后端具体原因',async()=>{
+  vi.mocked(listCounts).mockResolvedValue({records:[],pageNo:1,pageSize:20,total:0,totalPages:0});
+  vi.mocked(createCount).mockRejectedValue(new ApiError('请先完成期初建账并启用仓库库存',{
+    kind:'conflict',code:'wms.inventory.count_warehouse_inactive',status:409,
+  }));
+  const wrapper=mount(InventoryCountListPage,{global:{stubs:{
+    PageContainer:{template:'<div><slot /></div>'},
+    MomManagementHeader:{template:'<div><slot name="actions" /></div>'},
+    MomListSurface:{template:'<div><slot /><slot name="footer" /></div>'},
+    MomDataTable:{template:'<div />'},MomCrudPagination:{template:'<div />'},
+    MomSelect:{props:['options'],emits:['update:modelValue'],template:'<select @change="$emit(\'update:modelValue\', $event.target.value)"><option value="" /><option v-for="item in options" :value="item.value">{{ item.label }}</option></select>'},
+    MomButton:{props:['disabled'],template:'<button :disabled="disabled"><slot /></button>'},
+  }}});
+  await flushPromises();
+  await wrapper.get('select').setValue('2001');
+  await wrapper.findAll('button').find(item=>item.text()==='wms.inventory.count.create')!.trigger('click');
+  await flushPromises();
+  expect(wrapper.get('[role="alert"]').text()).toContain('请先完成期初建账并启用仓库库存');
+});

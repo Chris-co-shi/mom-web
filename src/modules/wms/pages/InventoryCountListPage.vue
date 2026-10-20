@@ -48,7 +48,8 @@ async function create():Promise<void> {
     requestKey.value='';
     await router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:detail.task.id}}); }
   catch(cause) { unknown.value=isApiError(cause)&&cause.resultUnknown;
-    error.value=unknown.value?t('wms.inventory.count.unknown'):t('wms.inventory.count.writefailed'); }
+    error.value=unknown.value?t('wms.inventory.count.unknown')
+      :isApiError(cause)&&cause.message?cause.message:t('wms.inventory.count.writefailed'); }
   finally { saving.value=false; }
 }
 function open(row:CountSummary):void { void router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:row.id}}); }

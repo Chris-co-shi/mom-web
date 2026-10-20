@@ -1,7 +1,7 @@
 import { computed, onScopeDispose, ref } from 'vue';
 import { hasAuthorities } from '../../auth';
 import type { UserResponse } from '../api/users-api';
-import { getUser, getUserRoles, replaceUserRoles } from '../api/users-api';
+import { getUserRoles, replaceUserRoles } from '../api/users-api';
 import { searchRoles, type RoleResponse } from '../api/roles-api';
 import { userFeedback, type UserFeedback } from './user-feedback';
 
@@ -92,17 +92,10 @@ export function useUserRoleAssignment() {
     controller?.abort();
     controller = new AbortController();
     try {
-      const [firstUser, page] = await Promise.all([
-        getUser(user.id, controller.signal), searchRoles(1, PAGE_SIZE, controller.signal),
+      const [currentRoles, page] = await Promise.all([
+        getUserRoles(user.id, controller.signal), searchRoles(1, PAGE_SIZE, controller.signal),
       ]);
-      const currentRoles = await getUserRoles(user.id, controller.signal);
-      const freshUser = await getUser(user.id, controller.signal);
       if (disposed || current !== sequence) return;
-      if (firstUser.version !== freshUser.version) {
-        error.value = { key: 'iam.users.conflict' };
-        return;
-      }
-      target.value = freshUser;
       assigned.value = currentRoles;
       const currentIds = currentRoles.map((role) => role.id);
       selectedIds.value = preserveUnknown ? [...(uncertainSelection ?? currentIds)] : currentIds;
@@ -137,7 +130,7 @@ export function useUserRoleAssignment() {
     error.value = undefined;
     notice.value = undefined;
     try {
-      const result = await replaceUserRoles(target.value.id, [...selectedIds.value], target.value.version);
+      const result = await replaceUserRoles(target.value.id, [...selectedIds.value]);
       if (disposed) return;
       assigned.value = result;
       selectedIds.value = result.map((role) => role.id);

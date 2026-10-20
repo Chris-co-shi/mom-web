@@ -92,11 +92,16 @@ export function useUserRoleAssignment() {
     controller?.abort();
     controller = new AbortController();
     try {
-      const [freshUser, currentRoles, page] = await Promise.all([
-        getUser(user.id, controller.signal), getUserRoles(user.id, controller.signal),
-        searchRoles(1, PAGE_SIZE, controller.signal),
+      const [firstUser, page] = await Promise.all([
+        getUser(user.id, controller.signal), searchRoles(1, PAGE_SIZE, controller.signal),
       ]);
+      const currentRoles = await getUserRoles(user.id, controller.signal);
+      const freshUser = await getUser(user.id, controller.signal);
       if (disposed || current !== sequence) return;
+      if (firstUser.version !== freshUser.version) {
+        error.value = { key: 'iam.users.conflict' };
+        return;
+      }
       target.value = freshUser;
       assigned.value = currentRoles;
       const currentIds = currentRoles.map((role) => role.id);

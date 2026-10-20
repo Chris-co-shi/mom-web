@@ -76,7 +76,7 @@ describe('角色整体权限草稿', () => {
     expect(m.selectedIds.value).toEqual(['a', 'b']);
     await m.review(); expect(m.stage.value).toBe('review');
     await m.submit();
-    expect(replaceRolePermissions).toHaveBeenCalledExactlyOnceWith('r', ['a', 'b'], 1);
+    expect(replaceRolePermissions).toHaveBeenCalledExactlyOnceWith('r', ['a', 'b']);
     expect(m.opened.value).toBe(false);
     scope.stop();
   });

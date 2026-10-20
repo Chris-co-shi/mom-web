@@ -6,7 +6,7 @@ export type CountStatus = 'DRAFT' | 'COUNTING' | 'CONFIRMED' | 'COMPLETED' | 'CA
 export type QualityStatus = 'PENDING' | 'QUALIFIED' | 'RESTRICTED' | 'REJECTED';
 export type WarehouseStatus = 'NORMAL' | 'FROZEN';
 export interface CountTask {
-  id: string; taskNo: string; warehouseId: string; warehouseCode: string;
+  id: string; taskNo: string; requestKey: string; warehouseId: string; warehouseCode: string;
   locationIds: string[]; materialIds: string[]; status: CountStatus; transactionId: string | null;
   createdBy: string; createdAt: string; updatedBy: string; updatedAt: string;
   startedBy: string | null; startedAt: string | null; confirmedBy: string | null; confirmedAt: string | null;
@@ -39,6 +39,10 @@ export function listCounts(pageNo: number, pageSize: number, warehouseId?: strin
   return httpClient.result({ path: path('/search'), method: 'POST', body: { params: { warehouseId: warehouseId || null }, pageNo, pageSize } });
 }
 export function getCount(id: string): Promise<CountDetail> { return httpClient.result({ path: idPath(id) }); }
+/** 仅返回当前操作人的已提交创建结果；null 不能作为安全重试凭据。 */
+export function findCountByRequestKey(requestKey: string): Promise<CountDetail | null> {
+  return httpClient.result({ path: path(`/by-request-key/${encodeURIComponent(requestKey)}`) });
+}
 export function createCount(requestKey: string, warehouseId: string, scope: CountScope): Promise<CountDetail> {
   return httpClient.result({ path: path(), method: 'POST', body: { requestKey, warehouseId, ...scope } });
 }

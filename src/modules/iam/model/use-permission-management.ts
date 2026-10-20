@@ -87,7 +87,7 @@ export function usePermissionManagement(fixedResource?: resourceApi.PermissionRe
       rows.value = result.records;
       total.value = result.total;
       pageNo.value = result.pageNo;
-      writeError.value = undefined;
+      // 列表读取不能判定上次写入是否已提交，未知结果保持阻断。
     } catch (error) {
       if (disposed || sequence !== listSequence) return;
       listError.value = permissionFeedback(error);
@@ -119,7 +119,7 @@ export function usePermissionManagement(fixedResource?: resourceApi.PermissionRe
 
   async function open(next: PermissionAction, permission?: api.PermissionResponse): Promise<void> {
     if (saving.value) return;
-    if (next !== 'detail' && writeError.value) return;
+    if (writeError.value) return;
     if (next !== 'detail' && !hasAuthority('auth:permission:write')) {
       notice.value = { key: 'iam.permissions.forbidden' };
       return;
@@ -139,7 +139,7 @@ export function usePermissionManagement(fixedResource?: resourceApi.PermissionRe
   }
 
   function close(): void {
-    if (saving.value) return;
+    if (saving.value || writeError.value) return;
     ++detailSequence;
     detailController?.abort();
     action.value = undefined;

@@ -1,7 +1,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { hasAuthority } from '../../auth';
 import { codeRuleApi, codeRuleOwners, type CodeRuleFilters, type CodeRuleOwner, type CodeRuleView } from '../api/code-rule-api';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { managementFeedback, type ManagementFeedback } from '../../../shared/management/management-feedback';
 import { validateFormSchema } from '../../../shared/form-designer/schema';
 import type { CodeRuleDefinition, CodeSegmentCatalogEntry } from '../../../shared/form-designer/types';
@@ -39,7 +39,9 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
   let discardResolver: ((discard: boolean) => void) | undefined;
   let catalogId = 0; let listId = 0; let detailId = 0;
   let catalogRequest: AbortController | undefined; let listRequest: AbortController | undefined; let detailRequest: AbortController | undefined;
-  let uncertain: { owner: CodeRuleOwner; revisionId?: string; ruleCode: string } | undefined;
+  let uncertain: { owner: CodeRuleOwner; revisionId?: string; ruleCode: string;
+    operation: 'create' | 'update' | CodeRuleAction; previousVersion?: number;
+    expected?: string } | undefined;
 
   /** 当前 Owner 目录无法解释的段或参数；存在时禁止提交，保留原始定义供查看。 */
   const unsupported = computed(() => definition.value.segments.filter(segment => {
@@ -130,16 +132,18 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
   async function page(value: number): Promise<void> { if (!saving.value) { pageNo.value = value; await loadList(); } }
   async function size(value: number): Promise<void> { if (!saving.value) { pageSize.value = value; pageNo.value = 1; await loadList(); } }
   async function showHistory(row: CodeRuleView): Promise<void> {
-    if (saving.value || !await confirmDiscard()) return;
+    if (saving.value || !uncertain && !await confirmDiscard()) return;
     resetEditor(); historyCode.value = row.ruleCode; pageNo.value = 1; await loadList();
   }
-  function writeError(error: unknown): void {
-    // 响应损坏或 5xx 不能证明事务未提交，按未知结果处理，禁止直接重放。
-    const unknown = !isApiError(error) || error.resultUnknown || ['protocol', 'server', 'http'].includes(error.kind);
+  function writeError(error: unknown, operation: 'create' | 'update' | CodeRuleAction,
+    previousVersion?: number, expected?: string): void {
+    const classification = classifyWriteFailure(error);
+    const unknown = classification === 'unknown';
     feedback.value = unknown ? { key: 'system.feedback.unknown', correlationId: isApiError(error) ? error.correlationId : undefined }
       : managementFeedback(error, true);
-    writeBlocked.value = unknown || isApiError(error) && ['conflict', 'not_found', 'forbidden', 'unauthenticated'].includes(error.kind);
-    if (unknown) uncertain = { owner: { ...owner.value }, revisionId: target.value?.id, ruleCode: ruleCode.value };
+    writeBlocked.value = classification !== 'failed' || isApiError(error) && ['not_found', 'forbidden', 'unauthenticated'].includes(error.kind);
+    if (unknown) uncertain = { owner: { ...owner.value }, revisionId: target.value?.id,
+      ruleCode: ruleCode.value, operation, previousVersion, expected };
   }
   /** 保存规则草稿；未知写入结果会阻断后续写操作，等待显式核对。 */
   async function save(): Promise<void> {
@@ -155,9 +159,10 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
         : await codeRuleApi.create(selected, { ruleCode: ruleCode.value, usageScenario: scenario, description: text, definition: body });
       apply(result); notice.value = true;
       if (!current) pageNo.value = 1;
-      await loadList();
-    } catch (error) { writeError(error); }
+    } catch (error) { writeError(error, current ? 'update' : 'create', current?.ruleVersion,
+      JSON.stringify({ usageScenario: scenario, description: text, definition: body })); }
     finally { saving.value = false; }
+    if (notice.value) await loadList();
   }
   /** 执行修订、发布或停用，并携带读取到的 ruleVersion。 */
   async function act(action: CodeRuleAction): Promise<void> {
@@ -167,9 +172,10 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
       || action === 'disable' && current.status !== 'ENABLED') return;
     // 发布必须由后端按当前 Handler/Provider 最终重验，不能由样例预览推断有效性。
     saving.value = true; feedback.value = null; notice.value = false;
-    try { apply(await codeRuleApi[action](owner.value, current.id, current.ruleVersion)); notice.value = true; await loadList(); }
-    catch (error) { writeError(error); }
+    try { apply(await codeRuleApi[action](owner.value, current.id, current.ruleVersion)); notice.value = true; }
+    catch (error) { writeError(error, action, current.ruleVersion); }
     finally { saving.value = false; }
+    if (notice.value) await loadList();
   }
   /** 用户显式核对结果，放弃本地编辑后才用服务端事实解除写入阻断。 */
   async function reconcile(): Promise<void> {
@@ -188,6 +194,10 @@ export function useCodeRuleManagement(owners = codeRuleOwners, allowed = hasAuth
       } else if (target.value) result = await codeRuleApi.detail(owner.value, target.value.id, detailRequest.signal);
       else { resetEditor(); await reload(); return; }
       if (current !== detailId) return;
+      if (uncertain) {
+        // 当前状态、定义与版本不能唯一证明原写请求提交；草稿和阻断都保留。
+        feedback.value = { key: 'system.feedback.unknown' }; return;
+      }
       apply(result); editorOpen.value = true; uncertain = undefined; writeBlocked.value = false; feedback.value = null;
       await reload();
     } catch (error) { if (current === detailId) feedback.value = managementFeedback(error); }

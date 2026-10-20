@@ -52,7 +52,7 @@ export function useRoleManagement() {
       rows.value = result.records;
       total.value = result.total;
       pageNo.value = result.pageNo;
-      writeError.value = undefined;
+      // 列表读取不能判定上次写入是否已提交，未知结果保持阻断。
     } catch (error) {
       if (disposed || sequence !== listSequence) return;
       listError.value = roleFeedback(error);
@@ -84,7 +84,7 @@ export function useRoleManagement() {
 
   async function open(next: RoleAction, role?: api.RoleResponse): Promise<void> {
     if (saving.value) return;
-    if (next !== 'detail' && writeError.value) return;
+    if (writeError.value) return;
     if (next !== 'detail' && !hasAuthority('auth:role:write')) {
       notice.value = { key: 'iam.roles.forbidden' };
       return;
@@ -103,7 +103,7 @@ export function useRoleManagement() {
   }
 
   function close(): void {
-    if (saving.value) return;
+    if (saving.value || writeError.value) return;
     ++detailSequence;
     detailController?.abort();
     action.value = undefined;

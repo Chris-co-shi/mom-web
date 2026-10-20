@@ -157,7 +157,7 @@ describe('编码规则编辑生命周期与失败语义', () => {
     await state.save(); expect(state.feedback.value?.key).toBe('system.feedback.forbidden'); expect(state.writeBlocked.value).toBe(true);
     wrapper.unmount();
   });
-  it('未知创建结果必须按原 Owner 和规则编码核对，找不到数据时继续阻止写入', async () => {
+  it('未知创建结果按原 Owner 和规则编码核对，已有同编码规则仍不足以证明原操作', async () => {
     const { state, wrapper } = setup(); await state.reload(); await state.open(); state.ruleCode.value = 'material'; state.usageScenario.value = '物料编码';
     vi.mocked(codeRuleApi.create).mockRejectedValueOnce(new ApiError('offline', { kind: 'network', resultUnknown: true, code: 'offline' }));
     await state.save(); expect(state.writeBlocked.value).toBe(true);
@@ -165,8 +165,8 @@ describe('编码规则编辑生命周期与失败语义', () => {
     let read = state.reconcile(); state.resolveDiscard(true); await read;
     expect(state.writeBlocked.value).toBe(true);
     read = state.reconcile(); state.resolveDiscard(true); await read;
-    expect(state.target.value?.id).toBe('revision-1'); expect(state.writeBlocked.value).toBe(false);
-    expect(state.definition.value).toEqual(definition); wrapper.unmount();
+    expect(state.target.value).toBeNull(); expect(state.writeBlocked.value).toBe(true);
+    expect(state.feedback.value?.key).toBe('system.feedback.unknown'); wrapper.unmount();
   });
   it('已发布和停用版本无法更新 definition，详情失败不能误创建新规则', async () => {
     const { state, wrapper } = setup(); await state.reload();

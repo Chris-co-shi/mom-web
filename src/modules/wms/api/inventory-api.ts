@@ -113,3 +113,11 @@ export function transferInventory(input: { requestKey: string; balanceId: string
   targetLocationId: string; quantity: string }): Promise<{ transactionId: string }> {
   return httpClient.result({ path: apiPath('wms', '/inventory/transfers'), method: 'POST', body: input });
 }
+
+/** 按原请求键读取当前操作人的已提交移动事实；null 不代表原请求未提交。 */
+export function findTransferByRequestKey(requestKey: string): Promise<{
+  transactionId: string; balanceId: string; targetLocationId: string; quantity: string;
+} | null> {
+  return httpClient.result({ path: apiPath('wms', `/inventory/transfers/by-request-key/${encodeURIComponent(requestKey)}`),
+    method: 'GET' });
+}

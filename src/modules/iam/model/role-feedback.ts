@@ -1,5 +1,5 @@
 import type { MessageKey } from '../../../locales/zh-CN';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 
 export interface RoleFeedback { key: MessageKey; correlationId?: string }
 
@@ -7,7 +7,7 @@ export interface RoleFeedback { key: MessageKey; correlationId?: string }
 export function roleFeedback(error: unknown, writing = false): RoleFeedback {
   if (!isApiError(error)) return { key: writing ? 'iam.roles.unknownWrite' : 'iam.roles.loadFailed' };
   let key: MessageKey = 'iam.roles.loadFailed';
-  if (writing && (error.resultUnknown || error.kind === 'server' || error.kind === 'protocol')) key = 'iam.roles.unknownWrite';
+  if (writing && classifyWriteFailure(error) === 'unknown') key = 'iam.roles.unknownWrite';
   else if (error.code === 'auth.role_code_conflict') key = 'iam.roles.codeConflict';
   else if (error.code === 'auth.resource_referenced') key = 'iam.roles.referenced';
   else if (error.kind === 'conflict') key = 'iam.roles.conflict';

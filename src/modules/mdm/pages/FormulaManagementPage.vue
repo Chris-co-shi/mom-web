@@ -4,7 +4,7 @@ import { Plus, RefreshCw } from '@lucide/vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import { submitWithFocus } from '../../../shared/ui/focus';
 import { AuthorityGuard, hasAuthority } from '../../auth';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { MomButton, MomInput, MomReferenceSelect, MomSelect } from '../../../shared/ui';
 import { activeMaterialReference } from '../api/reference-api';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
@@ -18,7 +18,7 @@ import { searchPlants, type PlantView } from '../api/factory-api';
 import { searchMaterials, type Material } from '../api/material-api';
 import { searchUomCatalog, type UomRow } from '../api/uom-api';
 import {
-  searchFormulas, getFormula, createFormula, updateFormulaDraft, nextFormulaRevision,
+  searchFormulas, getFormula, getFormulaRevision, createFormula, updateFormulaDraft, nextFormulaRevision,
   releaseFormulaRevision, obsoleteFormulaRevision,
   type FormulaIdentity, type FormulaDetail, type FormulaItemInput,
 } from '../api/formula-api';
@@ -35,11 +35,14 @@ const optionLoading = computed(() => Object.values(optionPending).some(Boolean))
 const optionError = computed(() => Object.values(optionFailed).some(Boolean));
 const optionRequest = { plants: 0, materials: 0, uoms: 0 };
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
-const loading = ref(false), detailLoading = ref(false), saving = ref(false);
+const loading = ref(false), detailLoading = ref(false), saving = ref(false), blocked = ref(false);
+let conflictBlocked = false;
 const listError = ref(''), dialogError = ref(''), formError = ref(''), notice = ref('');
 const action = ref<'create' | 'detail' | 'edit'>();
-const form = reactive({ code: '', name: '', plantId: '', outputMaterialId: '', baseBatchQuantity: '', baseUomId: '',
-  items: [{ sequenceNo: 10, materialId: '', quantity: '', uomId: '' }] as FormulaItemInput[] });
+const form = reactive({
+  code: '', name: '', plantId: '', outputMaterialId: '', baseBatchQuantity: '', baseUomId: '',
+  items: [{ sequenceNo: 10, materialId: '', quantity: '', uomId: '' }] as FormulaItemInput[]
+});
 let listController: AbortController | undefined, detailController: AbortController | undefined;
 let requestNo = 0, detailNo = 0, disposed = false;
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)));
@@ -105,24 +108,29 @@ async function loadOptions(kind: 'plants' | 'materials' | 'uoms', next = 1): Pro
   } catch { if (!disposed && current === optionRequest[kind]) optionFailed[kind] = true; }
   finally { if (current === optionRequest[kind]) optionPending[kind] = false; }
 }
-function refreshOptions(): void { void Promise.all(['plants', 'materials', 'uoms'].map(kind =>
-  loadOptions(kind as 'plants' | 'materials' | 'uoms'))); }
+function refreshOptions(): void {
+  void Promise.all(['plants', 'materials', 'uoms'].map(kind =>
+    loadOptions(kind as 'plants' | 'materials' | 'uoms')));
+}
 function resetForm(value?: FormulaDetail): void {
   const formula = value?.formula;
   Object.assign(form, {
     code: formula?.code ?? '', name: formula?.name ?? '', plantId: formula?.plantId ?? '',
     outputMaterialId: formula?.outputMaterialId ?? '', baseBatchQuantity: formula?.baseBatchQuantity ?? '',
     baseUomId: formula?.baseUomId ?? '',
-    items: value?.items.map(item => ({ sequenceNo: item.sequenceNo, materialId: item.materialId,
-      quantity: item.quantity, uomId: item.uomId })) ?? [{ sequenceNo: 10, materialId: '', quantity: '', uomId: '' }],
+    items: value?.items.map(item => ({
+      sequenceNo: item.sequenceNo, materialId: item.materialId,
+      quantity: item.quantity, uomId: item.uomId
+    })) ?? [{ sequenceNo: 10, materialId: '', quantity: '', uomId: '' }],
   });
 }
 function openCreate(): void {
-  if (!hasAuthority('mdm:manufacturing-definition:write')) return;
+  if (blocked.value || !hasAuthority('mdm:manufacturing-definition:write')) return;
   ++detailNo; detailController?.abort(); detail.value = undefined;
   action.value = 'create'; formError.value = ''; dialogError.value = ''; resetForm(); refreshOptions();
 }
 async function openDetail(row: FormulaIdentity): Promise<void> {
+  if (blocked.value) return;
   const current = ++detailNo; detailController?.abort(); detailController = new AbortController();
   action.value = 'detail'; detailLoading.value = true; detail.value = undefined;
   dialogError.value = ''; formError.value = ''; refreshOptions();
@@ -134,11 +142,15 @@ async function openDetail(row: FormulaIdentity): Promise<void> {
   finally { if (current === detailNo) detailLoading.value = false; }
 }
 function close(): void {
-  if (saving.value) return;
+  if (saving.value || blocked.value) return;
   ++detailNo; detailController?.abort(); action.value = undefined; detail.value = undefined;
 }
-function addItem(): void { form.items.push({ sequenceNo: (Math.max(0, ...form.items.map(x => x.sequenceNo)) + 10),
-  materialId: '', quantity: '', uomId: '' }); }
+function addItem(): void {
+  form.items.push({
+    sequenceNo: (Math.max(0, ...form.items.map(x => x.sequenceNo)) + 10),
+    materialId: '', quantity: '', uomId: ''
+  });
+}
 function validDecimal(value: string): boolean { return /^(0|[1-9]\d{0,14})(\.\d{1,9})?$/.test(value) && Number(value) > 0; }
 function validate(): boolean {
   if (action.value === 'create' && (!form.code.trim() || !form.name.trim() || !form.plantId || !form.outputMaterialId ||
@@ -149,7 +161,7 @@ function validate(): boolean {
       !!item.materialId && !!item.uomId && validDecimal(item.quantity));
 }
 async function write(operation: 'save' | 'next' | 'release' | 'obsolete'): Promise<void> {
-  if (saving.value || !hasAuthority('mdm:manufacturing-definition:write')) return;
+  if (saving.value || blocked.value || !hasAuthority('mdm:manufacturing-definition:write')) return;
   if (operation === 'save' && !validate()) { formError.value = t('mdm.formula.invalid'); return; }
   const current = detail.value;
   if (operation !== 'save' && !current) return;
@@ -157,9 +169,11 @@ async function write(operation: 'save' | 'next' | 'release' | 'obsolete'): Promi
   try {
     let result: FormulaDetail;
     if (operation === 'save' && action.value === 'create') {
-      result = await createFormula({ code: form.code.trim(), name: form.name.trim(), plantId: form.plantId,
+      result = await createFormula({
+        code: form.code.trim(), name: form.name.trim(), plantId: form.plantId,
         outputMaterialId: form.outputMaterialId, baseBatchQuantity: form.baseBatchQuantity,
-        baseUomId: form.baseUomId, items: form.items });
+        baseUomId: form.baseUomId, items: form.items
+      });
     } else if (operation === 'save' && current) {
       result = await updateFormulaDraft(current.revision.id, current.revision.lockVersion, form.items);
     } else if (operation === 'next' && current) {
@@ -171,105 +185,184 @@ async function write(operation: 'save' | 'next' | 'release' | 'obsolete'): Promi
     } else return;
     detail.value = result; resetForm(result); action.value = 'detail';
     notice.value = t('mdm.formula.saved'); void loadPage(1);
-  } catch (error) { formError.value = feedback(error, true); }
+  } catch (error) { const classification = classifyWriteFailure(error);
+    blocked.value = classification !== 'failed'; conflictBlocked = classification === 'conflict';
+    formError.value = feedback(error, true); }
   finally { saving.value = false; }
+}
+async function reconcile(): Promise<void> {
+  if (!blocked.value || saving.value || detailLoading.value || !detail.value) return;
+  const current = ++detailNo;
+  detailLoading.value = true;
+  try {
+    const latest = await getFormulaRevision(detail.value.revision.id);
+    if (current !== detailNo) return;
+    detail.value = latest;
+    if (conflictBlocked) {
+      blocked.value = false; conflictBlocked = false; formError.value = '';
+    } else formError.value = t('mdm.struct.unknownWrite');
+  } catch {formError.value = t('mdm.struct.unknownWrite');}
+  finally {if (current === detailNo) detailLoading.value = false;}
 }
 onMounted(() => { void loadPage(); });
 onBeforeRouteLeave(() => !saving.value);
-onScopeDispose(() => { disposed = true; ++requestNo; ++detailNo;
+onScopeDispose(() => {
+  disposed = true; ++requestNo; ++detailNo;
   Object.keys(optionRequest).forEach(kind => { ++optionRequest[kind as keyof typeof optionRequest]; });
-  listController?.abort(); detailController?.abort(); });
+  listController?.abort(); detailController?.abort();
+});
 </script>
 
 <template>
   <PageContainer>
     <section class="mdm-plants" aria-labelledby="mdm-formula-title">
-      <MomManagementHeader id="mdm-formula-title" title-id="mdm-formula-title"
-        :title="t('mdm.formula.title')" :description="t('mdm.formula.description')">
+      <MomManagementHeader id="mdm-formula-title" title-id="mdm-formula-title" :title="t('mdm.formula.title')"
+        :description="t('mdm.formula.description')">
         <template #actions>
-          <MomButton variant="outline" :disabled="loading" @click="loadPage()"><RefreshCw :size="16" />{{ t('mdm.struct.refresh') }}</MomButton>
+          <MomButton variant="outline" :disabled="loading" @click="loadPage()">
+            <RefreshCw :size="16" />{{ t('mdm.struct.refresh') }}
+          </MomButton>
           <AuthorityGuard :authorities="['mdm:manufacturing-definition:write']">
-            <MomButton @click="openCreate"><Plus :size="16" />{{ t('mdm.struct.create') }}</MomButton>
+            <MomButton :disabled="blocked" @click="openCreate">
+              <Plus :size="16" />{{ t('mdm.struct.create') }}
+            </MomButton>
           </AuthorityGuard>
         </template>
       </MomManagementHeader>
       <p v-if="notice" role="status">{{ notice }}</p>
+      <p v-if="blocked" class="mdm-plants__error" role="alert">{{ formError }}
+        <MomButton v-if="detail" variant="outline" :disabled="detailLoading" @click="reconcile">{{ t('mdm.struct.refresh') }}</MomButton>
+      </p>
       <div v-if="listError" class="mdm-plants__error" role="alert">
         {{ listError }} <MomButton variant="outline" @click="loadPage()">{{ t('mdm.struct.retry') }}</MomButton>
       </div>
-      <MomListSurface v-else :title="t('mdm.formula.title')" :hint="t('mdm.formula.listHint')"
-        :loading="loading" :loading-text="t('mdm.struct.loading')">
+      <MomListSurface v-else :title="t('mdm.formula.title')" :hint="t('mdm.formula.listHint')" :loading="loading"
+        :loading-text="t('mdm.struct.loading')">
         <MomDataTable :rows="rows" :columns="columns" :empty-text="t('mdm.formula.noData')">
           <template #cell-plantId="{ row }">{{ label(plants, row.plantId) }}</template>
           <template #cell-outputMaterialId="{ row }">{{ label(materials, row.outputMaterialId) }}</template>
-          <template #cell-actions="{ row }"><MomButton mode="text" @click="openDetail(row)">{{ t('mdm.struct.detail') }}</MomButton></template>
+          <template #cell-actions="{ row }">
+            <MomButton mode="text" @click="openDetail(row)">{{ t('mdm.struct.detail') }}</MomButton>
+          </template>
         </MomDataTable>
         <template #footer>
           <MomCrudPagination :page-no="pageNo" :page-size="pageSize" :total="total"
             :summary="`${pageNo} / ${pageCount}`" :page-size-label="t('mdm.struct.pageSize')"
             :previous-label="t('mdm.struct.previous')" :next-label="t('mdm.struct.next')"
-            :jump-label="t('mdm.struct.jump')" :go-label="t('mdm.struct.go')"
-            :disabled="loading || saving" @page="loadPage($event)" @size="loadPage(1, $event)" />
+            :jump-label="t('mdm.struct.jump')" :go-label="t('mdm.struct.go')" :disabled="loading || saving"
+            @page="loadPage($event)" @size="loadPage(1, $event)" />
         </template>
       </MomListSurface>
-      <MomModal :open="!!action" :title="t('mdm.formula.title')" :close-label="tForOwner('system', 'system.common.close')"
-        :busy="saving" :busy-text="t('mdm.struct.saving')" :width="760" @close="close">
+      <MomModal :open="!!action" :title="t('mdm.formula.title')"
+        :close-label="tForOwner('system', 'system.common.close')" :busy="saving" :busy-text="t('mdm.struct.saving')"
+        :width="760" @close="close">
         <div class="mdm-plants__dialog">
           <p v-if="detailLoading" role="status">{{ t('mdm.struct.loading') }}</p>
           <div v-if="dialogError" class="mdm-plants__error" role="alert">
-            {{ dialogError }} <MomButton v-if="detail" variant="outline" @click="openDetail(detail.formula)">{{ t('mdm.struct.retry') }}</MomButton>
+            {{ dialogError }} <MomButton v-if="detail" variant="outline" @click="openDetail(detail.formula)">{{
+              t('mdm.struct.retry') }}</MomButton>
           </div>
           <div v-if="optionError" class="mdm-plants__error" role="alert">
-            {{ t('mdm.material.referencesError') }} <MomButton variant="outline" @click="refreshOptions">{{ t('mdm.struct.retry') }}</MomButton>
+            {{ t('mdm.material.referencesError') }} <MomButton variant="outline" @click="refreshOptions">{{
+              t('mdm.struct.retry') }}</MomButton>
           </div>
           <dl v-if="detail" class="mdm-plants__summary">
-            <div><dt>{{ t('mdm.struct.code') }}</dt><dd>{{ detail.formula.code }}</dd></div>
-            <div><dt>{{ t('mdm.formula.revision') }}</dt><dd>{{ detail.revision.revisionNo }}</dd></div>
-            <div><dt>{{ t('mdm.struct.status') }}</dt><dd>{{ detail.revision.status }}</dd></div>
-            <div><dt>{{ t('mdm.struct.version') }}</dt><dd>{{ detail.revision.lockVersion }}</dd></div>
+            <div>
+              <dt>{{ t('mdm.struct.code') }}</dt>
+              <dd>{{ detail.formula.code }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('mdm.formula.revision') }}</dt>
+              <dd>{{ detail.revision.revisionNo }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('mdm.struct.status') }}</dt>
+              <dd>{{ detail.revision.status }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('mdm.struct.version') }}</dt>
+              <dd>{{ detail.revision.lockVersion }}</dd>
+            </div>
           </dl>
           <div v-if="action === 'detail' && detail" class="mdm-plants__form">
-            <p>{{ t('mdm.formula.batchQuantity') }}: {{ detail.formula.baseBatchQuantity }} · {{ label(uoms, detail.formula.baseUomId) }}</p>
-            <p v-for="item in detail.items" :key="item.id">{{ item.sequenceNo }} · {{ label(materials, item.materialId) }} · {{ item.quantity }} {{ label(uoms, item.uomId) }}</p>
+            <p>{{ t('mdm.formula.batchQuantity') }}: {{ detail.formula.baseBatchQuantity }} · {{ label(uoms,
+              detail.formula.baseUomId) }}</p>
+            <p v-for="item in detail.items" :key="item.id">{{ item.sequenceNo }} · {{ label(materials, item.materialId)
+            }} ·
+              {{ item.quantity }} {{ label(uoms, item.uomId) }}</p>
             <div class="mdm-plants__footer">
               <AuthorityGuard :authorities="['mdm:manufacturing-definition:write']">
-                <MomButton v-if="detail.revision.status === 'DRAFT'" variant="outline" @click="action = 'edit'">{{ t('mdm.struct.edit') }}</MomButton>
-                <MomButton v-if="detail.revision.status === 'DRAFT'" :disabled="saving" @click="write('release')">{{ t('mdm.formula.release') }}</MomButton>
-                <MomButton v-if="detail.revision.status === 'RELEASED'" variant="outline" :disabled="saving" @click="write('obsolete')">{{ t('mdm.formula.obsolete') }}</MomButton>
-                <MomButton v-if="detail.revision.status !== 'DRAFT'" :disabled="saving" @click="write('next')">{{ t('mdm.formula.nextRevision') }}</MomButton>
+                <MomButton v-if="detail.revision.status === 'DRAFT'" variant="outline" :disabled="blocked" @click="action = 'edit'">{{
+                  t('mdm.struct.edit') }}</MomButton>
+                <MomButton v-if="detail.revision.status === 'DRAFT'" :disabled="saving || blocked" @click="write('release')">{{
+                  t('mdm.formula.release') }}</MomButton>
+                <MomButton v-if="detail.revision.status === 'RELEASED'" variant="outline" :disabled="saving || blocked"
+                  @click="write('obsolete')">{{ t('mdm.formula.obsolete') }}</MomButton>
+                <MomButton v-if="detail.revision.status !== 'DRAFT'" :disabled="saving || blocked" @click="write('next')">{{
+                  t('mdm.formula.nextRevision') }}</MomButton>
               </AuthorityGuard>
             </div>
           </div>
           <form v-if="action === 'create' || action === 'edit'" class="mdm-plants__form"
             @submit.prevent="submitWithFocus($event, () => write('save'))">
             <template v-if="action === 'create'">
-              <label><span>{{ t('mdm.struct.code') }} *</span><MomInput v-model="form.code" :max-length="64" /></label>
-              <label><span>{{ t('mdm.struct.name') }} *</span><MomInput v-model="form.name" :max-length="200" /></label>
-              <label><span>{{ t('mdm.formula.plant') }} *</span><MomSelect v-model="form.plantId" :options="plantOptions" /></label>
-              <label><span>{{ t('mdm.formula.output') }} *</span><MomReferenceSelect v-model="form.outputMaterialId"
-                :label="t('mdm.formula.output')" :search="activeMaterialReference.search" :resolve="activeMaterialReference.resolve" /></label>
-              <label><span>{{ t('mdm.formula.batchQuantity') }} *</span><MomInput v-model="form.baseBatchQuantity" inputmode="decimal" /></label>
-              <label><span>{{ t('mdm.formula.baseUom') }} *</span><MomSelect v-model="form.baseUomId" :options="uomOptions(form.baseUomId)" /></label>
+              <label><span>{{ t('mdm.struct.code') }} *</span>
+                <MomInput v-model="form.code" :max-length="64" />
+              </label>
+              <label><span>{{ t('mdm.struct.name') }} *</span>
+                <MomInput v-model="form.name" :max-length="200" />
+              </label>
+              <label><span>{{ t('mdm.formula.plant') }} *</span>
+                <MomSelect v-model="form.plantId" :options="plantOptions" />
+              </label>
+              <label><span>{{ t('mdm.formula.output') }} *</span>
+                <MomReferenceSelect v-model="form.outputMaterialId" :label="t('mdm.formula.output')"
+                  :search="activeMaterialReference.search" :resolve="activeMaterialReference.resolve" />
+              </label>
+              <label><span>{{ t('mdm.formula.batchQuantity') }} *</span>
+                <MomInput v-model="form.baseBatchQuantity" inputmode="decimal" />
+              </label>
+              <label><span>{{ t('mdm.formula.baseUom') }} *</span>
+                <MomSelect v-model="form.baseUomId" :options="uomOptions(form.baseUomId)" />
+              </label>
             </template>
             <div v-for="(item, index) in form.items" :key="index" class="mdm-struct__form-grid">
-              <label><span>{{ t('mdm.formula.sequence') }} *</span><MomInput :model-value="String(item.sequenceNo)" type="number"
-                @update:model-value="item.sequenceNo = Number($event)" /></label>
-              <label><span>{{ t('mdm.formula.material') }} *</span><MomReferenceSelect v-model="item.materialId"
-                :label="t('mdm.formula.material')" :search="activeMaterialReference.search" :resolve="activeMaterialReference.resolve" /></label>
-              <label><span>{{ t('mdm.formula.quantity') }} *</span><MomInput v-model="item.quantity" inputmode="decimal" /></label>
-              <label><span>{{ t('mdm.formula.uom') }} *</span><MomSelect v-model="item.uomId" :options="uomOptions(item.uomId)" /></label>
-              <MomButton variant="outline" :disabled="form.items.length === 1" @click="form.items.splice(index, 1)">{{ t('mdm.formula.removeItem') }}</MomButton>
+              <label><span>{{ t('mdm.formula.sequence') }} *</span>
+                <MomInput :model-value="String(item.sequenceNo)" type="number"
+                  @update:model-value="item.sequenceNo = Number($event)" />
+              </label>
+              <label><span>{{ t('mdm.formula.material') }} *</span>
+                <MomReferenceSelect v-model="item.materialId" :label="t('mdm.formula.material')"
+                  :search="activeMaterialReference.search" :resolve="activeMaterialReference.resolve" />
+              </label>
+              <label><span>{{ t('mdm.formula.quantity') }} *</span>
+                <MomInput v-model="item.quantity" inputmode="decimal" />
+              </label>
+              <label><span>{{ t('mdm.formula.uom') }} *</span>
+                <MomSelect v-model="item.uomId" :options="uomOptions(item.uomId)" />
+              </label>
+              <MomButton variant="outline" :disabled="form.items.length === 1" @click="form.items.splice(index, 1)">{{
+                t('mdm.formula.removeItem') }}</MomButton>
             </div>
             <MomButton variant="outline" @click="addItem">{{ t('mdm.formula.addItem') }}</MomButton>
-            <div class="mdm-plants__footer" v-if="plants.length < optionTotal.plants || materials.length < optionTotal.materials || uoms.length < optionTotal.uoms">
-              <MomButton v-if="plants.length < optionTotal.plants" variant="outline" :disabled="optionLoading" @click="loadOptions('plants', optionPage.plants + 1)">{{ t('mdm.struct.loadMore') }} · {{ t('mdm.formula.plant') }}</MomButton>
-              <MomButton v-if="materials.length < optionTotal.materials" variant="outline" :disabled="optionLoading" @click="loadOptions('materials', optionPage.materials + 1)">{{ t('mdm.struct.loadMore') }} · {{ t('mdm.formula.material') }}</MomButton>
-              <MomButton v-if="uoms.length < optionTotal.uoms" variant="outline" :disabled="optionLoading" @click="loadOptions('uoms', optionPage.uoms + 1)">{{ t('mdm.struct.loadMore') }} · {{ t('mdm.formula.uom') }}</MomButton>
+            <div class="mdm-plants__footer"
+              v-if="plants.length < optionTotal.plants || materials.length < optionTotal.materials || uoms.length < optionTotal.uoms">
+              <MomButton v-if="plants.length < optionTotal.plants" variant="outline" :disabled="optionLoading"
+                @click="loadOptions('plants', optionPage.plants + 1)">{{ t('mdm.struct.loadMore') }} · {{
+                  t('mdm.formula.plant') }}</MomButton>
+              <MomButton v-if="materials.length < optionTotal.materials" variant="outline" :disabled="optionLoading"
+                @click="loadOptions('materials', optionPage.materials + 1)">{{ t('mdm.struct.loadMore') }} · {{
+                  t('mdm.formula.material') }}</MomButton>
+              <MomButton v-if="uoms.length < optionTotal.uoms" variant="outline" :disabled="optionLoading"
+                @click="loadOptions('uoms', optionPage.uoms + 1)">{{ t('mdm.struct.loadMore') }} · {{
+                  t('mdm.formula.uom') }}
+              </MomButton>
             </div>
             <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer">
               <MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
-              <MomButton type="submit" :disabled="saving || optionLoading || optionError">{{ t('mdm.struct.confirm') }}</MomButton>
+              <MomButton type="submit" :disabled="saving || blocked || optionLoading || optionError">{{ t('mdm.struct.confirm') }}
+              </MomButton>
             </div>
           </form>
         </div>

@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { MomButton as Button, MomInput as Input } from '../../../shared/ui';
 import type { MessageKey } from '../../../locales/zh-CN';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
 import { changeOwnPassword, synchronizeAuthSession, updateOwnProfile, useAuthSession } from '../model/auth-session';
@@ -13,6 +13,7 @@ const { user } = useAuthSession();
 const busy = ref(false);
 const ready = ref(false);
 const needsRefresh = ref(false);
+let pendingWrite: 'profile' | 'password' | undefined;
 const displayName = ref('');
 const passwords = reactive({ currentPassword: '', newPassword: '', confirmation: '' });
 const feedback = ref<MessageKey>();
@@ -25,16 +26,23 @@ function clearPasswords(): void {
   passwords.confirmation = '';
 }
 
-function showError(error: unknown): void {
+function showError(error: unknown, operation?: 'profile' | 'password'): void {
   success.value = false;
+  const result = operation ? classifyWriteFailure(error) : 'failed';
+  if (result === 'unknown') {
+    needsRefresh.value = true;
+    pendingWrite = operation;
+    feedback.value = 'account.resultUnknown';
+    return;
+  }
   if (isApiError(error)) {
     if (error.code === 'auth.current_password_invalid') {
       feedback.value = 'account.wrongPassword';
       return;
     }
-    if (error.kind === 'conflict' || error.resultUnknown) {
+    if (error.kind === 'conflict') {
       needsRefresh.value = true;
-      feedback.value = error.resultUnknown ? 'account.resultUnknown' : 'account.conflict';
+      feedback.value = 'account.conflict';
       return;
     }
     if (error.kind === 'not_found') {
@@ -64,7 +72,11 @@ async function refresh(initial = false): Promise<void> {
     if (!user.value) throw new Error('auth.session_expired');
     if (initial) displayName.value = user.value.displayName;
     ready.value = true;
-    needsRefresh.value = false;
+    if (pendingWrite) {
+      // 当前资料和版本无法唯一证明原请求已提交；保留阻断等待专门的操作结果契约。
+      needsRefresh.value = true;
+      feedback.value = 'account.resultUnknown';
+    } else needsRefresh.value = false;
   } catch (error) {
     ready.value = false;
     showError(error);
@@ -88,7 +100,7 @@ async function saveProfile(): Promise<void> {
     success.value = true;
     feedback.value = 'account.profileSaved';
   } catch (error) {
-    showError(error);
+    showError(error, 'profile');
   } finally {
     busy.value = false;
   }
@@ -117,7 +129,7 @@ async function savePassword(): Promise<void> {
     success.value = true;
     feedback.value = 'account.passwordSaved';
   } catch (error) {
-    showError(error);
+    showError(error, 'password');
   } finally {
     // 凭据不进入路由、存储或日志；每次已发送请求结束后清空。
     clearPasswords();

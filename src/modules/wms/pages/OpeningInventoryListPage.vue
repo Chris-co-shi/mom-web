@@ -10,7 +10,7 @@ import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue'
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { MomButton, MomReferenceSelect } from '../../../shared/ui';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
 import { createOpeningDocument, deleteOpeningDocument, listOpeningDocuments, type OpeningDocument } from '../api/opening-api';
@@ -47,7 +47,7 @@ async function create(): Promise<void> {
   saving.value = true; error.value = ''; success.value = '';
   try { const result = await createOpeningDocument(warehouseId.value); await router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: result.document.id } }); }
   catch (cause) {
-    if (isApiError(cause) && cause.resultUnknown) unknownWarehouseId.value = warehouseId.value;
+    if (classifyWriteFailure(cause) === 'unknown') unknownWarehouseId.value = warehouseId.value;
     error.value = unknownWarehouseId.value ? t('wms.opening.createUnknown')
       : isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden')
       : isApiError(cause) && cause.code === 'wms.opening.reference_invalid' ? cause.message
@@ -60,20 +60,19 @@ async function reconcile(): Promise<void> {
   loading.value = true;
   try {
     const page = await listOpeningDocuments(1, 20, unknownWarehouseId.value);
-    if (page.records.length) {
-      const document = page.records[0];
-      unknownWarehouseId.value = ''; error.value = '';
-      await router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: document.id } });
-    }
+    // 仓库唯一约束不能区分已有草稿与本次提交，保持阻断，供人工核对。
+    rows.value = page.records; error.value = t('wms.opening.createUnknown');
   } catch { error.value = t('wms.opening.createUnknown'); }
   finally { loading.value = false; }
 }
 function open(row: OpeningDocument): void { void router.push({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: row.id } }); }
 async function remove(): Promise<void> {
-  if (!deleting.value || saving.value) return;
+  if (!deleting.value || saving.value || unknownWarehouseId.value) return;
   saving.value = true; error.value = '';
   try { await deleteOpeningDocument(deleting.value.id); deleting.value = undefined; await load(); if (!rows.value.length && pageNo.value > 1) await load(pageNo.value - 1); }
-  catch (cause) { error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.writeFailed'); }
+  catch (cause) { error.value = classifyWriteFailure(cause) === 'unknown' ? t('wms.opening.createUnknown')
+    : isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.writeFailed');
+    if (classifyWriteFailure(cause) === 'unknown') unknownWarehouseId.value = deleting.value?.warehouseId ?? warehouseId.value; }
   finally { saving.value = false; }
 }
 onMounted(() => { void load(); });
@@ -96,7 +95,7 @@ onMounted(() => { void load(); });
         <template #cell-status="{ row }">{{ t(row.status === 'DRAFT' ? 'wms.opening.draft' : 'wms.opening.posted') }}</template>
         <template #cell-warehouseState="{ row }">{{ t(row.warehouseState === 'INITIALIZING' ? 'wms.opening.initializing' : row.warehouseState === 'PENDING_ACTIVATION' ? 'wms.opening.pendingActivation' : 'wms.opening.active') }}</template>
         <template #cell-transactionId="{ row }">{{ row.transactionId || '—' }}</template>
-        <template #cell-actions="{ row }"><MomButton mode="text" @click="open(row)">{{ t('wms.opening.open') }}</MomButton><MomButton v-if="canCreate && row.status === 'DRAFT'" mode="text" :disabled="saving" @click="deleting = row">{{ tForOwner('system', 'system.common.delete') }}</MomButton></template>
+        <template #cell-actions="{ row }"><MomButton mode="text" @click="open(row)">{{ t('wms.opening.open') }}</MomButton><MomButton v-if="canCreate && row.status === 'DRAFT'" mode="text" :disabled="saving || !!unknownWarehouseId" @click="deleting = row">{{ tForOwner('system', 'system.common.delete') }}</MomButton></template>
       </MomDataTable>
       <template #footer><MomCrudPagination :page-no="pageNo" :page-size="pageSize" :total="total"
         :summary="`${total}`" :page-size-label="tForOwner('system', 'system.common.pageSize')"

@@ -1,13 +1,13 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import InventoryTransferModal from './InventoryTransferModal.vue';
-import { transferInventory } from '../api/inventory-api';
+import { findTransferByRequestKey, transferInventory } from '../api/inventory-api';
 import { searchCatalog } from '../../mdm/api/catalog-api';
 import { ApiError } from '../../../shared/api/errors';
 
 vi.mock('../../../shared/i18n/locale', () => ({ useLocale: () => ({ t: (key: string) => key,
   tForOwner: (_owner: string, key: string) => key }) }));
-vi.mock('../api/inventory-api', () => ({ transferInventory: vi.fn() }));
+vi.mock('../api/inventory-api', () => ({ transferInventory: vi.fn(), findTransferByRequestKey: vi.fn() }));
 vi.mock('../../mdm/api/catalog-api', () => ({ searchCatalog: vi.fn() }));
 
 const balance = { id: 'balance-1', materialId: '1001', materialCode: 'MAT-1', materialName: '材料一', uomCode: 'kg',
@@ -34,6 +34,7 @@ beforeEach(() => {
     pageNo: 1, pageSize: 20, total: 2, totalPages: 1,
   }));
   vi.mocked(transferInventory).mockReset().mockResolvedValue({ transactionId: 'tx-1' });
+  vi.mocked(findTransferByRequestKey).mockReset().mockResolvedValue(null);
 });
 
 describe('库内移动弹窗', () => {
@@ -65,7 +66,7 @@ describe('库内移动弹窗', () => {
     expect(transferInventory).not.toHaveBeenCalled();
   });
 
-  it('未知写入结果禁用再次提交，要求刷新核对', async () => {
+  it('响应丢失后只用原请求键核对，缺失结果继续阻断，匹配原输入才解除', async () => {
     vi.stubGlobal('crypto', { randomUUID: () => 'move-key' });
     vi.mocked(transferInventory).mockRejectedValue(new ApiError('network',
       { kind: 'network', code: 'network', resultUnknown: true }));
@@ -74,6 +75,16 @@ describe('库内移动弹窗', () => {
     await wrapper.find('form').trigger('submit'); await flushPromises();
     expect(wrapper.text()).toContain('wms.inventory.transfer.unknown');
     await wrapper.find('form').trigger('submit');
+    expect(transferInventory).toHaveBeenCalledTimes(1);
+    await wrapper.findAll('button').find(button => button.text() === 'wms.inventory.retry')!.trigger('click');
+    await flushPromises();
+    expect(findTransferByRequestKey).toHaveBeenCalledWith('move-key');
+    expect(wrapper.emitted('done')).toBeUndefined();
+    vi.mocked(findTransferByRequestKey).mockResolvedValue({ transactionId: 'tx-1', balanceId: 'balance-1',
+      targetLocationId: '3002', quantity: '10.000000' });
+    await wrapper.findAll('button').find(button => button.text() === 'wms.inventory.retry')!.trigger('click');
+    await flushPromises();
+    expect(wrapper.emitted('done')).toHaveLength(1);
     expect(transferInventory).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
   });

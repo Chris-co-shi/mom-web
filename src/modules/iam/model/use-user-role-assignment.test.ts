@@ -50,6 +50,24 @@ describe('用户角色分配草稿', () => {
     scope.stop();
   });
 
+  it('未知结果即使读到目标关系也保留草稿和阻断，因为关系集合无法证明原请求提交', async () => {
+    const scope = effectScope();
+    const assignment = scope.run(useUserRoleAssignment)!;
+    await assignment.openFor(user);
+    assignment.toggle(role('new'));
+    vi.mocked(replaceUserRoles).mockRejectedValueOnce(new Error('response lost'));
+    await assignment.submit();
+    await assignment.reloadLatest();
+    expect(assignment.stage.value).toBe('unknown');
+    expect(assignment.selectedIds.value).toEqual(['existing', 'new']);
+    vi.mocked(getUserRoles).mockResolvedValueOnce([role('existing'), role('new')]);
+    await assignment.reloadLatest();
+    expect(assignment.stage.value).toBe('unknown');
+    expect(assignment.selectedIds.value).toEqual(['existing', 'new']);
+    expect(assignment.canSubmit.value).toBe(false);
+    scope.stop();
+  });
+
   it('初始关系读取失败时不能用空关系覆盖，必须重新读取后才允许保存', async () => {
     const scope = effectScope();
     const assignment = scope.run(useUserRoleAssignment)!;

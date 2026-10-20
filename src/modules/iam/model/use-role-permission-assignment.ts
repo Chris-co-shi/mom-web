@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, ref, watch } from 'vue';
 import type { MessageKey } from '../../../locales/zh-CN';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { hasAuthorities } from '../../auth';
 import type { PermissionResponse } from '../api/permissions-api';
 import { searchPermissions } from '../api/permissions-api';
@@ -14,8 +14,7 @@ export type GrantStage = 'select' | 'review' | 'stale' | 'unknown';
 function feedback(error: unknown, writing = false): GrantFeedback {
   if (!isApiError(error)) return { key: writing ? 'iam.grants.unknownWrite' : 'iam.grants.loadFailed' };
   let key: MessageKey = 'iam.grants.loadFailed';
-  if (writing && (error.resultUnknown || error.kind === 'network' || error.kind === 'timeout'
-    || error.kind === 'server' || error.kind === 'protocol')) key = 'iam.grants.unknownWrite';
+  if (writing && classifyWriteFailure(error) === 'unknown') key = 'iam.grants.unknownWrite';
   else if (error.code === 'auth.permission_disabled') key = 'iam.grants.disabled';
   else if (error.code === 'auth.relation_selection_too_large') key = 'iam.grants.limit';
   else if (error.kind === 'conflict') key = 'iam.grants.conflict';
@@ -69,6 +68,7 @@ export function useRolePermissionAssignment() {
   let sequence = 0;
   let pageSequence = 0;
   let disposed = false;
+  let uncertainSelection: string[] | undefined;
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   const baselineIds = computed(() => assigned.value.map((item) => item.id));
@@ -127,13 +127,16 @@ export function useRolePermissionAssignment() {
       if (disposed || current !== sequence) return;
       target.value = freshRole;
       assigned.value = relations;
-      selectedIds.value = relations.map((item) => item.id);
+      selectedIds.value = preserveUnknown && uncertainSelection
+        ? [...uncertainSelection] : relations.map((item) => item.id);
       known.value = [];
       remember(relations);
       pageNo.value = 1;
       total.value = 0;
-      stage.value = 'select';
-      if (preserveUnknown) notice.value = { key: 'iam.grants.reconciled' };
+      stage.value = preserveUnknown ? 'unknown' : 'select';
+      if (preserveUnknown) {
+        error.value = { key: 'iam.grants.unknownWrite' };
+      }
     } catch (cause) {
       if (disposed || current !== sequence) return;
       error.value = feedback(cause);
@@ -328,7 +331,7 @@ export function useRolePermissionAssignment() {
     } catch (cause) {
       if (disposed) return false;
       error.value = feedback(cause, true);
-      if (error.value.key === 'iam.grants.unknownWrite') stage.value = 'unknown';
+      if (error.value.key === 'iam.grants.unknownWrite') {stage.value = 'unknown';uncertainSelection = [...selectedIds.value];}
       else if (error.value.key === 'iam.grants.disabled' || error.value.key === 'iam.grants.notFound'
         || error.value.key === 'iam.grants.conflict') stage.value = 'stale';
       return false;

@@ -4,7 +4,7 @@ import { Plus, RefreshCw } from '@lucide/vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import { submitWithFocus } from '../../../shared/ui/focus';
 import { AuthorityGuard, hasAuthority } from '../../auth';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
@@ -15,7 +15,7 @@ import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
 import { searchPlants, type PlantView } from '../api/factory-api';
 import { searchCatalog, type MasterRow } from '../api/catalog-api';
-import { searchRoutings, getRouting, createRouting, updateRoutingDraft, nextRoutingRevision,
+import { searchRoutings, getRouting, getRoutingRevision, createRouting, updateRoutingDraft, nextRoutingRevision,
   releaseRoutingRevision, obsoleteRoutingRevision, type RoutingIdentity, type RoutingDetail,
   type RoutingStepInput } from '../api/routing-api';
 import './mdm-pages.css';
@@ -31,7 +31,8 @@ const optionLoading = computed(() => Object.values(optionPending).some(Boolean))
 const optionError = computed(() => Object.values(optionFailed).some(Boolean));
 const optionRequest = { plants: 0, lines: 0, stations: 0 };
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
-const loading = ref(false), detailLoading = ref(false), saving = ref(false);
+const loading = ref(false), detailLoading = ref(false), saving = ref(false), blocked = ref(false);
+let conflictBlocked = false;
 const listError = ref(''), dialogError = ref(''), formError = ref(''), notice = ref('');
 const action = ref<'create' | 'detail' | 'edit'>();
 const form = reactive({ code: '', name: '', plantId: '',
@@ -105,11 +106,12 @@ function resetForm(value?: RoutingDetail): void {
         resourceType: 'PRODUCTION_LINE', resourceId: '' }] });
 }
 function openCreate(): void {
-  if (!hasAuthority('mdm:manufacturing-definition:write')) return;
+  if (blocked.value || !hasAuthority('mdm:manufacturing-definition:write')) return;
   ++detailNo; detailController?.abort(); detail.value = undefined;
   action.value = 'create'; formError.value = ''; dialogError.value = ''; resetForm(); refreshOptions();
 }
 async function openDetail(row: RoutingIdentity): Promise<void> {
+  if (blocked.value) return;
   const current = ++detailNo; detailController?.abort(); detailController = new AbortController();
   action.value = 'detail'; detailLoading.value = true; detail.value = undefined;
   formError.value = ''; dialogError.value = ''; refreshOptions();
@@ -120,7 +122,7 @@ async function openDetail(row: RoutingIdentity): Promise<void> {
   } catch (error) { if (!disposed && current === detailNo) dialogError.value = feedback(error); }
   finally { if (current === detailNo) detailLoading.value = false; }
 }
-function close(): void { if (saving.value) return; ++detailNo; detailController?.abort(); action.value = undefined; detail.value = undefined; }
+function close(): void { if (saving.value || blocked.value) return; ++detailNo; detailController?.abort(); action.value = undefined; detail.value = undefined; }
 function addStep(): void { form.steps.push({ sequenceNo: Math.max(0, ...form.steps.map(step => step.sequenceNo)) + 10,
   operationCode: '', name: '', resourceType: 'PRODUCTION_LINE', resourceId: '' }); }
 function valid(): boolean {
@@ -131,7 +133,7 @@ function valid(): boolean {
       !!step.operationCode.trim() && !!step.name.trim() && !!step.resourceId);
 }
 async function write(operation: 'save' | 'next' | 'release' | 'obsolete'): Promise<void> {
-  if (saving.value || !hasAuthority('mdm:manufacturing-definition:write')) return;
+  if (saving.value || blocked.value || !hasAuthority('mdm:manufacturing-definition:write')) return;
   if (operation === 'save' && !valid()) { formError.value = t('mdm.routing.invalid'); return; }
   const current = detail.value;
   if (operation !== 'save' && !current) return;
@@ -150,8 +152,23 @@ async function write(operation: 'save' | 'next' | 'release' | 'obsolete'): Promi
       result = await obsoleteRoutingRevision(current.revision.id, current.revision.lockVersion);
     } else return;
     detail.value = result; resetForm(result); action.value = 'detail'; notice.value = t('mdm.routing.saved'); void loadPage(1);
-  } catch (error) { formError.value = feedback(error, true); }
+  } catch (error) {const classification = classifyWriteFailure(error);
+    blocked.value = classification !== 'failed'; conflictBlocked = classification === 'conflict';
+    formError.value = feedback(error, true); }
   finally { saving.value = false; }
+}
+async function reconcile(): Promise<void> {
+  if (!blocked.value || saving.value || detailLoading.value || !detail.value) return;
+  const current = ++detailNo; detailLoading.value = true;
+  try {
+    const latest = await getRoutingRevision(detail.value.revision.id);
+    if (current !== detailNo) return;
+    detail.value = latest;
+    if (conflictBlocked) {
+      blocked.value = false; conflictBlocked = false; formError.value = '';
+    } else formError.value = t('mdm.struct.unknownWrite');
+  } catch {formError.value = t('mdm.struct.unknownWrite');}
+  finally {if (current === detailNo) detailLoading.value = false;}
 }
 onMounted(() => { void loadPage(); });
 onBeforeRouteLeave(() => !saving.value);
@@ -167,11 +184,14 @@ onScopeDispose(() => { disposed = true; ++listNo; ++detailNo;
         <template #actions>
           <MomButton variant="outline" :disabled="loading" @click="loadPage()"><RefreshCw :size="16" />{{ t('mdm.struct.refresh') }}</MomButton>
           <AuthorityGuard :authorities="['mdm:manufacturing-definition:write']">
-            <MomButton @click="openCreate"><Plus :size="16" />{{ t('mdm.struct.create') }}</MomButton>
+            <MomButton :disabled="blocked" @click="openCreate"><Plus :size="16" />{{ t('mdm.struct.create') }}</MomButton>
           </AuthorityGuard>
         </template>
       </MomManagementHeader>
       <p v-if="notice" role="status">{{ notice }}</p>
+      <p v-if="blocked" class="mdm-plants__error" role="alert">{{ formError }}
+        <MomButton v-if="detail" variant="outline" :disabled="detailLoading" @click="reconcile">{{ t('mdm.struct.refresh') }}</MomButton>
+      </p>
       <div v-if="listError" class="mdm-plants__error" role="alert">{{ listError }}
         <MomButton variant="outline" @click="loadPage()">{{ t('mdm.struct.retry') }}</MomButton></div>
       <MomListSurface v-else :title="t('mdm.routing.title')" :hint="t('mdm.routing.listHint')"
@@ -206,10 +226,10 @@ onScopeDispose(() => { disposed = true; ++listNo; ++detailNo;
               · {{ resourceLabel(step.resourceType, step.resourceId) }}</p>
             <div class="mdm-plants__footer">
               <AuthorityGuard :authorities="['mdm:manufacturing-definition:write']">
-                <MomButton v-if="detail.revision.status === 'DRAFT'" variant="outline" @click="action = 'edit'">{{ t('mdm.struct.edit') }}</MomButton>
-                <MomButton v-if="detail.revision.status === 'DRAFT'" :disabled="saving" @click="write('release')">{{ t('mdm.routing.release') }}</MomButton>
-                <MomButton v-if="detail.revision.status === 'RELEASED'" variant="outline" :disabled="saving" @click="write('obsolete')">{{ t('mdm.routing.obsolete') }}</MomButton>
-                <MomButton v-if="detail.revision.status !== 'DRAFT'" :disabled="saving" @click="write('next')">{{ t('mdm.routing.nextRevision') }}</MomButton>
+                <MomButton v-if="detail.revision.status === 'DRAFT'" variant="outline" :disabled="blocked" @click="action = 'edit'">{{ t('mdm.struct.edit') }}</MomButton>
+                <MomButton v-if="detail.revision.status === 'DRAFT'" :disabled="saving || blocked" @click="write('release')">{{ t('mdm.routing.release') }}</MomButton>
+                <MomButton v-if="detail.revision.status === 'RELEASED'" variant="outline" :disabled="saving || blocked" @click="write('obsolete')">{{ t('mdm.routing.obsolete') }}</MomButton>
+                <MomButton v-if="detail.revision.status !== 'DRAFT'" :disabled="saving || blocked" @click="write('next')">{{ t('mdm.routing.nextRevision') }}</MomButton>
               </AuthorityGuard>
             </div>
           </div>
@@ -239,7 +259,7 @@ onScopeDispose(() => { disposed = true; ++listNo; ++detailNo;
             </div>
             <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{ formError }}</p>
             <div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
-              <MomButton type="submit" :disabled="saving || optionLoading || optionError">{{ t('mdm.struct.confirm') }}</MomButton></div>
+              <MomButton type="submit" :disabled="saving || blocked || optionLoading || optionError">{{ t('mdm.struct.confirm') }}</MomButton></div>
           </form>
         </div>
       </MomModal>

@@ -18,7 +18,7 @@ beforeEach(() => {
   vi.mocked(createOpeningDocument).mockReset();
 });
 
-it('期初单创建结果未知时阻止重放，并按仓库查询已创建单据', async () => {
+it('期初单创建结果未知时阻止重放，仓库查询不能证明原创建结果', async () => {
   const empty = { records: [], pageNo: 1, pageSize: 20, total: 0, totalPages: 0 };
   const document = { id: 'doc-1', documentNo: 'OB-00000001', warehouseId: '2001', warehouseCode: 'WH-1',
     status: 'DRAFT' as const, transactionId: null, createdBy: 'operator', version: 0,
@@ -49,5 +49,6 @@ it('期初单创建结果未知时阻止重放，并按仓库查询已创建单�
   await refresh.trigger('click');
   await flushPromises();
   expect(listOpeningDocuments).toHaveBeenLastCalledWith(1, 20, '2001');
-  expect(push).toHaveBeenCalledWith({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: 'doc-1' } });
+  expect(push).not.toHaveBeenCalledWith({ name: ROUTE_NAMES.wmsOpeningDetail, params: { id: 'doc-1' } });
+  expect(create.attributes('disabled')).toBeDefined();
 });

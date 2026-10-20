@@ -13,6 +13,7 @@ import MomCrudRowMenu from '../../../shared/components/MomCrudRowMenu.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
+import { classifyWriteFailure } from '../../../shared/api/errors';
 import { formatInstant } from '../../../shared/formatters';
 import { systemApi, type SupportedLocale } from '../api/system-api';
 import { systemFeedback, validDisplayText, validLocaleCode, validSortOrder, type SystemFeedback } from '../model/system-feedback';
@@ -26,6 +27,7 @@ const action = ref<Action | null>(null);
 const target = ref<SupportedLocale | null>(null);
 const saving = ref(false);
 const blocked = ref(false);
+let unknownWrite = false;
 const feedback = ref<SystemFeedback | null>(null);
 const notice = ref(false);
 const search = ref('');
@@ -51,8 +53,7 @@ watch(pages, value => { if (pageNo.value > value) pageNo.value = value; });
 async function reload(): Promise<void> {
   const ok = await list.reload();
   if (ok) {
-    blocked.value = false;
-    feedback.value = null;
+    if (!unknownWrite) {blocked.value = false; feedback.value = null;}
     if (target.value) target.value = list.rows.value.find(row => row.id === target.value?.id) ?? null;
   }
 }
@@ -67,7 +68,7 @@ function open(next: Action, row?: SupportedLocale): void {
   Object.assign(form, { localeCode: row?.localeCode ?? '', displayName: row?.displayName ?? '',
     nativeName: row?.nativeName ?? '', sortOrder: row?.sortOrder ?? 0, enabled: row?.enabled ?? true });
 }
-function close(): void { if (!saving.value) { action.value = null; feedback.value = null; } }
+function close(): void { if (!saving.value) { action.value = null; if (!blocked.value) feedback.value = null; } }
 async function submit(): Promise<void> {
   if (!action.value || saving.value || blocked.value || action.value === 'detail') return;
   if (action.value !== 'create' && !target.value) { feedback.value = { key: 'system.feedback.notFound' }; blocked.value = true; return; }
@@ -86,6 +87,7 @@ async function submit(): Promise<void> {
     if (await list.reload()) { pageNo.value = 1; blocked.value = false; }
   } catch (cause) {
     feedback.value = systemFeedback(cause, true);
+    unknownWrite = classifyWriteFailure(cause) === 'unknown';
     blocked.value = feedback.value.key === 'system.feedback.conflict' || feedback.value.key === 'system.feedback.unknown';
   } finally { saving.value = false; }
 }

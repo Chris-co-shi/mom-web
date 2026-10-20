@@ -1,5 +1,5 @@
 import type { MessageKey } from '../../../locales/zh-CN';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 
 export interface UserFeedback {
   key: MessageKey;
@@ -10,7 +10,7 @@ export interface UserFeedback {
 export function userFeedback(error: unknown, writing = false): UserFeedback {
   if (!isApiError(error)) return { key: writing ? 'iam.users.unknownWrite' : 'iam.users.loadFailed' };
   let key: MessageKey = 'iam.users.loadFailed';
-  if (writing && (error.resultUnknown || error.kind === 'server' || error.kind === 'protocol')) key = 'iam.users.unknownWrite';
+  if (writing && classifyWriteFailure(error) === 'unknown') key = 'iam.users.unknownWrite';
   else if (error.code === 'auth.username_conflict') key = 'iam.users.usernameConflict';
   else if (error.code === 'auth.resource_referenced') key = 'iam.users.referenced';
   else if (error.kind === 'conflict') key = 'iam.users.conflict';

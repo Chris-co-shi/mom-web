@@ -11,7 +11,7 @@ import MomDataTable, { type MomColumn } from '../../../shared/components/MomData
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import { MomButton, MomInput, MomQuantityInput, MomReferenceSelect, MomSelect } from '../../../shared/ui';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
 import { addOpeningLine, activateWarehouseInventory, deleteOpeningLine, editOpeningLine, getOpeningDocument, postOpeningDocument, type OpeningDetail, type OpeningLine, type OpeningLineInput } from '../api/opening-api';
@@ -21,6 +21,9 @@ const route = useRoute(), router = useRouter(), { t, tForOwner } = useLocale();
 const id = String(route.params.id), detail = ref<OpeningDetail>();
 const loading = ref(false), saving = ref(false), error = ref(''), notice = ref(''), deleting = ref<OpeningLine>();
 const editingLineId = ref('');
+const blocked = ref(false);
+let conflictBlocked = false;
+let detailSequence = 0;
 const materialUomCode = ref('');
 const locationReference = catalogReference('locations', () => ({ warehouseId: detail.value?.document.warehouseId ?? '', status: 'ENABLED' }));
 let uomSequence = 0;
@@ -49,10 +52,35 @@ const columns = computed<MomColumn[]>(() => [
   { key: 'actions', title: tForOwner('system', 'system.common.actions'), width: 170, resizable: false },
 ]);
 async function load(): Promise<void> {
+  const current = ++detailSequence;
   loading.value = true; error.value = '';
-  try { detail.value = await getOpeningDocument(id); }
-  catch (cause) { error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.loadFailed'); }
+  try { const latest = await getOpeningDocument(id);
+    if (current !== detailSequence) return;
+    detail.value = latest;
+    if (blocked.value) error.value = tForOwner('system', 'system.feedback.unknown'); }
+  catch (cause) { if (current === detailSequence) error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.loadFailed'); }
+  finally { if (current === detailSequence) loading.value = false; }
+}
+async function reconcile(): Promise<void> {
+  if (!blocked.value || saving.value || loading.value) return;
+  ++detailSequence;
+  loading.value = true;
+  try {
+    const latest = await getOpeningDocument(id);
+    detail.value = latest;
+    if (conflictBlocked) {
+      blocked.value = false; conflictBlocked = false; error.value = '';
+    } else error.value = tForOwner('system', 'system.feedback.unknown');
+  } catch { error.value = tForOwner('system', 'system.feedback.unknown'); }
   finally { loading.value = false; }
+}
+function writeFailure(cause: unknown): void {
+  const result = classifyWriteFailure(cause);
+  if (result !== 'failed') { blocked.value = true;
+    conflictBlocked = result === 'conflict'; }
+  error.value = result === 'unknown' ? tForOwner('system', 'system.feedback.unknown')
+    : isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden')
+      : isApiError(cause) && cause.message ? cause.message : t('wms.opening.writeFailed');
 }
 function edit(line: OpeningLine): void {
   form.materialId = line.materialId; form.locationId = line.locationId; form.batchCode = line.batchCode ?? '';
@@ -60,36 +88,37 @@ function edit(line: OpeningLine): void {
 }
 function clear(): void { Object.assign(form, { materialId: '', locationId: '', batchCode: '', snCode: '', quantity: '', qualityStatus: 'PENDING', warehouseStatus: 'NORMAL' }); editingLineId.value = ''; }
 async function saveLine(lineId?: string): Promise<void> {
-  if (!canWrite.value || saving.value || !form.materialId || !form.locationId || !materialUomCode.value
+  if (!canWrite.value || saving.value || blocked.value || !form.materialId || !form.locationId || !materialUomCode.value
     || !/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(form.quantity) || /^0(?:\.0+)?$/.test(form.quantity)) return;
   saving.value = true; error.value = ''; notice.value = '';
   const payload: OpeningLineInput = { materialId: form.materialId, locationId: form.locationId,
     batchCode: form.batchCode || null, snCode: form.snCode || null, quantity: form.quantity,
     qualityStatus: form.qualityStatus as OpeningLineInput['qualityStatus'], warehouseStatus: form.warehouseStatus as OpeningLineInput['warehouseStatus'] };
   try { const targetLineId = lineId || editingLineId.value; detail.value = targetLineId ? await editOpeningLine(id, targetLineId, payload) : await addOpeningLine(id, payload); clear(); notice.value = t('wms.opening.lineSaved'); }
-  catch (cause) { error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.writeFailed'); }
+  catch (cause) { writeFailure(cause); }
   finally { saving.value = false; }
 }
 async function removeLine(): Promise<void> {
-  if (!deleting.value || saving.value) return;
+  if (!deleting.value || saving.value || blocked.value) return;
   saving.value = true;
   try { detail.value = await deleteOpeningLine(id, deleting.value.id); deleting.value = undefined; }
-  catch { error.value = t('wms.opening.writeFailed'); }
+  catch (cause) { writeFailure(cause); }
   finally { saving.value = false; }
 }
 async function post(): Promise<void> {
-  if (!canPost.value || saving.value || !detail.value?.lines.length) return;
+  if (!canPost.value || saving.value || blocked.value || !detail.value?.lines.length) return;
   saving.value = true; error.value = ''; notice.value = '';
   try { const result = await postOpeningDocument(id); detail.value = result.detail; notice.value = `${t('wms.opening.postedResult')}: ${result.transactionId}`; }
-  catch (cause) { error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.postFailed'); }
+  catch (cause) { writeFailure(cause); }
   finally { saving.value = false; }
 }
 async function activate(): Promise<void> {
-  if (!detail.value || !hasAuthority('wms:opening:activate') || saving.value) return;
+  if (!detail.value || !hasAuthority('wms:opening:activate') || saving.value || blocked.value) return;
   saving.value = true; error.value = '';
-  try { await activateWarehouseInventory(detail.value.document.warehouseId); confirmActivation.value = false; notice.value = t('wms.opening.activated'); await load(); }
-  catch { error.value = t('wms.opening.activateFailed'); }
+  try { await activateWarehouseInventory(detail.value.document.warehouseId); confirmActivation.value = false; notice.value = t('wms.opening.activated'); }
+  catch (cause) { writeFailure(cause); }
   finally { saving.value = false; }
+  if (notice.value) await load();
 }
 function verifyInventory(): void { void router.push({ name: ROUTE_NAMES.wmsInventoryDetails, query: { warehouseId: detail.value?.document.warehouseId } }); }
 onMounted(() => { void load(); });
@@ -100,8 +129,9 @@ onMounted(() => { void load(); });
     <MomManagementHeader title-id="wms-opening-detail-title" :title="t('wms.opening.title')" :description="`${t('wms.opening.warehouse')}: ${detail?.document.warehouseCode || ''}`">
       <template #actions>
         <MomButton variant="outline" @click="router.push({ name: ROUTE_NAMES.wmsOpeningDocuments })">{{ t('wms.opening.back') }}</MomButton>
-        <MomButton v-if="canPost" :disabled="saving || !detail?.lines.length" @click="post">{{ t('wms.opening.confirmPost') }}</MomButton>
-        <MomButton v-if="canActivate" :disabled="saving" @click="confirmActivation = true">{{ t('wms.opening.activate') }}</MomButton>
+        <MomButton v-if="canPost" :disabled="saving || blocked || !detail?.lines.length" @click="post">{{ t('wms.opening.confirmPost') }}</MomButton>
+        <MomButton v-if="canActivate" :disabled="saving || blocked" @click="confirmActivation = true">{{ t('wms.opening.activate') }}</MomButton>
+        <MomButton v-if="blocked" variant="outline" :disabled="saving || loading" @click="reconcile">{{ tForOwner('system', 'system.common.refresh') }}</MomButton>
         <MomButton v-if="detail?.document.status === 'POSTED'" variant="outline" @click="verifyInventory">{{ t('wms.opening.verifyInventory') }}</MomButton>
       </template>
     </MomManagementHeader>
@@ -147,7 +177,7 @@ onMounted(() => { void load(); });
           <label class="opening-detail__field">{{ t('wms.opening.warehouseStatus') }}<MomSelect v-model="form.warehouseStatus" :options="[{ value:'NORMAL',label:t('wms.inventory.warehouse.normal') },{ value:'FROZEN',label:t('wms.inventory.warehouse.frozen') }]" /></label>
         </div>
         <div class="opening-detail__form-actions">
-          <MomButton type="submit" :disabled="saving || !materialUomCode">{{ editingLineId ? tForOwner('system', 'system.common.save') : t('wms.opening.addLine') }}</MomButton>
+        <MomButton type="submit" :disabled="saving || blocked || !materialUomCode">{{ editingLineId ? tForOwner('system', 'system.common.save') : t('wms.opening.addLine') }}</MomButton>
           <MomButton v-if="editingLineId" type="button" variant="outline" :disabled="saving" @click="clear">{{ tForOwner('system', 'system.common.cancel') }}</MomButton>
         </div>
       </form>
@@ -155,14 +185,14 @@ onMounted(() => { void load(); });
       <MomDataTable v-if="detail" :rows="detail.lines" :columns="columns" :empty-text="detail.lines.length ? tForOwner('system', 'system.common.empty') : t('wms.opening.emptyLines')">
         <template #cell-qualityStatus="{ row }">{{ t(`wms.inventory.quality.${row.qualityStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
         <template #cell-warehouseStatus="{ row }">{{ t(`wms.inventory.warehouse.${row.warehouseStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
-        <template #cell-actions="{ row }"><template v-if="canWrite"><MomButton mode="text" :disabled="saving" @click="edit(row)">{{ tForOwner('system', 'system.common.edit') }}</MomButton><MomButton mode="text" :disabled="saving" @click="deleting = row">{{ tForOwner('system', 'system.common.delete') }}</MomButton></template></template>
+        <template #cell-actions="{ row }"><template v-if="canWrite"><MomButton mode="text" :disabled="saving || blocked" @click="edit(row)">{{ tForOwner('system', 'system.common.edit') }}</MomButton><MomButton mode="text" :disabled="saving || blocked" @click="deleting = row">{{ tForOwner('system', 'system.common.delete') }}</MomButton></template></template>
       </MomDataTable>
     </MomListSurface>
     <MomModal :open="!!deleting" :title="t('wms.opening.deleteConfirm')" :close-label="tForOwner('system', 'system.common.close')" :busy="saving" @close="deleting = undefined">
-      <p>{{ t('wms.opening.deleteConfirm') }}</p><template #footer><MomButton variant="outline" :disabled="saving" @click="deleting = undefined">{{ tForOwner('system', 'system.common.cancel') }}</MomButton><MomButton variant="destructive" :disabled="saving" @click="removeLine">{{ tForOwner('system', 'system.common.delete') }}</MomButton></template>
+      <p>{{ t('wms.opening.deleteConfirm') }}</p><template #footer><MomButton variant="outline" :disabled="saving" @click="deleting = undefined">{{ tForOwner('system', 'system.common.cancel') }}</MomButton><MomButton variant="destructive" :disabled="saving || blocked" @click="removeLine">{{ tForOwner('system', 'system.common.delete') }}</MomButton></template>
     </MomModal>
     <MomModal :open="confirmActivation" :title="t('wms.opening.activationConfirm')" :close-label="tForOwner('system', 'system.common.close')" :busy="saving" @close="confirmActivation = false">
-      <p>{{ t('wms.opening.activationHint') }}</p><template #footer><MomButton variant="outline" :disabled="saving" @click="confirmActivation = false">{{ tForOwner('system', 'system.common.cancel') }}</MomButton><MomButton :disabled="saving" @click="activate">{{ t('wms.opening.activate') }}</MomButton></template>
+      <p>{{ t('wms.opening.activationHint') }}</p><template #footer><MomButton variant="outline" :disabled="saving" @click="confirmActivation = false">{{ tForOwner('system', 'system.common.cancel') }}</MomButton><MomButton :disabled="saving || blocked" @click="activate">{{ t('wms.opening.activate') }}</MomButton></template>
     </MomModal>
   </section></PageContainer>
 </template>

@@ -4,7 +4,7 @@ import { submitWithFocus } from '../../../shared/ui/focus';
 import { onBeforeRouteLeave } from 'vue-router';
 import { Plus, RefreshCw } from '@lucide/vue';
 import { AuthorityGuard, hasAuthority } from '../../auth';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
@@ -35,7 +35,7 @@ const resolvedCategories = ref<MaterialCategory[]>([]), resolvedUoms = ref<UomRo
 const knownCategories = computed(() => [...new Map([...categories.value, ...resolvedCategories.value].map(row => [row.id, row])).values()]);
 const knownUoms = computed(() => [...new Map([...uoms.value, ...resolvedUoms.value].map(row => [row.id, row])).values()]);
 const pageNo = ref(1), pageSize = ref(20), total = ref(0), loading = ref(false);
-const saving = ref(false), detailLoading = ref(false), blocked = ref(false);
+const saving = ref(false), detailLoading = ref(false), blocked = ref(false), unknownWrite = ref(false);
 const action = ref<'create' | 'detail' | 'edit' | 'status'>(), target = ref<Material>();
 const listError = ref(''), dialogError = ref(''), notice = ref(''), formError = ref('');
 const filter = reactive({ keyword:'', categoryId:'', baseUomId:'', status:'' });
@@ -83,7 +83,7 @@ const dayValue = (raw: string): number | null => raw === '' ? null : Number(raw)
 const isDays = (raw: string): boolean => raw === '' || /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw));
 function feedback(error: unknown, writing = false): string {
   if (!isApiError(error)) return t(writing ? 'mdm.struct.unknownWrite' : 'mdm.struct.loadFailed');
-  if (writing && (error.resultUnknown || ['network','timeout','server','protocol'].includes(error.kind)))
+  if (writing && classifyWriteFailure(error) === 'unknown')
     return t('mdm.struct.unknownWrite');
   if (error.code === 'mdm.material_category_not_leaf') return t('mdm.material.notLeaf');
   if (error.kind === 'conflict') return t('mdm.struct.conflict');
@@ -140,7 +140,7 @@ function resetForm(value?: Material): void {
   });
 }
 async function open(next: 'create'|'detail'|'edit'|'status', row?: Material): Promise<void> {
-  if (saving.value || (next !== 'detail' && !hasAuthority('mdm:material:write'))) return;
+  if (saving.value || unknownWrite.value || (next !== 'detail' && !hasAuthority('mdm:material:write'))) return;
   ++detailSeq; detailController?.abort();
   action.value = next; target.value = row; blocked.value = false; detailLoading.value = false;
   dialogError.value = ''; formError.value = ''; resetForm(row);
@@ -165,7 +165,7 @@ async function open(next: 'create'|'detail'|'edit'|'status', row?: Material): Pr
   finally { if (current === detailSeq) detailLoading.value = false; }
 }
 function close(): void {
-  if (saving.value) return;
+  if (saving.value || unknownWrite.value) return;
   ++detailSeq; detailController?.abort(); action.value = undefined; target.value = undefined;
 }
 async function ensureLeafCategory(id: string): Promise<boolean> {
@@ -228,9 +228,9 @@ async function submit(): Promise<void> {
   } catch (error) {
     if (disposed) return;
     dialogError.value = feedback(error, true);
-    blocked.value = isApiError(error)
-      ? error.resultUnknown || ['conflict','not_found','network','timeout','server','protocol'].includes(error.kind)
-      : true;
+    const classification = classifyWriteFailure(error);
+    unknownWrite.value = classification === 'unknown';
+    blocked.value = classification !== 'failed' || isApiError(error) && error.kind === 'not_found';
   } finally { saving.value = false; }
 }
 function displayCategory(id: string): string { return knownCategories.value.find(r=>r.id===id)?.name ?? id; }
@@ -255,7 +255,7 @@ function handleMore(key: string, row: Material): void {
   if (key === 'status') void open('status', row);
 }
 onMounted(() => { void loadPage(); reloadReferences(); });
-onBeforeRouteLeave(() => !saving.value);
+onBeforeRouteLeave(() => !saving.value && !unknownWrite.value);
 onScopeDispose(() => { disposed = true; controller?.abort(); detailController?.abort(); });
 </script>
 

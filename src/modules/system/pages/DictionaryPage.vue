@@ -13,6 +13,7 @@ import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue'
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
+import { classifyWriteFailure } from '../../../shared/api/errors';
 import { systemApi, type DictionaryItem, type DictionaryType } from '../api/system-api';
 import { systemFeedback, validDictionaryCode, validDisplayText, validItemKey, validSortOrder, type SystemFeedback } from '../model/system-feedback';
 import { useSystemList } from '../model/use-system-list';
@@ -56,6 +57,7 @@ const kind = ref<Kind>('type'); const action = ref<Action | null>(null);
 const targetType = ref<DictionaryType | null>(null); const targetItem = ref<DictionaryItem | null>(null);
 const form = reactive({ code: '', name: '', key: '', value: '', sortOrder: 0, description: '', enabled: true });
 const saving = ref(false); const blocked = ref(false); const feedback = ref<SystemFeedback | null>(null); const notice = ref(false);
+let unknownWrite = false;
 watch(typeSearch, () => { typePage.value = 1; });
 watch([itemSearch, pageSize], () => { itemPage.value = 1; });
 watch(typePages, count => { if (typePage.value > count) typePage.value = count; });
@@ -64,14 +66,14 @@ watch(selectedId, id => { items.clear(); itemPage.value = 1; if (id) void items.
 
 async function refreshTypes(): Promise<void> {
   if (!(await types.reload())) return;
-  blocked.value = false; feedback.value = null;
+  if (!unknownWrite) {blocked.value = false; feedback.value = null;}
   if (!types.rows.value.some(row => row.id === selectedId.value)) selectedId.value = types.rows.value[0]?.id ?? null;
   else if (selectedId.value) await items.reload();
   if (targetType.value) targetType.value = types.rows.value.find(row => row.id === targetType.value?.id) ?? null;
 }
 async function refreshItems(): Promise<void> {
   if (!selectedId.value || !(await items.reload())) return;
-  blocked.value = false; feedback.value = null;
+  if (!unknownWrite) {blocked.value = false; feedback.value = null;}
   if (targetItem.value) targetItem.value = items.rows.value.find(row => row.id === targetItem.value?.id) ?? null;
 }
 function open(nextKind: Kind, nextAction: Action, row?: DictionaryType | DictionaryItem): void {
@@ -85,7 +87,7 @@ function open(nextKind: Kind, nextAction: Action, row?: DictionaryType | Diction
     sortOrder: item?.sortOrder ?? 0, description: (nextKind === 'type' ? type?.description : item?.description) ?? '', enabled: (nextKind === 'type' ? type?.enabled : item?.enabled) ?? true
   });
 }
-function close(): void { if (!saving.value) { action.value = null; feedback.value = null; } }
+function close(): void { if (!saving.value) { action.value = null; if (!blocked.value) feedback.value = null; } }
 async function submit(): Promise<void> {
   if (!action.value || action.value === 'detail' || saving.value || blocked.value) return;
   if ((kind.value === 'type' && action.value !== 'create' && !targetType.value) ||
@@ -115,6 +117,7 @@ async function submit(): Promise<void> {
     else await refreshItems();
   } catch (cause) {
     feedback.value = systemFeedback(cause, true);
+    unknownWrite = classifyWriteFailure(cause) === 'unknown';
     blocked.value = feedback.value.key === 'system.feedback.conflict' || feedback.value.key === 'system.feedback.unknown';
   } finally { saving.value = false; }
 }

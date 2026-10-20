@@ -12,7 +12,7 @@ import MomDataTable, { type MomColumn } from '../../../shared/components/MomData
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { MomButton, MomInput, MomQuantityInput, MomReferenceSelect, MomSelect } from '../../../shared/ui';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
 import { addExtra, adjustCount, cancelCount, confirmCount, editCountScope, getCount, saveCount, startCount,
@@ -29,6 +29,8 @@ let uomSequence=0;
 const scope=reactive({materialIds:[] as string[],locationIds:[] as string[]});
 const quantities=reactive<Record<string,string>>({});
 const extra=reactive({materialId:'',locationId:'',batchCode:'',snCode:'',qualityStatus:'PENDING',warehouseStatus:'NORMAL',quantity:''});
+let detailRequest=0;
+let conflictBlocked=false;
 watch(()=>extra.materialId,async value=>{
   const current=++uomSequence;extraUomCode.value='';
   if(!value)return;
@@ -70,16 +72,31 @@ const scopedLocationReference={
 };
 const validQuantity=(value:string)=>/^(0|[1-9]\d{0,17})(\.\d{1,6})?$/.test(value);
 async function load():Promise<void> {
+  const current=++detailRequest;
   loading.value=true; error.value='';
   try {
-    detail.value=await getCount(id);
-    scope.materialIds=[...detail.value.task.materialIds]; scope.locationIds=[...detail.value.task.locationIds];
+    const result=await getCount(id);
+    if(current!==detailRequest)return;
+    detail.value=result;
+    if(!blocked.value) {scope.materialIds=[...result.task.materialIds]; scope.locationIds=[...result.task.locationIds];}
     void resolveScopeNames();
-    for(const line of detail.value.lines) quantities[line.id]=line.countedQuantity??'';
-    blocked.value=false;
-  } catch(cause) { error.value=isApiError(cause)&&cause.kind==='forbidden'
+    for(const line of result.lines) if(!(line.id in quantities)) quantities[line.id]=line.countedQuantity??'';
+    if(blocked.value)error.value=t('wms.inventory.count.unknown');
+  } catch(cause) { if(current===detailRequest)error.value=isApiError(cause)&&cause.kind==='forbidden'
     ? t('wms.inventory.forbidden'):t('wms.inventory.count.loadfailed'); }
-  finally { loading.value=false; }
+  finally {if(current===detailRequest)loading.value=false;}
+}
+async function reconcile():Promise<void> {
+  if(!blocked.value||saving.value||loading.value)return;
+  loading.value=true;
+  try {
+    const result=await getCount(id);
+    detail.value=result;
+    if(conflictBlocked) {
+      blocked.value=false;conflictBlocked=false;error.value='';
+    } else error.value=t('wms.inventory.count.unknown');
+  } catch {error.value=t('wms.inventory.count.unknown');}
+  finally {loading.value=false;}
 }
 async function resolveScopeNames():Promise<void>{
   if(!detail.value)return;
@@ -99,8 +116,10 @@ async function write(action:()=>Promise<CountDetail>,success:string):Promise<voi
   saving.value=true;error.value='';notice.value='';
   try {detail.value=await action();notice.value=t(success as Parameters<typeof t>[0]);
   }
-  catch(cause) { blocked.value=isApiError(cause)&&cause.resultUnknown;
-    error.value=blocked.value?t('wms.inventory.count.unknown')
+  catch(cause) {const classification=classifyWriteFailure(cause);
+    blocked.value=classification!=='failed';
+    conflictBlocked=classification==='conflict';
+    error.value=classification==='unknown'?t('wms.inventory.count.unknown')
       :isApiError(cause)&&cause.kind==='forbidden'?t('wms.inventory.forbidden')
       :isApiError(cause)&&cause.message?cause.message:t('wms.inventory.count.writefailed'); }
   finally {saving.value=false;pending.value='';}
@@ -136,7 +155,8 @@ onMounted(()=>{void load();});
   <PageContainer><section class="inventory-page">
     <MomManagementHeader title-id="wms-count-detail" :title="t('wms.inventory.count.detail')" :description="detail ? `${detail.task.taskNo} · ${detail.task.warehouseCode}` : ''">
       <template #actions>
-        <MomButton variant="outline" :disabled="loading" @click="load">{{ tForOwner('system','system.common.refresh') }}</MomButton>
+        <MomButton variant="outline" :disabled="loading||saving" @click="load">{{ tForOwner('system','system.common.refresh') }}</MomButton>
+        <MomButton v-if="blocked" variant="outline" :disabled="loading||saving" @click="reconcile">{{ tForOwner('system','system.common.refresh') }}</MomButton>
         <MomButton v-if="canStart" :disabled="saving||blocked" @click="pending='start'">{{ t('wms.inventory.count.start') }}</MomButton>
         <MomButton v-if="canConfirm" :disabled="saving||blocked" @click="pending='confirm'">{{ t('wms.inventory.count.confirm') }}</MomButton>
         <MomButton v-if="canAdjust" :disabled="saving||blocked" @click="pending='adjust'">{{ t('wms.inventory.count.adjust') }}</MomButton>
@@ -200,7 +220,7 @@ onMounted(()=>{void load();});
     <MomModal :open="!!pending" :title="t('wms.inventory.count.confirmaction')" :close-label="tForOwner('system','system.common.close')" :busy="saving" @close="pending=''">
       <p>{{ t('wms.inventory.count.confirmaction') }}</p>
       <template #footer><MomButton variant="outline" :disabled="saving" @click="pending=''">{{ tForOwner('system','system.common.cancel') }}</MomButton>
-        <MomButton :disabled="saving" @click="runAction(pending as 'start'|'confirm'|'adjust'|'cancel')">{{ t('wms.inventory.count.proceed') }}</MomButton></template>
+        <MomButton :disabled="saving||blocked" @click="runAction(pending as 'start'|'confirm'|'adjust'|'cancel')">{{ t('wms.inventory.count.proceed') }}</MomButton></template>
     </MomModal>
   </section></PageContainer>
 </template>

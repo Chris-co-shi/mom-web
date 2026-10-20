@@ -4,7 +4,7 @@ import { onBeforeRouteLeave } from 'vue-router';
 import { Plus, RefreshCw } from '@lucide/vue';
 import { submitWithFocus } from '../../../shared/ui/focus';
 import { AuthorityGuard, hasAuthority } from '../../auth';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
@@ -28,7 +28,8 @@ const plants = ref<PlantView[]>([]), materials = ref<Material[]>([]);
 const formulas = ref<FormulaDetail[]>([]), routings = ref<RoutingDetail[]>([]);
 const referenceLoading = ref(false), referenceError = ref(false);
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
-const loading = ref(false), detailLoading = ref(false), saving = ref(false);
+const loading = ref(false), detailLoading = ref(false), saving = ref(false), blocked = ref(false);
+let conflictBlocked = false;
 const listError = ref(''), dialogError = ref(''), formError = ref(''), notice = ref('');
 const action = ref<'create' | 'detail' | 'edit'>();
 const form = reactive({ code: '', name: '', businessVersion: '', plantId: '', outputMaterialId: '',
@@ -102,9 +103,10 @@ function resetForm(row?:ProductionVersion):void { Object.assign(form,{ code:row?
   businessVersion:row?.businessVersion??'', plantId:row?.plantId??'', outputMaterialId:row?.outputMaterialId??'',
   formulaRevisionId:row?.formulaRevisionId??'', routingRevisionId:row?.routingRevisionId??'',
   validFrom:row?.validFrom??'', validTo:row?.validTo??'' }); }
-function openCreate():void { if (!hasAuthority('mdm:manufacturing-definition:write')) return;
+function openCreate():void { if (blocked.value || !hasAuthority('mdm:manufacturing-definition:write')) return;
   ++detailNo; detailController?.abort(); target.value=undefined; action.value='create'; formError.value=''; resetForm(); void loadReferences(); }
 async function openDetail(row:ProductionVersion):Promise<void> {
+  if (blocked.value) return;
   const current=++detailNo; detailController?.abort(); detailController=new AbortController();
   action.value='detail'; target.value=undefined; detailLoading.value=true; dialogError.value=''; formError.value=''; void loadReferences();
   try { const value=await getProductionVersion(row.id,detailController.signal);
@@ -112,7 +114,7 @@ async function openDetail(row:ProductionVersion):Promise<void> {
   } catch(error) { if (!disposed && current===detailNo) dialogError.value=feedback(error); }
   finally { if (current===detailNo) detailLoading.value=false; }
 }
-function close():void { if(saving.value)return; ++detailNo; detailController?.abort(); action.value=undefined; target.value=undefined; }
+function close():void { if(saving.value || blocked.value)return; ++detailNo; detailController?.abort(); action.value=undefined; target.value=undefined; }
 function valid():boolean { return !!form.name.trim() && !!form.businessVersion.trim() && !!form.plantId && !!form.outputMaterialId
   && !!form.formulaRevisionId && !!form.routingRevisionId && /^\d{4}-\d{2}-\d{2}$/.test(form.validFrom)
   && (!form.validTo || /^\d{4}-\d{2}-\d{2}$/.test(form.validTo) && form.validTo>form.validFrom); }
@@ -120,7 +122,7 @@ function draft():ProductionVersionDraft { return { name:form.name.trim(), busine
   outputMaterialId:form.outputMaterialId, formulaRevisionId:form.formulaRevisionId, routingRevisionId:form.routingRevisionId,
   validFrom:form.validFrom, validTo:form.validTo||null }; }
 async function write(operation:'save'|'release'|'obsolete'):Promise<void> {
-  if(saving.value || !hasAuthority('mdm:manufacturing-definition:write'))return;
+  if(saving.value || blocked.value || !hasAuthority('mdm:manufacturing-definition:write'))return;
   if(operation==='save' && (!valid() || action.value==='create' && !form.code.trim())) { formError.value=t('mdm.productionVersion.invalid'); return; }
   if(operation!=='save' && !target.value)return;
   saving.value=true; formError.value='';
@@ -131,8 +133,21 @@ async function write(operation:'save'|'release'|'obsolete'):Promise<void> {
     else if(operation==='obsolete' && target.value) value=await obsoleteProductionVersion(target.value.id,target.value.lockVersion);
     else return;
     target.value=value; resetForm(value); action.value='detail'; notice.value=t('mdm.productionVersion.saved'); void loadPage(1);
-  } catch(error) { formError.value=feedback(error,true); }
+  } catch(error) {const classification=classifyWriteFailure(error);
+    blocked.value=classification!=='failed';conflictBlocked=classification==='conflict';
+    formError.value=feedback(error,true);}
   finally { saving.value=false; }
+}
+async function reconcile():Promise<void> {
+  if(!blocked.value||saving.value||detailLoading.value||!target.value)return;
+  const current=++detailNo;detailLoading.value=true;
+  try {const latest=await getProductionVersion(target.value.id);
+    if(current!==detailNo)return;target.value=latest;
+    if(conflictBlocked) {
+      blocked.value=false;conflictBlocked=false;formError.value='';
+    } else formError.value=t('mdm.struct.unknownWrite');
+  } catch {formError.value=t('mdm.struct.unknownWrite');}
+  finally {if(current===detailNo)detailLoading.value=false;}
 }
 onMounted(()=>{void loadPage();}); onBeforeRouteLeave(()=>!saving.value);
 onScopeDispose(()=>{disposed=true;++listNo;++detailNo;++referenceNo;listController?.abort();detailController?.abort();});
@@ -141,9 +156,10 @@ onScopeDispose(()=>{disposed=true;++listNo;++detailNo;++referenceNo;listControll
 <template><PageContainer><section class="mdm-plants" aria-labelledby="mdm-pv-title">
   <MomManagementHeader title-id="mdm-pv-title" :title="t('mdm.productionVersion.title')" :description="t('mdm.productionVersion.description')"><template #actions>
     <MomButton variant="outline" :disabled="loading" @click="loadPage()"><RefreshCw :size="16" />{{t('mdm.struct.refresh')}}</MomButton>
-    <AuthorityGuard :authorities="['mdm:manufacturing-definition:write']"><MomButton @click="openCreate"><Plus :size="16" />{{t('mdm.struct.create')}}</MomButton></AuthorityGuard>
+    <AuthorityGuard :authorities="['mdm:manufacturing-definition:write']"><MomButton :disabled="blocked" @click="openCreate"><Plus :size="16" />{{t('mdm.struct.create')}}</MomButton></AuthorityGuard>
   </template></MomManagementHeader>
   <p v-if="notice" role="status">{{notice}}</p>
+  <p v-if="blocked" class="mdm-plants__error" role="alert">{{formError}} <MomButton v-if="target" variant="outline" :disabled="detailLoading" @click="reconcile">{{t('mdm.struct.refresh')}}</MomButton></p>
   <div v-if="listError" class="mdm-plants__error" role="alert">{{listError}} <MomButton variant="outline" @click="loadPage()">{{t('mdm.struct.retry')}}</MomButton></div>
   <MomListSurface v-else :title="t('mdm.productionVersion.title')" :hint="t('mdm.productionVersion.listHint')" :loading="loading" :loading-text="t('mdm.struct.loading')">
     <MomDataTable :rows="rows" :columns="columns" :empty-text="t('mdm.productionVersion.noData')">
@@ -161,15 +177,15 @@ onScopeDispose(()=>{disposed=true;++listNo;++detailNo;++referenceNo;listControll
         <div><dt>{{t('mdm.struct.status')}}</dt><dd>{{target.status}}</dd></div><div><dt>{{t('mdm.struct.version')}}</dt><dd>{{target.lockVersion}}</dd></div></dl>
       <div v-if="action==='detail'&&target" class="mdm-plants__form"><p>{{target.validFrom}} — {{target.validTo??'∞'}}</p><p>{{target.formulaRevisionId}}</p><p>{{target.routingRevisionId}}</p>
         <div class="mdm-plants__footer"><AuthorityGuard :authorities="['mdm:manufacturing-definition:write']">
-          <MomButton v-if="target.status==='DRAFT'" variant="outline" @click="action='edit'">{{t('mdm.struct.edit')}}</MomButton><MomButton v-if="target.status==='DRAFT'" @click="write('release')">{{t('mdm.productionVersion.release')}}</MomButton>
-          <MomButton v-if="target.status==='RELEASED'" variant="outline" @click="write('obsolete')">{{t('mdm.productionVersion.obsolete')}}</MomButton>
+          <MomButton v-if="target.status==='DRAFT'" variant="outline" :disabled="blocked" @click="action='edit'">{{t('mdm.struct.edit')}}</MomButton><MomButton v-if="target.status==='DRAFT'" :disabled="saving||blocked" @click="write('release')">{{t('mdm.productionVersion.release')}}</MomButton>
+          <MomButton v-if="target.status==='RELEASED'" variant="outline" :disabled="saving||blocked" @click="write('obsolete')">{{t('mdm.productionVersion.obsolete')}}</MomButton>
         </AuthorityGuard></div></div>
       <form v-if="action==='create'||action==='edit'" class="mdm-plants__form" @submit.prevent="submitWithFocus($event,()=>write('save'))">
         <label v-if="action==='create'"><span>{{t('mdm.struct.code')}} *</span><MomInput v-model="form.code" :max-length="64" /></label><label><span>{{t('mdm.struct.name')}} *</span><MomInput v-model="form.name" :max-length="200" /></label>
         <label><span>{{t('mdm.productionVersion.businessVersion')}} *</span><MomInput v-model="form.businessVersion" :max-length="64" /></label><label><span>{{t('mdm.productionVersion.plant')}} *</span><MomSelect v-model="form.plantId" :options="plantOptions" /></label>
         <label><span>{{t('mdm.productionVersion.output')}} *</span><MomSelect v-model="form.outputMaterialId" :options="materialOptions" /></label><label><span>{{t('mdm.productionVersion.formulaRevision')}} *</span><MomSelect v-model="form.formulaRevisionId" :options="formulaOptions" /></label>
         <label><span>{{t('mdm.productionVersion.routingRevision')}} *</span><MomSelect v-model="form.routingRevisionId" :options="routingOptions" /></label><div class="mdm-struct__form-grid"><label><span>{{t('mdm.productionVersion.validFrom')}} *</span><MomInput v-model="form.validFrom" type="date" /></label><label><span>{{t('mdm.productionVersion.validTo')}}</span><MomInput v-model="form.validTo" type="date" /></label></div>
-        <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{formError}}</p><div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{tForOwner('system', 'system.common.cancel')}}</MomButton><MomButton type="submit" :disabled="saving||referenceLoading||referenceError">{{t('mdm.struct.confirm')}}</MomButton></div>
+        <p v-if="formError" class="mdm-plants__field-error" role="alert" tabindex="-1">{{formError}}</p><div class="mdm-plants__footer"><MomButton variant="outline" @click="close">{{tForOwner('system', 'system.common.cancel')}}</MomButton><MomButton type="submit" :disabled="saving||blocked||referenceLoading||referenceError">{{t('mdm.struct.confirm')}}</MomButton></div>
       </form></div>
   </MomModal>
 </section></PageContainer></template>

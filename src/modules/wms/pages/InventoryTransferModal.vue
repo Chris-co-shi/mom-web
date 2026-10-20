@@ -3,15 +3,16 @@ import { computed, ref } from 'vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import { MomButton, MomQuantityInput, MomReferenceSelect } from '../../../shared/ui';
 import { getCatalog, searchCatalog } from '../../mdm/api/catalog-api';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
-import { transferInventory, type InventoryDetail } from '../api/inventory-api';
+import { findTransferByRequestKey, transferInventory, type InventoryDetail } from '../api/inventory-api';
 
 const props = defineProps<{ balance: InventoryDetail }>();
-const emit = defineEmits<{ close: []; done: []; refresh: [] }>();
+const emit = defineEmits<{ close: []; done: []; uncertain: [] }>();
 const { t, tForOwner } = useLocale();
 const targetId = ref(''), quantity = ref(props.balance.quantity);
 const saving = ref(false), resultUnknown = ref(false), error = ref('');
+let pendingRequest: { requestKey: string; balanceId: string; targetLocationId: string; quantity: string } | undefined;
 const targetReference = {
   async search(keyword: string, page: number, signal: AbortSignal) {
     const result = await searchCatalog('locations', page, 20,
@@ -36,24 +37,41 @@ const validQuantity = computed(() => {
 async function submit(): Promise<void> {
   if (saving.value || resultUnknown.value || !targetId.value || !validQuantity.value) return;
   saving.value = true; error.value = '';
+  const request = { requestKey: crypto.randomUUID(), balanceId: props.balance.id,
+    targetLocationId: targetId.value, quantity: quantity.value };
   try {
-    await transferInventory({ requestKey: crypto.randomUUID(), balanceId: props.balance.id,
-      targetLocationId: targetId.value, quantity: quantity.value });
+    await transferInventory(request);
     emit('done');
   } catch (cause) {
-    if (isApiError(cause) && cause.resultUnknown) {
-      resultUnknown.value = true; error.value = t('wms.inventory.transfer.unknown');
+    if (classifyWriteFailure(cause) === 'unknown') {
+      pendingRequest = request; resultUnknown.value = true;
+      error.value = t('wms.inventory.transfer.unknown'); emit('uncertain');
     } else if (isApiError(cause) && cause.kind === 'forbidden') error.value = t('wms.inventory.forbidden');
     else if (isApiError(cause) && cause.kind === 'conflict') error.value = t('wms.inventory.transfer.conflict');
     else error.value = t('wms.inventory.transfer.failed');
   } finally { saving.value = false; }
 }
 
+async function reconcile(): Promise<void> {
+  if (!pendingRequest || saving.value) return;
+  saving.value = true;
+  try {
+    const result = await findTransferByRequestKey(pendingRequest.requestKey);
+    if (result && result.balanceId === pendingRequest.balanceId
+      && result.targetLocationId === pendingRequest.targetLocationId
+      && decimalUnits(result.quantity) === decimalUnits(pendingRequest.quantity)) {
+      resultUnknown.value = false; pendingRequest = undefined; error.value = ''; emit('done');
+    } else error.value = t('wms.inventory.transfer.unknown');
+  } catch { error.value = t('wms.inventory.transfer.unknown'); }
+  finally { saving.value = false; }
+}
+
 </script>
 
 <template>
   <MomModal :open="true" :title="t('wms.inventory.transfer.action')"
-    :close-label="tForOwner('system', 'system.common.close')" :busy="saving" @close="emit('close')">
+    :close-label="tForOwner('system', 'system.common.close')" :busy="saving"
+    @close="!resultUnknown && emit('close')">
     <div class="inventory-transfer">
       <dl class="inventory-transfer__summary">
         <div><dt>{{ t('wms.inventory.material') }}</dt><dd><strong>{{ balance.materialName }}</strong> · {{ balance.materialCode }}<br>{{ balance.batchCode || '—' }} · {{ balance.snCode || '—' }}</dd></div>
@@ -77,8 +95,8 @@ async function submit(): Promise<void> {
       </form>
     </div>
     <template #footer>
-      <MomButton v-if="resultUnknown" variant="outline" @click="emit('refresh')">{{ t('wms.inventory.retry') }}</MomButton>
-      <MomButton variant="outline" :disabled="saving" @click="emit('close')">{{ tForOwner('system', 'system.common.close') }}</MomButton>
+      <MomButton v-if="resultUnknown" variant="outline" :disabled="saving" @click="reconcile">{{ t('wms.inventory.retry') }}</MomButton>
+      <MomButton variant="outline" :disabled="saving || resultUnknown" @click="emit('close')">{{ tForOwner('system', 'system.common.close') }}</MomButton>
       <MomButton type="submit" form="inventory-transfer-form" :disabled="saving || resultUnknown || !targetId || !validQuantity">
         {{ t('wms.inventory.transfer.submit') }}
       </MomButton>

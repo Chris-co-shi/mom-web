@@ -33,6 +33,8 @@ const resourceKeyword = ref('');
 const resourceDomainDraft = ref('');
 const resourceDomain = ref('');
 const blocked = ref(false);
+let pendingWrite: { action: Action; target: api.PermissionResourceResponse | undefined;
+  name: string; description: string | null; sortOrder: number } | undefined;
 const form = reactive({ domainCode: '', resourceCode: '', name: '', description: '', sortOrder: 0 });
 let controller: AbortController | undefined;
 let sequence = 0;
@@ -60,7 +62,7 @@ async function loadPage(nextPage = pageNo.value, nextSize = pageSize.value): Pro
     pageNo.value = result.pageNo;
     pageSize.value = nextSize;
     total.value = result.total;
-    blocked.value = false;
+    // 分页读取无法判定先前写请求是否提交，阻断状态只由目标核对解除。
   } catch (cause) {
     if (current === sequence) error.value = permissionFeedback(cause);
   } finally {
@@ -82,6 +84,15 @@ async function open(next: Action, row?: api.PermissionResourceResponse): Promise
 }
 
 function close(): void { if (!saving.value) action.value = undefined; }
+async function reconcile(): Promise<void> {
+  if (!blocked.value || saving.value || !pendingWrite?.target) return;
+  try {
+    const latest = await api.getResource(pendingWrite.target.id);
+    if (dialogError.value?.key === 'iam.permissions.conflict') {
+      target.value = latest; blocked.value = false; dialogError.value = undefined;
+    } // 当前字段与版本不能唯一证明原请求已提交，未知结果继续阻断。
+  } catch { /* 未取得目标权威事实时保持阻断。 */ }
+}
 
 function openPermissions(row: api.PermissionResourceResponse): void {
   selectedResource.value = row;
@@ -117,6 +128,8 @@ async function submit(): Promise<void> {
   }
   saving.value = true;
   const currentAction = action.value;
+  pendingWrite = { action: currentAction, target: target.value, name: form.name,
+    description: form.description || null, sortOrder: form.sortOrder };
   let changedResource: api.PermissionResourceResponse | undefined;
   try {
     if (currentAction === 'create') changedResource = await api.createResource({ ...form, description: form.description || null, enabled: true });
@@ -139,7 +152,8 @@ async function submit(): Promise<void> {
     if (changedResource && currentAction === 'create') selectedResource.value = changedResource;
   } catch (cause) {
     dialogError.value = permissionFeedback(cause, true);
-    if (dialogError.value.key === 'iam.permissions.unknownWrite') blocked.value = true;
+    if (dialogError.value.key === 'iam.permissions.unknownWrite'
+      || dialogError.value.key === 'iam.permissions.conflict') blocked.value = true;
   } finally { saving.value = false; }
 }
 
@@ -157,6 +171,9 @@ onUnmounted(() => { controller?.abort(); if (searchTimer) clearTimeout(searchTim
           <AuthorityGuard :authorities="['auth:permission:write']"><MomButton class="mom-management-button mom-management-button--primary" type="button" round :disabled="saving || blocked" @click="open('create')">{{ t('iam.resources.create') }}</MomButton></AuthorityGuard>
         </template>
       </MomManagementHeader>
+      <p v-if="blocked && dialogError" class="iam-permission-feedback" role="alert">{{ t(dialogError.key) }}
+        <MomButton v-if="pendingWrite?.target" variant="outline" :disabled="saving" @click="reconcile">{{ t('iam.permissions.refresh') }}</MomButton>
+      </p>
       <div class="iam-permission-workspace">
         <aside class="iam-permission-workspace__rail" :aria-label="t('iam.resources.directory')" :aria-busy="loading">
           <div class="iam-permission-workspace__rail-head">
@@ -215,7 +232,9 @@ onUnmounted(() => { controller?.abort(); if (searchTimer) clearTimeout(searchTim
       </div>
       <MomModal :open="!!action" :title="title" :close-label="t('iam.permissions.close')" :busy="saving" :busy-text="t('iam.permissions.saving')" :width="640" @close="close">
         <div class="iam-permission-dialog__body">
-          <p v-if="dialogError" class="iam-permission-feedback" role="alert">{{ t(dialogError.key) }}</p>
+          <p v-if="dialogError" class="iam-permission-feedback" role="alert">{{ t(dialogError.key) }}
+            <MomButton v-if="blocked && pendingWrite?.target" variant="outline" :disabled="saving" @click="reconcile">{{ t('iam.permissions.refresh') }}</MomButton>
+          </p>
           <dl v-if="target" class="iam-permission-summary">
             <div><dt>{{ t('iam.permissions.domain') }}</dt><dd>{{ target.domainCode }}</dd></div>
             <div><dt>{{ t('iam.resources.code') }}</dt><dd>{{ target.resourceCode }}</dd></div>

@@ -27,6 +27,7 @@ export function useUserRoleAssignment() {
   let controller: AbortController | undefined;
   let sequence = 0;
   let disposed = false;
+  let uncertainSelection: string[] | undefined;
 
   const selectedRoles = computed(() => selectedIds.value
     .map((id) => known.value.find((role) => role.id === id))
@@ -67,8 +68,9 @@ export function useUserRoleAssignment() {
     }
   }
 
-  async function openFor(user: UserResponse): Promise<void> {
+  async function openFor(user: UserResponse, preserveUnknown = false): Promise<void> {
     if (saving.value) return;
+    if (stage.value === 'unknown' && target.value && !preserveUnknown) {opened.value = true;return;}
     if (!hasAuthorities(['auth:user:read', 'auth:user:write', 'auth:role:read'])) {
       error.value = { key: 'iam.users.forbidden' };
       return;
@@ -82,7 +84,7 @@ export function useUserRoleAssignment() {
     relationshipsLoaded.value = false;
     pageNo.value = 1;
     total.value = 0;
-    stage.value = 'select';
+    stage.value = preserveUnknown ? 'unknown' : 'select';
     notice.value = undefined;
     error.value = undefined;
     loading.value = true;
@@ -95,7 +97,10 @@ export function useUserRoleAssignment() {
       ]);
       if (disposed || current !== sequence) return;
       assigned.value = currentRoles;
-      selectedIds.value = currentRoles.map((role) => role.id);
+      const currentIds = currentRoles.map((role) => role.id);
+      selectedIds.value = preserveUnknown ? [...(uncertainSelection ?? currentIds)] : currentIds;
+      stage.value = preserveUnknown ? 'unknown' : 'select';
+      if (preserveUnknown) error.value = { key: 'iam.users.unknownWrite' };
       relationshipsLoaded.value = true;
       remember([...currentRoles, ...page.records]);
       roles.value = page.records;
@@ -135,7 +140,7 @@ export function useUserRoleAssignment() {
     } catch (cause) {
       if (disposed) return;
       error.value = userFeedback(cause, true);
-      if (error.value.key === 'iam.users.unknownWrite') stage.value = 'unknown';
+      if (error.value.key === 'iam.users.unknownWrite') {stage.value = 'unknown';uncertainSelection = [...selectedIds.value];}
     } finally {
       saving.value = false;
     }
@@ -143,7 +148,7 @@ export function useUserRoleAssignment() {
 
   async function reloadLatest(): Promise<void> {
     if (!target.value || saving.value) return;
-    await openFor(target.value);
+    await openFor(target.value, stage.value === 'unknown');
   }
 
   async function retry(): Promise<void> {
@@ -154,7 +159,7 @@ export function useUserRoleAssignment() {
   function close(): void {
     if (saving.value) return;
     opened.value = false;
-    target.value = undefined;
+    if (stage.value !== 'unknown') target.value = undefined;
     ++sequence;
     controller?.abort();
   }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from './errors';
+import { ApiError, classifyWriteFailure } from './errors';
 import { httpClient, setHttpRequestContextProvider, setHttpUnauthorizedHandler } from './http-client';
 import { createPinia, setActivePinia } from 'pinia';
 import { useLocaleStore } from '../i18n/locale';
@@ -103,6 +103,15 @@ describe('httpClient', () => {
       retryable: false,
       resultUnknown: true,
     });
+  });
+
+  it('业务写入按证据区分明确失败、冲突与结果未知', () => {
+    expect(classifyWriteFailure(new ApiError('invalid', { kind: 'validation', code: 'invalid' }))).toBe('failed');
+    expect(classifyWriteFailure(new ApiError('stale', { kind: 'conflict', code: 'stale', status: 409 }))).toBe('conflict');
+    expect(classifyWriteFailure(new ApiError('server', { kind: 'server', code: 'http.500', status: 500 }))).toBe('unknown');
+    expect(classifyWriteFailure(new ApiError('bad response', { kind: 'protocol', code: 'client.invalid_result' }))).toBe('unknown');
+    expect(classifyWriteFailure(new ApiError('cancelled', { kind: 'cancelled', code: 'cancelled' }))).toBe('unknown');
+    expect(classifyWriteFailure(new Error('unexpected'))).toBe('unknown');
   });
 
   it('GET 超时可以由调用方决定是否显式重试', async () => {

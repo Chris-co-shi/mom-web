@@ -1,5 +1,5 @@
 import type { MessageKey } from '../../../locales/zh-CN';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 
 export interface PermissionFeedback { key: MessageKey; correlationId?: string }
 
@@ -7,7 +7,7 @@ export interface PermissionFeedback { key: MessageKey; correlationId?: string }
 export function permissionFeedback(error: unknown, writing = false): PermissionFeedback {
   if (!isApiError(error)) return { key: writing ? 'iam.permissions.unknownWrite' : 'iam.permissions.loadFailed' };
   let key: MessageKey = 'iam.permissions.loadFailed';
-  if (writing && (error.resultUnknown || error.kind === 'server' || error.kind === 'protocol')) key = 'iam.permissions.unknownWrite';
+  if (writing && classifyWriteFailure(error) === 'unknown') key = 'iam.permissions.unknownWrite';
   else if (error.code === 'auth.permission_code_conflict') key = 'iam.permissions.codeConflict';
   else if (error.code === 'auth.resource_code_conflict') key = 'iam.resources.codeConflict';
   else if (error.code === 'auth.resource_disabled') key = 'iam.permissions.resourceDisabled';

@@ -23,6 +23,8 @@ export function useUserManagement() {
   const saving = ref(false);
   const dialogError = ref<UserFeedback>();
   const blocked = ref(false);
+  const writeUnknown = ref(false);
+  let statusPending: { id: string; expectedEnabled: boolean; version: number; unknown: boolean } | undefined;
   const form = reactive({ username: '', displayName: '', password: '', confirmation: '' });
   const fieldErrors = ref<Partial<Record<keyof typeof form, UserFeedback['key']>>>({});
   let listController: AbortController | undefined;
@@ -56,8 +58,12 @@ export function useUserManagement() {
       rows.value = result.records;
       total.value = result.total;
       pageNo.value = result.pageNo;
-      statusError.value = undefined;
-      statusBlocked.value = false;
+      if (statusPending) {
+        const latest = result.records.find(row => row.id === statusPending?.id);
+        if (latest && !statusPending.unknown) {
+          statusPending = undefined; statusBlocked.value = false; statusError.value = undefined;
+        }
+      } else if (!statusBlocked.value) statusError.value = undefined;
     } catch (error) {
       if (disposed || sequence !== listSequence) return;
       listError.value = userFeedback(error); // search 虽是 POST，但失败提示按只读查询处理。
@@ -82,7 +88,7 @@ export function useUserManagement() {
         form.username = user.username;
         form.displayName = user.displayName;
       }
-      blocked.value = false;
+      blocked.value = writeUnknown.value;
     } catch (error) {
       if (disposed || sequence !== detailSequence) return;
       dialogError.value = userFeedback(error);
@@ -92,7 +98,7 @@ export function useUserManagement() {
   }
 
   async function open(next: UserAction, user?: api.UserResponse): Promise<void> {
-    if (saving.value) return;
+    if (saving.value || writeUnknown.value) return;
     if (next !== 'detail' && !hasAuthority('auth:user:write')) {
       notice.value = { key: 'iam.users.forbidden' };
       return;
@@ -104,14 +110,14 @@ export function useUserManagement() {
     dialogError.value = undefined;
     notice.value = undefined;
     fieldErrors.value = {};
-    blocked.value = false;
+    blocked.value = writeUnknown.value;
     detailLoading.value = false;
     Object.assign(form, { username: '', displayName: '', password: '', confirmation: '' });
     if (user) await readTarget(user.id);
   }
 
   function close(): void {
-    if (saving.value) return;
+    if (saving.value || writeUnknown.value) return;
     ++detailSequence;
     detailController?.abort();
     action.value = undefined;
@@ -125,7 +131,7 @@ export function useUserManagement() {
 
   /** 表格状态列独立写入；失败或版本冲突不乐观翻转，结果不明时须先刷新列表核对。 */
   async function toggleEnabled(user: api.UserResponse): Promise<void> {
-    if (saving.value || loading.value || statusBlocked.value) return;
+    if (saving.value || loading.value || statusBlocked.value || writeUnknown.value) return;
     if (!hasAuthority('auth:user:write')) { statusError.value = { key: 'iam.users.forbidden' }; return; }
     saving.value = true;
     statusError.value = undefined;
@@ -142,6 +148,9 @@ export function useUserManagement() {
         : feedback.key === 'iam.users.unknownWrite' ? 'iam.users.statusUnknown' : feedback.key };
       statusBlocked.value = feedback.key === 'iam.users.unknownWrite'
         || feedback.key === 'iam.users.conflict' || feedback.key === 'iam.users.notFound';
+      if (statusBlocked.value) statusPending = {id: user.id, expectedEnabled: !user.enabled,
+        version: user.version, unknown: feedback.key === 'iam.users.unknownWrite'};
+      if (feedback.key === 'iam.users.unknownWrite') writeUnknown.value = true;
     } finally {
       saving.value = false;
     }
@@ -184,6 +193,7 @@ export function useUserManagement() {
       dialogError.value = userFeedback(error, true);
       blocked.value = dialogError.value.key === 'iam.users.unknownWrite'
         || dialogError.value.key === 'iam.users.conflict' || dialogError.value.key === 'iam.users.notFound';
+      if (dialogError.value.key === 'iam.users.unknownWrite') writeUnknown.value = true;
       if (isApiError(error)) {
         for (const field of error.fieldErrors) {
           const name = field.field === 'newPassword' ? 'password' : field.field;

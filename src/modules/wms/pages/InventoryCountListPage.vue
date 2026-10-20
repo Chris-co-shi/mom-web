@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { hasAuthority } from '../../auth/model/auth-permissions';
 import { catalogReference } from '../../mdm/api/reference-api';
@@ -9,10 +9,10 @@ import MomDataTable, { type MomColumn } from '../../../shared/components/MomData
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { MomButton, MomReferenceSelect } from '../../../shared/ui';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
-import { createCount, listCounts, type CountSummary, type CountStatus } from '../api/inventory-count-api';
+import { createCount, findCountByRequestKey, listCounts, type CountSummary, type CountStatus } from '../api/inventory-count-api';
 import './inventory-pages.css';
 const router = useRouter(), { t, tForOwner } = useLocale();
 const rows=ref<CountSummary[]>([]), warehouseId=ref('');
@@ -20,7 +20,6 @@ const warehouseReference=catalogReference('warehouses',()=>({status:'ENABLED'}))
 const pageNo=ref(1), pageSize=ref(20), total=ref(0);
 const loading=ref(false), saving=ref(false), error=ref(''), unknown=ref(false);
 const requestKey=ref('');
-watch(warehouseId,()=>{requestKey.value='';unknown.value=false;});
 const canCreate=computed(()=>hasAuthority('wms:inventory-count:create') && hasAuthority('mdm:warehouse:read'));
 const columns=computed<MomColumn[]>(()=>[
   { key:'taskNo',title:t('wms.inventory.count.number'),minWidth:160 },
@@ -46,10 +45,23 @@ async function create():Promise<void> {
   try { const detail=await createCount(requestKey.value,warehouseId.value,{locationIds:[],materialIds:[]});
     requestKey.value='';
     await router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:detail.task.id}}); }
-  catch(cause) { unknown.value=isApiError(cause)&&cause.resultUnknown;
+  catch(cause) { unknown.value=classifyWriteFailure(cause)==='unknown';
     error.value=unknown.value?t('wms.inventory.count.unknown')
       :isApiError(cause)&&cause.message?cause.message:t('wms.inventory.count.writefailed'); }
   finally { saving.value=false; }
+}
+async function reconcile():Promise<void> {
+  if(!unknown.value||!requestKey.value||saving.value)return;
+  saving.value=true;
+  try {
+    const detail=await findCountByRequestKey(requestKey.value);
+    if(!detail || detail.task.requestKey!==requestKey.value || detail.task.warehouseId!==warehouseId.value) {
+      error.value=t('wms.inventory.count.unknown');return;
+    }
+    unknown.value=false;requestKey.value='';error.value='';
+    await router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:detail.task.id}});
+  } catch {error.value=t('wms.inventory.count.unknown');}
+  finally {saving.value=false;}
 }
 function open(row:CountSummary):void { void router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:row.id}}); }
 onMounted(()=>{void load();});
@@ -60,12 +72,14 @@ onMounted(()=>{void load();});
       <template #actions>
         <MomReferenceSelect v-if="canCreate" v-model="warehouseId" class="inventory-page__header-reference"
           :label="t('wms.inventory.count.selectwarehouse')" :search="warehouseReference.search"
-          :resolve="warehouseReference.resolve" :disabled="saving||loading" />
+          :resolve="warehouseReference.resolve" :disabled="saving||loading||unknown" />
         <MomButton v-if="canCreate" :disabled="saving||loading||!warehouseId||unknown" @click="create">{{ t('wms.inventory.count.create') }}</MomButton>
-        <MomButton variant="outline" :disabled="loading" @click="unknown=false;load()">{{ tForOwner('system','system.common.refresh') }}</MomButton>
+        <MomButton variant="outline" :disabled="loading" @click="load()">{{ tForOwner('system','system.common.refresh') }}</MomButton>
       </template>
     </MomManagementHeader>
-    <p v-if="error" role="alert" class="inventory-page__error">{{ error }}</p>
+    <p v-if="error" role="alert" class="inventory-page__error">{{ error }}
+      <MomButton v-if="unknown" variant="outline" :disabled="saving" @click="reconcile">{{ tForOwner('system','system.common.refresh') }}</MomButton>
+    </p>
     <MomListSurface :title="t('wms.inventory.count.title')" :hint="t('wms.inventory.count.hint')" :loading="loading" :loading-text="tForOwner('system','system.common.loading')">
       <MomDataTable :rows="rows" :columns="columns" :empty-text="tForOwner('system','system.common.empty')">
         <template #cell-status="{row}">{{ status(row.status) }}</template>

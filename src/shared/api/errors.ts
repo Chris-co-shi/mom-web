@@ -54,3 +54,12 @@ export class ApiError extends Error {
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
+
+/** 对确有业务副作用的调用分类；调用方负责判定操作语义和恢复方式。 */
+export function classifyWriteFailure(error: unknown): 'failed' | 'conflict' | 'unknown' {
+  if (!isApiError(error)) return 'unknown';
+  if (error.resultUnknown || ['cancelled', 'network', 'timeout', 'server', 'protocol'].includes(error.kind)
+    || error.status !== undefined && error.status >= 500) return 'unknown';
+  if (error.kind === 'conflict' || error.status === 409) return 'conflict';
+  return 'failed';
+}

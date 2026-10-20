@@ -102,6 +102,10 @@ describe('角色整体权限草稿', () => {
     vi.mocked(replaceRolePermissions).mockRejectedValue(new Error('connection lost'));
     await m.submit(); await m.submit(); m.close(); await m.openFor({...role,id:'other'});
     expect(m.stage.value).toBe('unknown'); expect(m.target.value?.id).toBe('r');
+    vi.mocked(getRolePermissions).mockResolvedValueOnce([a, b]);
+    await m.reconcile();
+    expect(m.stage.value).toBe('unknown');
+    expect(m.selectedIds.value).toEqual(['a', 'b']);
     expect(replaceRolePermissions).toHaveBeenCalledTimes(1); scope.stop();
   });
 });

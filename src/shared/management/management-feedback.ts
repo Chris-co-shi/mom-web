@@ -1,13 +1,15 @@
-import { isApiError } from '../api/errors';
+import { classifyWriteFailure, isApiError } from '../api/errors';
 import type { MessageKey } from '../../locales/zh-CN';
 
 /** 管理端反馈只向 UI 暴露稳定文案 Key 与关联标识，不展示后端异常正文。 */
 export interface ManagementFeedback { key: MessageKey; correlationId?: string }
 
 export function managementFeedback(error: unknown, write = false): ManagementFeedback {
+  if (write && classifyWriteFailure(error) === 'unknown') return {
+    key: 'system.feedback.unknown', correlationId: isApiError(error) ? error.correlationId : undefined,
+  };
   if (!isApiError(error)) return { key: 'system.feedback.failed' };
-  const key: MessageKey = error.resultUnknown && write ? 'system.feedback.unknown'
-    : error.kind === 'conflict' ? 'system.feedback.conflict'
+  const key: MessageKey = error.kind === 'conflict' ? 'system.feedback.conflict'
       : error.kind === 'forbidden' ? 'system.feedback.forbidden'
         : error.kind === 'validation' ? 'system.feedback.invalid'
           : error.kind === 'not_found' ? 'system.feedback.notFound'

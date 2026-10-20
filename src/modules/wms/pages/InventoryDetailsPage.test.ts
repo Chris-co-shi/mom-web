@@ -26,7 +26,7 @@ function mountPage() {
     MomDataTable: { props: ['rows'], template: '<div><div v-for="row in rows" :key="row.id"><slot name="cell-actions" :row="row" /></div></div>' },
     MomCrudPagination: { template: '<div />' },
     MomModal: { props: ['open'], template: '<div v-if="open"><slot /><slot name="footer" /></div>' },
-    MomButton: { template: '<button><slot /></button>' },
+    MomButton: { props: ['disabled'], template: '<button :disabled="disabled"><slot /></button>' },
     MomInput: { props: ['modelValue'], emits: ['update:modelValue'], template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' },
     MomReferenceSelect: { props: ['modelValue', 'label'], emits: ['update:modelValue'],
       template: '<div :data-label="label" :data-value="modelValue" />' },
@@ -84,7 +84,7 @@ describe('WMS 实时库存明细冻结交互', () => {
     vi.unstubAllGlobals();
   });
 
-  it('提交结果未知时锁定重复写入，并允许刷新查询核对', async () => {
+  it('提交结果未知时普通查询不解除阻断、不覆盖冻结草稿或重复写入', async () => {
     vi.stubGlobal('crypto', { randomUUID: () => 'request-2' });
     vi.mocked(freezeInventory).mockRejectedValue(new ApiError('network', {
       kind: 'network', code: 'network', resultUnknown: true,
@@ -99,6 +99,8 @@ describe('WMS 实时库存明细冻结交互', () => {
     const refresh = wrapper.findAll('button').find(button => button.text() === 'wms.inventory.retry')!;
     await refresh.trigger('click');
     await flushPromises();
+    expect(wrapper.find('form.inventory-freeze__form button[type="submit"]').attributes('disabled')).toBeDefined();
+    await wrapper.find('form.inventory-freeze__form').trigger('submit');
     expect(freezeInventory).toHaveBeenCalledTimes(1);
     expect(searchActiveFreezes).toHaveBeenCalledTimes(2);
     vi.unstubAllGlobals();

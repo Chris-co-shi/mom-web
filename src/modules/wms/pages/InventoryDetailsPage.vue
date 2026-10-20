@@ -11,7 +11,7 @@ import PageContainer from '../../../shared/components/PageContainer.vue';
 import { hasAuthority } from '../../auth/model/auth-permissions';
 import { MomButton, MomInput, MomQuantityInput, MomReferenceSelect, MomSelect, MomTextarea } from '../../../shared/ui';
 import { catalogReference, materialReference } from '../../mdm/api/reference-api';
-import { isApiError } from '../../../shared/api/errors';
+import { classifyWriteFailure, isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
 import { freezeInventory, searchActiveFreezes, searchInventoryDetails, unfreezeInventory,
@@ -118,8 +118,10 @@ async function load(next = pageNo.value, size = pageSize.value): Promise<boolean
 async function loadActive(balanceId: string): Promise<boolean> {
   try {
     activeFreezes.value = await searchActiveFreezes(balanceId);
-    releaseQuantities.value = Object.fromEntries(activeFreezes.value.map(freeze => [freeze.id, freeze.remainingQuantity]));
-    releaseNotes.value = Object.fromEntries(activeFreezes.value.map(freeze => [freeze.id, '']));
+    if (!unknownWrite.value) {
+      releaseQuantities.value = Object.fromEntries(activeFreezes.value.map(freeze => [freeze.id, freeze.remainingQuantity]));
+      releaseNotes.value = Object.fromEntries(activeFreezes.value.map(freeze => [freeze.id, '']));
+    }
     return true;
   } catch (cause) {
     activeFreezes.value = [];
@@ -130,6 +132,7 @@ async function loadActive(balanceId: string): Promise<boolean> {
 }
 
 async function openManagement(row: InventoryDetail): Promise<void> {
+  if (unknownWrite.value) return;
   selected.value = row; error.value = ''; notice.value = '';
   freezeQuantity.value = row.warehouseStatus === 'NORMAL' ? row.quantity : '';
   freezeNote.value = ''; freezeReason.value = 'WAREHOUSE_CHECK'; activeFreezes.value = [];
@@ -139,7 +142,7 @@ async function openManagement(row: InventoryDetail): Promise<void> {
 function search(): void { void load(1); }
 function back(): void { void router.push({ name: ROUTE_NAMES.wmsInventoryOverview }); }
 function writeFailure(cause: unknown): void {
-  if (isApiError(cause) && cause.resultUnknown) {
+  if (classifyWriteFailure(cause) === 'unknown') {
     unknownWrite.value = true;
     error.value = t('wms.inventory.freeze.unknown');
   } else if (isApiError(cause) && cause.kind === 'forbidden') error.value = t('wms.inventory.forbidden');
@@ -161,11 +164,12 @@ async function submitFreeze(): Promise<void> {
     await freezeInventory({ requestKey: crypto.randomUUID(), balanceId: row.id, quantity: freezeQuantity.value,
       reason: freezeReason.value, note: freezeNote.value.trim() || undefined });
     notice.value = t('wms.inventory.freeze.success');
-    await load();
-    await loadActive(row.id);
-    freezeQuantity.value = selected.value?.warehouseStatus === 'NORMAL' ? selected.value.quantity : '';
   } catch (cause) { writeFailure(cause); }
   finally { saving.value = false; }
+  if (notice.value) {
+    await load(); await loadActive(row.id);
+    freezeQuantity.value = selected.value?.warehouseStatus === 'NORMAL' ? selected.value.quantity : '';
+  }
 }
 
 async function submitUnfreeze(freeze: InventoryFreeze): Promise<void> {
@@ -182,10 +186,9 @@ async function submitUnfreeze(freeze: InventoryFreeze): Promise<void> {
     await unfreezeInventory(freeze.id, { requestKey: crypto.randomUUID(), quantity,
       note: releaseNotes.value[freeze.id]?.trim() || undefined });
     notice.value = t('wms.inventory.freeze.success');
-    await load();
-    await loadActive(selected.value.id);
   } catch (cause) { writeFailure(cause); }
   finally { saving.value = false; }
+  if (notice.value) {await load(); if(selected.value)await loadActive(selected.value.id);}
 }
 
 async function refreshUnknown(): Promise<void> {
@@ -194,9 +197,7 @@ async function refreshUnknown(): Promise<void> {
   const inventoryLoaded = await load();
   const holdsLoaded = row ? await loadActive(row.id) : true;
   if (inventoryLoaded && holdsLoaded) {
-    unknownWrite.value = false;
-    error.value = '';
-    freezeQuantity.value = selected.value?.warehouseStatus === 'NORMAL' ? selected.value.quantity : '';
+    error.value = t('wms.inventory.freeze.unknown');
   }
 }
 
@@ -252,9 +253,9 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
             <MomButton mode="text" @click="router.push({ name: ROUTE_NAMES.wmsInventoryHistory,
               query: { materialId: row.materialId, batchCode: row.batchCode || undefined,
                 snCode: row.snCode || undefined, warehouseId: row.warehouseId, locationId: row.locationId } })">{{ t('wms.inventory.history.open') }}</MomButton>
-            <MomButton mode="text" @click="openManagement(row)">{{ t('wms.inventory.freeze.action') }}</MomButton>
+            <MomButton mode="text" :disabled="unknownWrite" @click="openManagement(row)">{{ t('wms.inventory.freeze.action') }}</MomButton>
             <MomButton v-if="canTransfer && row.warehouseStatus === 'NORMAL'" mode="text"
-              @click="transferSelected = row">{{ t('wms.inventory.transfer.action') }}</MomButton>
+              :disabled="unknownWrite" @click="transferSelected = row">{{ t('wms.inventory.transfer.action') }}</MomButton>
           </template>
         </MomDataTable>
         <template #footer><MomCrudPagination :page-no="pageNo" :page-size="pageSize" :total="total"
@@ -265,7 +266,7 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
       </MomListSurface>
 
       <MomModal :open="!!selected" :title="t('wms.inventory.freeze.active')"
-        :close-label="tForOwner('system', 'system.common.close')" :busy="saving" @close="selected = undefined">
+        :close-label="tForOwner('system', 'system.common.close')" :busy="saving" @close="!unknownWrite && (selected = undefined)">
         <div v-if="selected" class="inventory-freeze">
           <p>{{ selected.materialCode }} · {{ selected.warehouseCode }} · {{ selected.locationCode }} · {{ selected.snCode || selected.batchCode || '' }}</p>
           <p>{{ t('wms.inventory.freeze.available') }}：{{ selected.warehouseStatus === 'NORMAL' ? selected.quantity : '0' }} {{ selected.uomCode }}</p>
@@ -292,12 +293,13 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
             </form>
           </article>
         </div>
-        <template #footer><MomButton variant="outline" :disabled="saving" @click="selected = undefined">{{ tForOwner('system', 'system.common.close') }}</MomButton></template>
+        <template #footer><MomButton variant="outline" :disabled="saving || unknownWrite" @click="selected = undefined">{{ tForOwner('system', 'system.common.close') }}</MomButton></template>
       </MomModal>
       <InventoryTransferModal v-if="transferSelected" :balance="transferSelected"
         @close="transferSelected = undefined"
-        @done="transferSelected = undefined; notice = t('wms.inventory.transfer.success'); load()"
-        @refresh="transferSelected = undefined; load()" />
+        @done="unknownWrite = false; transferSelected = undefined; notice = t('wms.inventory.transfer.success'); load()"
+        @uncertain="unknownWrite = true; error = t('wms.inventory.transfer.unknown')"
+        />
     </section>
   </PageContainer>
 </template>

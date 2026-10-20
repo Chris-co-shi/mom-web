@@ -67,6 +67,6 @@ export function getUserRoles(id: string, signal?: AbortSignal): Promise<RoleResp
 }
 
 /** 整体替换用户角色关系；失败时不自动重放，空数组表示移除全部角色。 */
-export function replaceUserRoles(id: string, roleIds: string[], version: number): Promise<RoleResponse[]> {
-  return httpClient.result({ path: userPath(id, '/roles'), method: 'PUT', body: { roleIds, version } });
+export function replaceUserRoles(id: string, roleIds: string[]): Promise<RoleResponse[]> {
+  return httpClient.result({ path: userPath(id, '/roles'), method: 'PUT', body: { roleIds } });
 }

@@ -322,7 +322,7 @@ export function useRolePermissionAssignment() {
     saving.value = true;
     error.value = undefined;
     try {
-      await replaceRolePermissions(target.value.id, selectedIds.value);
+      await replaceRolePermissions(target.value.id, selectedIds.value, target.value.version);
       if (disposed) return false;
       stage.value = 'select';
       saving.value = false;

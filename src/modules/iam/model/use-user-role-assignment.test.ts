@@ -1,11 +1,11 @@
 import { effectScope } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useUserRoleAssignment } from './use-user-role-assignment';
-import { getUserRoles, replaceUserRoles } from '../api/users-api';
+import { getUser, getUserRoles, replaceUserRoles } from '../api/users-api';
 import { searchRoles } from '../api/roles-api';
 
 vi.mock('../../auth', () => ({ hasAuthorities: () => true, hasAuthority: () => true }));
-vi.mock('../api/users-api', () => ({ getUserRoles: vi.fn(), replaceUserRoles: vi.fn() }));
+vi.mock('../api/users-api', () => ({ getUser: vi.fn(), getUserRoles: vi.fn(), replaceUserRoles: vi.fn() }));
 vi.mock('../api/roles-api', () => ({ searchRoles: vi.fn() }));
 
 const user = { id: 'u-1', username: 'operator', displayName: '操作员', enabled: true, version: 1, createdAt: '', updatedAt: '' };
@@ -15,6 +15,7 @@ const role = (id: string, enabled = true) => ({ id, code: `ROLE_${id}`, name: `�
 describe('用户角色分配草稿', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(getUser).mockResolvedValue(user);
     vi.mocked(getUserRoles).mockResolvedValue([role('existing')]);
     vi.mocked(searchRoles).mockImplementation(async (pageNo, pageSize) => ({
       records: pageNo === 1 ? [role('existing'), role('new')] : [role('later')],
@@ -32,7 +33,7 @@ describe('用户角色分配草稿', () => {
     assignment.toggle(role('later'));
     expect(assignment.selectedIds.value).toEqual(['existing', 'new', 'later']);
     await assignment.submit();
-    expect(replaceUserRoles).toHaveBeenCalledExactlyOnceWith('u-1', ['existing', 'new', 'later']);
+    expect(replaceUserRoles).toHaveBeenCalledExactlyOnceWith('u-1', ['existing', 'new', 'later'], 1);
     expect(assignment.opened.value).toBe(false);
     scope.stop();
   });

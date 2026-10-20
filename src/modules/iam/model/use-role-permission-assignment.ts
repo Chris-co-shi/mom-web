@@ -120,17 +120,11 @@ export function useRolePermissionAssignment() {
     assigned.value = [];
     selectedIds.value = [];
     try {
-      const [firstRole] = await Promise.all([
-        getRole(role.id, controller.signal), loadResources(1),
+      const [freshRole, relations] = await Promise.all([
+        getRole(role.id, controller.signal), getRolePermissions(role.id, controller.signal),
+        loadResources(1),
       ]);
-      const relations = await getRolePermissions(role.id, controller.signal);
-      const freshRole = await getRole(role.id, controller.signal);
       if (disposed || current !== sequence) return;
-      if (firstRole.version !== freshRole.version) {
-        stage.value = 'stale';
-        error.value = { key: 'iam.grants.stale' };
-        return;
-      }
       target.value = freshRole;
       assigned.value = relations;
       selectedIds.value = preserveUnknown && uncertainSelection
@@ -289,15 +283,8 @@ export function useRolePermissionAssignment() {
     loading.value = true;
     error.value = undefined;
     try {
-      const firstRole = await getRole(roleId);
-      const latest = await getRolePermissions(roleId);
-      const freshRole = await getRole(roleId);
+      const [freshRole, latest] = await Promise.all([getRole(roleId), getRolePermissions(roleId)]);
       if (disposed || !opened.value || sequence !== current || target.value?.id !== roleId) return false;
-      if (firstRole.version !== freshRole.version || freshRole.version !== target.value.version) {
-        stage.value = 'stale';
-        error.value = { key: 'iam.grants.stale' };
-        return false;
-      }
       target.value = freshRole;
       if (!sameIds(baselineIds.value, latest.map((item) => item.id))) {
         stage.value = 'stale';
@@ -335,7 +322,7 @@ export function useRolePermissionAssignment() {
     saving.value = true;
     error.value = undefined;
     try {
-      await replaceRolePermissions(target.value.id, selectedIds.value, target.value.version);
+      await replaceRolePermissions(target.value.id, selectedIds.value);
       if (disposed) return false;
       stage.value = 'select';
       saving.value = false;

@@ -18,33 +18,33 @@ function mountModal(snCode: string | null = null) {
   return mount(InventoryTransferModal, { props: { balance: { ...balance, snCode } }, global: { stubs: {
     MomModal: { template: '<div><slot /><slot name="footer" /></div>' },
     MomButton: { props: ['disabled'], template: '<button :disabled="disabled"><slot /></button>' },
-    MomInput: { props: ['modelValue'], emits: ['update:modelValue'],
+    MomQuantityInput: { props: ['modelValue', 'unitValue'], emits: ['update:modelValue'],
       template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' },
-    MomSelect: { props: ['modelValue', 'options'], emits: ['update:modelValue'],
-      template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option value=""></option><option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option></select>' },
+    MomReferenceSelect: { name: 'MomReferenceSelect', props: ['modelValue', 'search'], emits: ['update:modelValue'],
+      template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option value=""></option><option value="3002">目标库位</option></select>' },
   } } });
 }
 
 beforeEach(() => {
-  vi.mocked(searchCatalog).mockReset().mockImplementation(async kind => ({
-    records: kind === 'warehouse-areas'
-      ? [{ id: 'area-1', code: 'A', name: '区域', status: 'ENABLED' as const,
-          version: 0, createdAt: '', updatedAt: '' }]
-      : [{ id: '3001', code: 'LOC-1', name: '来源', status: 'ENABLED' as const,
+  vi.mocked(searchCatalog).mockReset().mockImplementation(async () => ({
+    records: [{ id: '3001', code: 'LOC-1', name: '来源', status: 'ENABLED' as const,
           version: 0, createdAt: '', updatedAt: '' },
         { id: '3002', code: 'LOC-2', name: '目标', status: 'ENABLED' as const,
           version: 0, createdAt: '', updatedAt: '' }],
-    pageNo: 1, pageSize: 200, total: kind === 'warehouse-areas' ? 1 : 2, totalPages: 1,
+    pageNo: 1, pageSize: 20, total: 2, totalPages: 1,
   }));
   vi.mocked(transferInventory).mockReset().mockResolvedValue({ transactionId: 'tx-1' });
 });
 
 describe('库内移动弹窗', () => {
-  it('仅加载当前仓库 MDM 真实库位，排除来源并提交单次写入', async () => {
+  it('分页搜索当前仓库库位，排除来源并提交单次写入', async () => {
     vi.stubGlobal('crypto', { randomUUID: () => 'move-key' });
     const wrapper = mountModal(); await flushPromises();
-    expect(searchCatalog).toHaveBeenCalledWith('warehouse-areas', 1, 200,
-      { warehouseId: '2001', status: 'ENABLED' });
+    const reference = wrapper.findComponent({ name: 'MomReferenceSelect' });
+    const result = await reference.props('search')('', 1, new AbortController().signal);
+    expect(searchCatalog).toHaveBeenCalledWith('locations', 1, 20,
+      { warehouseId: '2001', keyword: '', status: 'ENABLED' }, expect.any(AbortSignal));
+    expect(result.records.map((row: { id: string }) => row.id)).toEqual(['3002']);
     expect(wrapper.findAll('option').map(option => option.attributes('value'))).toEqual(['', '3002']);
     await wrapper.find('select').setValue('3002');
     await wrapper.find('input').setValue('2.5');

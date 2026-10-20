@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { hasAuthority } from '../../auth/model/auth-permissions';
-import { searchMaterials, type Material } from '../../mdm/api/material-api';
-import { searchCatalog, type MasterRow } from '../../mdm/api/catalog-api';
+import { getMaterial } from '../../mdm/api/material-api';
+import { getCatalog } from '../../mdm/api/catalog-api';
+import { getUomCatalog } from '../../mdm/api/uom-api';
+import { activeMaterialReference, catalogReference } from '../../mdm/api/reference-api';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
-import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
+import { MomButton, MomInput, MomQuantityInput, MomReferenceSelect, MomSelect } from '../../../shared/ui';
 import { isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
@@ -17,12 +19,23 @@ import { addExtra, adjustCount, cancelCount, confirmCount, editCountScope, getCo
   type CountDetail, type CountLine, type ExtraInput, type QualityStatus, type WarehouseStatus } from '../api/inventory-count-api';
 import './inventory-pages.css';
 const route=useRoute(), router=useRouter(), {t,tForOwner}=useLocale(), id=String(route.params.id);
-const detail=ref<CountDetail>(), materials=ref<Material[]>([]), locations=ref<MasterRow[]>([]);
+const detail=ref<CountDetail>();
 const loading=ref(false),saving=ref(false),error=ref(''),notice=ref(''),blocked=ref(false),pending=ref('');
-const materialKeyword=ref(''),locationKeyword=ref(''),scopeMaterial=ref(''),scopeLocation=ref('');
+const scopeMaterial=ref(''),scopeLocation=ref('');
+const referenceNames=reactive<Record<string,string>>({});
+const extraUomCode=ref('');
+const locationReference=catalogReference('locations',()=>({warehouseId:detail.value?.task.warehouseId??'',status:'ENABLED'}));
+let uomSequence=0;
 const scope=reactive({materialIds:[] as string[],locationIds:[] as string[]});
 const quantities=reactive<Record<string,string>>({});
 const extra=reactive({materialId:'',locationId:'',batchCode:'',snCode:'',qualityStatus:'PENDING',warehouseStatus:'NORMAL',quantity:''});
+watch(()=>extra.materialId,async value=>{
+  const current=++uomSequence;extraUomCode.value='';
+  if(!value)return;
+  try {const material=await getMaterial(value);const uom=await getUomCatalog('uoms',material.baseUomId);
+    if(current===uomSequence)extraUomCode.value=uom.code;}
+  catch {if(current===uomSequence)error.value=t('wms.inventory.count.referencefailed');}
+});
 const draft=computed(()=>detail.value?.task.status==='DRAFT');
 const counting=computed(()=>detail.value?.task.status==='COUNTING');
 const confirmed=computed(()=>detail.value?.task.status==='CONFIRMED');
@@ -45,44 +58,47 @@ const columns=computed<MomColumn[]>(()=>[
   {key:'differenceQuantity',title:t('wms.inventory.count.difference'),minWidth:120},
   {key:'actions',title:tForOwner('system','system.common.actions'),width:130,resizable:false},
 ]);
-const visibleLocations=computed(()=>locations.value.filter(v=>`${v.code} ${v.name}`.toLowerCase().includes(locationKeyword.value.toLowerCase())));
-const countMaterials=computed(()=>materials.value.filter(value=>!detail.value?.task.materialIds.length||detail.value.task.materialIds.includes(value.id)));
-const countLocations=computed(()=>locations.value.filter(value=>!detail.value?.task.locationIds.length||detail.value.task.locationIds.includes(value.id)));
+const scopedMaterialReference={
+  async search(keyword:string,page:number,signal:AbortSignal){const result=await activeMaterialReference.search(keyword,page,signal);
+    return {...result,records:result.records.filter(row=>!detail.value?.task.materialIds.length||detail.value.task.materialIds.includes(row.id))};},
+  resolve:activeMaterialReference.resolve,
+};
+const scopedLocationReference={
+  async search(keyword:string,page:number,signal:AbortSignal){const result=await locationReference.search(keyword,page,signal);
+    return {...result,records:result.records.filter(row=>!detail.value?.task.locationIds.length||detail.value.task.locationIds.includes(row.id))};},
+  resolve:locationReference.resolve,
+};
 const validQuantity=(value:string)=>/^(0|[1-9]\d{0,17})(\.\d{1,6})?$/.test(value);
 async function load():Promise<void> {
   loading.value=true; error.value='';
   try {
     detail.value=await getCount(id);
     scope.materialIds=[...detail.value.task.materialIds]; scope.locationIds=[...detail.value.task.locationIds];
+    void resolveScopeNames();
     for(const line of detail.value.lines) quantities[line.id]=line.countedQuantity??'';
     blocked.value=false;
   } catch(cause) { error.value=isApiError(cause)&&cause.kind==='forbidden'
     ? t('wms.inventory.forbidden'):t('wms.inventory.count.loadfailed'); }
   finally { loading.value=false; }
 }
-async function lookup():Promise<void> {
+async function resolveScopeNames():Promise<void>{
   if(!detail.value)return;
-  try {
-    const areas=await searchCatalog('warehouse-areas',1,200,{warehouseId:detail.value.task.warehouseId,status:'ENABLED'});
-    const pages=await Promise.all(areas.records.map(area=>searchCatalog('locations',1,200,{warehouseAreaId:area.id})));
-    locations.value=pages.flatMap(page=>page.records).filter(row=>row.status==='ENABLED');
-    await searchMaterialOptions();
-  } catch { error.value=t('wms.inventory.count.referencefailed'); }
-}
-async function searchMaterialOptions():Promise<void> {
-  try { materials.value=(await searchMaterials(1,100,{keyword:materialKeyword.value||undefined,status:'ENABLED'})).records; }
-  catch { error.value=t('wms.inventory.count.referencefailed'); }
+  const materialIds=[...detail.value.task.materialIds],locationIds=[...detail.value.task.locationIds];
+  await Promise.all([...materialIds.map(async value=>{try{const row=await getMaterial(value);referenceNames[value]=`${row.name} · ${row.code}`;}catch{referenceNames[value]=value;}}),
+    ...locationIds.map(async value=>{try{const row=await getCatalog('locations',value);referenceNames[value]=`${row.name} · ${row.code}`;}catch{referenceNames[value]=value;}})]);
 }
 function addScope(kind:'material'|'location'):void {
   const id=kind==='material'?scopeMaterial.value:scopeLocation.value;
   const list=kind==='material'?scope.materialIds:scope.locationIds;
   if(id&&!list.includes(id))list.push(id);
+  if(id)void (kind==='material'?getMaterial(id):getCatalog('locations',id))
+    .then(row=>{referenceNames[id]=`${row.name} · ${row.code}`;}).catch(()=>{referenceNames[id]=id;});
 }
 async function write(action:()=>Promise<CountDetail>,success:string):Promise<void> {
   if(saving.value||blocked.value)return;
   saving.value=true;error.value='';notice.value='';
   try {detail.value=await action();notice.value=t(success as Parameters<typeof t>[0]);
-    if(canExtra.value&&(!materials.value.length||!locations.value.length))await lookup();}
+  }
   catch(cause) { blocked.value=isApiError(cause)&&cause.resultUnknown;
     error.value=blocked.value?t('wms.inventory.count.unknown')
       :isApiError(cause)&&cause.kind==='forbidden'?t('wms.inventory.forbidden')
@@ -101,7 +117,7 @@ function saveLine(line:CountLine):void {
   void write(()=>saveCount(id,line.id,value),'wms.inventory.count.countsaved');
 }
 function saveExtra():void {
-  if(!canExtra.value||!extra.materialId||!extra.locationId||!validQuantity(extra.quantity)) {
+  if(!canExtra.value||!extra.materialId||!extra.locationId||!extraUomCode.value||!validQuantity(extra.quantity)) {
     error.value=t('wms.inventory.count.invalidquantity');return;
   }
   const input:ExtraInput={materialId:extra.materialId,locationId:extra.locationId,batchCode:extra.batchCode||null,
@@ -114,7 +130,7 @@ function history():void {
   void router.push({name:ROUTE_NAMES.wmsInventoryHistory,query:{sourceType:'INVENTORY_COUNT',sourceId:id,
     warehouseId:detail.value.task.warehouseId}});
 }
-onMounted(async()=>{await load();if(detail.value&&(canScope.value||canExtra.value))await lookup();});
+onMounted(()=>{void load();});
 </script>
 <template>
   <PageContainer><section class="inventory-page">
@@ -129,21 +145,27 @@ onMounted(async()=>{await load();if(detail.value&&(canScope.value||canExtra.valu
       </template>
     </MomManagementHeader>
     <p v-if="error" role="alert" class="inventory-page__error">{{ error }}</p><p v-if="notice" role="status">{{ notice }}</p>
-    <p v-if="detail">{{ t('wms.inventory.count.status') }}: {{ t(`wms.inventory.count.${detail.task.status.toLowerCase()}` as Parameters<typeof t>[0]) }}
-      · {{ t('wms.inventory.count.createdat') }}: {{ new Date(detail.task.createdAt).toLocaleString() }}</p>
-    <div v-if="canScope" class="opening-detail__form">
+    <dl v-if="detail" class="inventory-count__summary">
+      <div><dt>{{ t('wms.inventory.count.status') }}</dt><dd>{{ t(`wms.inventory.count.${detail.task.status.toLowerCase()}` as Parameters<typeof t>[0]) }}</dd></div>
+      <div><dt>{{ t('wms.opening.warehouse') }}</dt><dd>{{ detail.task.warehouseCode }}</dd></div>
+      <div><dt>{{ t('wms.inventory.count.createdat') }}</dt><dd>{{ new Date(detail.task.createdAt).toLocaleString() }}</dd></div>
+    </dl>
+    <section v-if="canScope" class="inventory-count__scope">
       <h2>{{ t('wms.inventory.count.scope') }}</h2>
       <p>{{ t('wms.inventory.count.emptyscope') }}</p>
-      <label class="opening-detail__field">{{ t('wms.opening.materialSearch') }}<MomInput v-model="materialKeyword" /><MomButton variant="outline" @click="searchMaterialOptions">{{ tForOwner('system','system.common.search') }}</MomButton></label>
-      <MomSelect v-model="scopeMaterial" :options="materials.map(m=>({value:m.id,label:`${m.code} · ${m.name}`}))" :placeholder="t('wms.inventory.count.material')" />
-      <MomButton variant="outline" @click="addScope('material')">{{ t('wms.inventory.count.addmaterial') }}</MomButton>
-      <p v-for="value in scope.materialIds" :key="value">{{ materials.find(m=>m.id===value)?.code||value }} <MomButton mode="text" @click="scope.materialIds=scope.materialIds.filter(id=>id!==value)">×</MomButton></p>
-      <label class="opening-detail__field">{{ t('wms.opening.locationSearch') }}<MomInput v-model="locationKeyword" /></label>
-      <MomSelect v-model="scopeLocation" :options="visibleLocations.map(v=>({value:v.id,label:`${v.code} · ${v.name}`}))" :placeholder="t('wms.inventory.count.location')" />
-      <MomButton variant="outline" @click="addScope('location')">{{ t('wms.inventory.count.addlocation') }}</MomButton>
-      <p v-for="value in scope.locationIds" :key="value">{{ locations.find(v=>v.id===value)?.code||value }} <MomButton mode="text" @click="scope.locationIds=scope.locationIds.filter(id=>id!==value)">×</MomButton></p>
-      <MomButton :disabled="saving||blocked" @click="saveScope">{{ t('wms.inventory.count.savescope') }}</MomButton>
-    </div>
+      <div class="inventory-count__scope-grid">
+        <div class="inventory-count__scope-field"><label>{{ t('wms.inventory.count.material') }}<MomReferenceSelect v-model="scopeMaterial"
+          :label="t('wms.inventory.count.material')" :search="activeMaterialReference.search" :resolve="activeMaterialReference.resolve" /></label>
+          <MomButton variant="outline" @click="addScope('material')">{{ t('wms.inventory.count.addmaterial') }}</MomButton>
+          <p v-for="value in scope.materialIds" :key="value">{{ referenceNames[value] || value }} <MomButton mode="text" @click="scope.materialIds=scope.materialIds.filter(id=>id!==value)">×</MomButton></p></div>
+        <div class="inventory-count__scope-field"><label>{{ t('wms.inventory.count.location') }}<MomReferenceSelect v-model="scopeLocation"
+          :label="t('wms.inventory.count.location')" :search="locationReference.search" :resolve="locationReference.resolve"
+          :parent-key="detail?.task.warehouseId" /></label>
+          <MomButton variant="outline" @click="addScope('location')">{{ t('wms.inventory.count.addlocation') }}</MomButton>
+          <p v-for="value in scope.locationIds" :key="value">{{ referenceNames[value] || value }} <MomButton mode="text" @click="scope.locationIds=scope.locationIds.filter(id=>id!==value)">×</MomButton></p></div>
+      </div>
+      <div class="inventory-count__actions"><MomButton :disabled="saving||blocked" @click="saveScope">{{ t('wms.inventory.count.savescope') }}</MomButton></div>
+    </section>
     <MomListSurface :title="t('wms.inventory.count.lines')" :hint="t('wms.inventory.count.linehint')" :loading="loading" :loading-text="tForOwner('system','system.common.loading')">
       <MomDataTable :rows="detail?.lines||[]" :columns="columns" :empty-text="tForOwner('system','system.common.empty')">
         <template #cell-materialCode="{row}">{{ row.dimension.materialCode }}</template>
@@ -152,23 +174,29 @@ onMounted(async()=>{await load();if(detail.value&&(canScope.value||canExtra.valu
         <template #cell-locationCode="{row}">{{ row.dimension.locationCode }}</template>
         <template #cell-qualityStatus="{row}">{{ t(`wms.inventory.quality.${row.dimension.qualityStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
         <template #cell-warehouseStatus="{row}">{{ t(`wms.inventory.warehouse.${row.dimension.warehouseStatus.toLowerCase()}` as Parameters<typeof t>[0]) }}</template>
-        <template #cell-countedQuantity="{row}"><MomInput v-if="canCount" v-model="quantities[row.id]" type="number" min="0" step="0.000001" :aria-label="t('wms.inventory.count.counted')" />
-          <span v-else>{{ row.countedQuantity===null?t('wms.inventory.count.uncounted'):row.countedQuantity }}</span></template>
+        <template #cell-countedQuantity="{row}"><MomQuantityInput v-if="canCount" v-model="quantities[row.id]"
+          :unit-value="row.dimension.uomCode" :units="[{value:row.dimension.uomCode,label:row.dimension.uomCode}]"
+          :label="t('wms.inventory.count.counted')" unit-disabled />
+          <span v-else>{{ row.countedQuantity===null?t('wms.inventory.count.uncounted'):`${row.countedQuantity} ${row.dimension.uomCode}` }}</span></template>
         <template #cell-differenceQuantity="{row}">{{ row.differenceQuantity===null?'—':row.differenceQuantity==='0'||row.differenceQuantity.startsWith('-')?row.differenceQuantity:`+${row.differenceQuantity}` }}</template>
         <template #cell-actions="{row}"><MomButton v-if="canCount" mode="text" :disabled="saving||blocked" @click="saveLine(row)">{{ t('wms.inventory.count.savecount') }}</MomButton></template>
       </MomDataTable>
     </MomListSurface>
-    <div v-if="canExtra" class="opening-detail__form"><h2>{{ t('wms.inventory.count.extra') }}</h2>
-      <label class="opening-detail__field">{{ t('wms.opening.materialSearch') }}<MomInput v-model="materialKeyword" /><MomButton variant="outline" @click="searchMaterialOptions">{{ tForOwner('system','system.common.search') }}</MomButton></label>
-      <MomSelect v-model="extra.materialId" :options="countMaterials.map(m=>({value:m.id,label:`${m.code} · ${m.name}`}))" :placeholder="t('wms.inventory.count.material')" />
-      <MomSelect v-model="extra.locationId" :options="countLocations.map(v=>({value:v.id,label:`${v.code} · ${v.name}`}))" :placeholder="t('wms.inventory.count.location')" />
+    <section v-if="canExtra" class="inventory-count__scope"><h2>{{ t('wms.inventory.count.extra') }}</h2>
+      <div class="inventory-count__extra-grid"><label>{{ t('wms.inventory.count.material') }}<MomReferenceSelect v-model="extra.materialId"
+        :label="t('wms.inventory.count.material')" :search="scopedMaterialReference.search" :resolve="scopedMaterialReference.resolve" /></label>
+      <label>{{ t('wms.inventory.count.location') }}<MomReferenceSelect v-model="extra.locationId"
+        :label="t('wms.inventory.count.location')" :search="scopedLocationReference.search" :resolve="scopedLocationReference.resolve"
+        :parent-key="detail?.task.warehouseId" /></label>
       <label class="opening-detail__field">{{ t('wms.inventory.batch') }}<MomInput v-model="extra.batchCode" :maxlength="128" /></label>
       <label class="opening-detail__field">{{ t('wms.inventory.sn') }}<MomInput v-model="extra.snCode" :maxlength="128" /></label>
       <MomSelect v-model="extra.qualityStatus" :options="(['PENDING','QUALIFIED','RESTRICTED','REJECTED'] as const).map(v=>({value:v,label:t(`wms.inventory.quality.${v.toLowerCase()}` as Parameters<typeof t>[0])}))" />
       <MomSelect v-model="extra.warehouseStatus" :options="(['NORMAL','FROZEN'] as const).map(v=>({value:v,label:t(`wms.inventory.warehouse.${v.toLowerCase()}` as Parameters<typeof t>[0])}))" />
-      <label class="opening-detail__field">{{ t('wms.inventory.count.counted') }}<MomInput v-model="extra.quantity" type="number" min="0" step="0.000001" /></label>
-      <MomButton :disabled="saving||blocked" @click="saveExtra">{{ t('wms.inventory.count.addextra') }}</MomButton>
-    </div>
+      <label>{{ t('wms.inventory.count.counted') }}<MomQuantityInput v-model="extra.quantity"
+        :unit-value="extraUomCode" :units="extraUomCode?[{value:extraUomCode,label:extraUomCode}]:[]"
+        :label="t('wms.inventory.count.counted')" unit-disabled /></label></div>
+      <div class="inventory-count__actions"><MomButton :disabled="saving||blocked||!extraUomCode" @click="saveExtra">{{ t('wms.inventory.count.addextra') }}</MomButton></div>
+    </section>
     <MomModal :open="!!pending" :title="t('wms.inventory.count.confirmaction')" :close-label="tForOwner('system','system.common.close')" :busy="saving" @close="pending=''">
       <p>{{ t('wms.inventory.count.confirmaction') }}</p>
       <template #footer><MomButton variant="outline" :disabled="saving" @click="pending=''">{{ tForOwner('system','system.common.cancel') }}</MomButton>

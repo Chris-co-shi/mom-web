@@ -34,7 +34,7 @@ it('期初单创建结果未知时阻止重放，并按仓库查询已创建单�
     MomDataTable: { template: '<div />' },
     MomCrudPagination: { template: '<div />' },
     MomModal: { template: '<div />' },
-    MomSelect: { props: ['options'], emits: ['update:modelValue'], template: '<select @change="$emit(\'update:modelValue\', $event.target.value)"><option value="" /><option v-for="item in options" :value="item.value">{{ item.label }}</option></select>' },
+    MomReferenceSelect: { emits: ['update:modelValue'], template: '<select @change="$emit(\'update:modelValue\', $event.target.value)"><option value="" /><option value="2001">主仓 · WH-1</option></select>' },
     MomButton: { props: ['disabled'], template: '<button :disabled="disabled"><slot /></button>' },
   } } });
   await flushPromises();

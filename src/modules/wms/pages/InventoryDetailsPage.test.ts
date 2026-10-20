@@ -6,11 +6,12 @@ import { ApiError } from '../../../shared/api/errors';
 import { hasAuthority } from '../../auth/model/auth-permissions';
 
 const push = vi.fn();
+const routeQuery = vi.hoisted(() => ({ warehouseId: '2001', locationId: '' }));
 const detail = { id: 'balance-1', materialId: '1001', materialCode: 'MAT-1', materialName: '材料一', uomCode: 'kg',
   batchCode: 'B1', snCode: 'SN-1', warehouseId: '2001', warehouseCode: 'WH-1', locationId: '3001', locationCode: 'LOC-1',
   qualityStatus: 'QUALIFIED' as const, warehouseStatus: 'NORMAL' as const, quantity: '10' };
 vi.mock('vue-router', async original => ({ ...(await original<typeof import('vue-router')>()),
-  useRouter: () => ({ push }), useRoute: () => ({ query: { warehouseId: '2001' } }) }));
+  useRouter: () => ({ push }), useRoute: () => ({ query: routeQuery }) }));
 vi.mock('../../../shared/i18n/locale', () => ({ useLocale: () => ({ t: (key: string) => key,
   tForOwner: (_owner: string, key: string) => key }) }));
 vi.mock('../../auth/model/auth-permissions', () => ({ hasAuthority: vi.fn(() => true) }));
@@ -27,12 +28,17 @@ function mountPage() {
     MomModal: { props: ['open'], template: '<div v-if="open"><slot /><slot name="footer" /></div>' },
     MomButton: { template: '<button><slot /></button>' },
     MomInput: { props: ['modelValue'], emits: ['update:modelValue'], template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' },
+    MomReferenceSelect: { props: ['modelValue', 'label'], emits: ['update:modelValue'],
+      template: '<div :data-label="label" :data-value="modelValue" />' },
+    MomQuantityInput: { props: ['modelValue'], emits: ['update:modelValue'],
+      template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' },
     MomSelect: { props: ['modelValue', 'options'], emits: ['update:modelValue'], template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option></select>' },
     MomTextarea: { props: ['modelValue'], emits: ['update:modelValue'], template: '<textarea :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' },
   } } });
 }
 
 beforeEach(() => {
+  routeQuery.locationId = '';
   vi.mocked(hasAuthority).mockImplementation(() => true);
   push.mockReset();
   vi.mocked(searchInventoryDetails).mockResolvedValue({ records: [detail], pageNo: 1, pageSize: 20, total: 1, totalPages: 1 });
@@ -42,6 +48,14 @@ beforeEach(() => {
 });
 
 describe('WMS 实时库存明细冻结交互', () => {
+  it('路由中的仓库和库位 ID 保留为筛选值并交给参照组件回显', async () => {
+    routeQuery.locationId = '3001';
+    const wrapper = mountPage(); await flushPromises();
+    expect(wrapper.find('[data-label="wms.inventory.warehouse"]').attributes('data-value')).toBe('2001');
+    expect(wrapper.find('[data-label="wms.inventory.location"]').attributes('data-value')).toBe('3001');
+    expect(searchInventoryDetails).toHaveBeenCalledWith(1, 20,
+      expect.objectContaining({ warehouseId: '2001', locationId: '3001' }), expect.any(AbortSignal));
+  });
   it('只读用户看不到库内移动入口', async () => {
     vi.mocked(hasAuthority).mockImplementation(authority => authority !== 'wms:inventory:transfer');
     const wrapper = mountPage(); await flushPromises();

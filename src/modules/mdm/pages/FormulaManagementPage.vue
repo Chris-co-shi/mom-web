@@ -5,7 +5,8 @@ import { onBeforeRouteLeave } from 'vue-router';
 import { submitWithFocus } from '../../../shared/ui/focus';
 import { AuthorityGuard, hasAuthority } from '../../auth';
 import { isApiError } from '../../../shared/api/errors';
-import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
+import { MomButton, MomInput, MomReferenceSelect, MomSelect } from '../../../shared/ui';
+import { activeMaterialReference } from '../api/reference-api';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
@@ -59,9 +60,7 @@ const selectOptions = <T extends { id: string; code: string; name: string; statu
   return [{ value: '', label: t('mdm.struct.select') }, ...options];
 };
 const plantOptions = computed(() => selectOptions(plants.value, form.plantId));
-const outputOptions = computed(() => selectOptions(materials.value, form.outputMaterialId));
 const uomOptions = (selected: string) => selectOptions(uoms.value, selected);
-const materialOptions = (selected: string) => selectOptions(materials.value, selected);
 const label = <T extends { id: string; code: string; name: string }>(values: T[], id: string) =>
   values.find(row => row.id === id)?.name ?? id;
 
@@ -247,14 +246,16 @@ onScopeDispose(() => { disposed = true; ++requestNo; ++detailNo;
               <label><span>{{ t('mdm.struct.code') }} *</span><MomInput v-model="form.code" :max-length="64" /></label>
               <label><span>{{ t('mdm.struct.name') }} *</span><MomInput v-model="form.name" :max-length="200" /></label>
               <label><span>{{ t('mdm.formula.plant') }} *</span><MomSelect v-model="form.plantId" :options="plantOptions" /></label>
-              <label><span>{{ t('mdm.formula.output') }} *</span><MomSelect v-model="form.outputMaterialId" :options="outputOptions" /></label>
+              <label><span>{{ t('mdm.formula.output') }} *</span><MomReferenceSelect v-model="form.outputMaterialId"
+                :label="t('mdm.formula.output')" :search="activeMaterialReference.search" :resolve="activeMaterialReference.resolve" /></label>
               <label><span>{{ t('mdm.formula.batchQuantity') }} *</span><MomInput v-model="form.baseBatchQuantity" inputmode="decimal" /></label>
               <label><span>{{ t('mdm.formula.baseUom') }} *</span><MomSelect v-model="form.baseUomId" :options="uomOptions(form.baseUomId)" /></label>
             </template>
             <div v-for="(item, index) in form.items" :key="index" class="mdm-struct__form-grid">
               <label><span>{{ t('mdm.formula.sequence') }} *</span><MomInput :model-value="String(item.sequenceNo)" type="number"
                 @update:model-value="item.sequenceNo = Number($event)" /></label>
-              <label><span>{{ t('mdm.formula.material') }} *</span><MomSelect v-model="item.materialId" :options="materialOptions(item.materialId)" /></label>
+              <label><span>{{ t('mdm.formula.material') }} *</span><MomReferenceSelect v-model="item.materialId"
+                :label="t('mdm.formula.material')" :search="activeMaterialReference.search" :resolve="activeMaterialReference.resolve" /></label>
               <label><span>{{ t('mdm.formula.quantity') }} *</span><MomInput v-model="item.quantity" inputmode="decimal" /></label>
               <label><span>{{ t('mdm.formula.uom') }} *</span><MomSelect v-model="item.uomId" :options="uomOptions(item.uomId)" /></label>
               <MomButton variant="outline" :disabled="form.items.length === 1" @click="form.items.splice(index, 1)">{{ t('mdm.formula.removeItem') }}</MomButton>

@@ -16,7 +16,7 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run src",
     "test:watch": "vitest",
     "test:browser-smoke": "playwright test --config=playwright.config.ts",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"

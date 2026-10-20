@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onScopeDispose, reactive, ref } from 'vue';
+import { computed, onMounted, onScopeDispose, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
@@ -9,7 +9,8 @@ import MomModal from '../../../shared/components/MomModal.vue';
 import InventoryTransferModal from './InventoryTransferModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import { hasAuthority } from '../../auth/model/auth-permissions';
-import { MomButton, MomInput, MomSelect, MomTextarea } from '../../../shared/ui';
+import { MomButton, MomInput, MomQuantityInput, MomReferenceSelect, MomSelect, MomTextarea } from '../../../shared/ui';
+import { catalogReference, materialReference } from '../../mdm/api/reference-api';
 import { isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
@@ -31,8 +32,17 @@ const unknownWrite = ref(false);
 const filter = reactive({
   materialId: typeof route.query.materialId === 'string' ? route.query.materialId : '',
   warehouseId: typeof route.query.warehouseId === 'string' ? route.query.warehouseId : '',
-  locationId: '', batchCode: '', snCode: '', qualityStatus: '', warehouseStatus: '',
+  locationId: typeof route.query.locationId === 'string' ? route.query.locationId : '',
+  batchCode: '', snCode: '', qualityStatus: '', warehouseStatus: '',
 });
+const warehouseReference = catalogReference('warehouses', () => ({}));
+const locationReference = catalogReference('locations', () => ({ warehouseId: filter.warehouseId }));
+watch(() => filter.warehouseId, (value, previous) => { if (value !== previous) filter.locationId = ''; });
+function resetFilters(): void {
+  Object.assign(filter, { materialId: '', warehouseId: '', locationId: '', batchCode: '', snCode: '',
+    qualityStatus: '', warehouseStatus: '' });
+  void load(1);
+}
 let controller: AbortController | undefined, sequence = 0;
 const canFreeze = computed(() => hasAuthority('wms:inventory:freeze'));
 const canUnfreeze = computed(() => hasAuthority('wms:inventory:unfreeze'));
@@ -208,9 +218,13 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
         </template>
       </MomManagementHeader>
       <form class="inventory-page__filters" @submit.prevent="search">
-        <label>{{ t('wms.inventory.materialId') }}<MomInput v-model="filter.materialId" /></label>
-        <label>{{ t('wms.inventory.warehouseId') }}<MomInput v-model="filter.warehouseId" /></label>
-        <label>{{ t('wms.inventory.locationId') }}<MomInput v-model="filter.locationId" /></label>
+        <label>{{ t('wms.inventory.material') }}<MomReferenceSelect v-model="filter.materialId"
+          :label="t('wms.inventory.material')" :search="materialReference.search" :resolve="materialReference.resolve" /></label>
+        <label>{{ t('wms.inventory.warehouse') }}<MomReferenceSelect v-model="filter.warehouseId"
+          :label="t('wms.inventory.warehouse')" :search="warehouseReference.search" :resolve="warehouseReference.resolve" /></label>
+        <label>{{ t('wms.inventory.location') }}<MomReferenceSelect v-model="filter.locationId"
+          :label="t('wms.inventory.location')" :search="locationReference.search" :resolve="locationReference.resolve"
+          :parent-key="filter.warehouseId" :disabled="!filter.warehouseId" /></label>
         <label>{{ t('wms.inventory.batch') }}<MomInput v-model="filter.batchCode" /></label>
         <label>{{ t('wms.inventory.sn') }}<MomInput v-model="filter.snCode" /></label>
         <label>{{ t('wms.inventory.qualityStatus') }}<MomSelect v-model="filter.qualityStatus" :options="[
@@ -218,7 +232,10 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
         <label>{{ t('wms.inventory.warehouseStatus') }}<MomSelect v-model="filter.warehouseStatus" :options="[
           { value: '', label: t('wms.inventory.all') }, { value: 'NORMAL', label: t('wms.inventory.warehouse.normal') },
           { value: 'FROZEN', label: t('wms.inventory.warehouse.frozen') }]" /></label>
-        <MomButton type="submit" :disabled="loading">{{ tForOwner('system', 'system.common.search') }}</MomButton>
+        <div class="inventory-page__filter-actions">
+          <MomButton type="submit" :disabled="loading">{{ tForOwner('system', 'system.common.search') }}</MomButton>
+          <MomButton type="button" variant="outline" :disabled="loading" @click="resetFilters">{{ tForOwner('system', 'system.common.reset') }}</MomButton>
+        </div>
       </form>
       <div v-if="error" role="alert" class="inventory-page__error">
         {{ error }}
@@ -253,7 +270,9 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
           <p>{{ selected.materialCode }} · {{ selected.warehouseCode }} · {{ selected.locationCode }} · {{ selected.snCode || selected.batchCode || '' }}</p>
           <p>{{ t('wms.inventory.freeze.available') }}：{{ selected.warehouseStatus === 'NORMAL' ? selected.quantity : '0' }} {{ selected.uomCode }}</p>
           <form v-if="canFreeze && selected.warehouseStatus === 'NORMAL'" class="inventory-freeze__form" @submit.prevent="submitFreeze">
-            <label>{{ t('wms.inventory.freeze.quantity') }}<MomInput v-model="freezeQuantity" :disabled="saving || unknownWrite" /></label>
+            <label>{{ t('wms.inventory.freeze.quantity') }}<MomQuantityInput v-model="freezeQuantity"
+              :unit-value="selected.uomCode" :units="[{ value: selected.uomCode, label: selected.uomCode }]"
+              :label="t('wms.inventory.freeze.quantity')" unit-disabled :disabled="saving || unknownWrite" /></label>
             <label>{{ t('wms.inventory.freeze.reason') }}<MomSelect v-model="freezeReason" :options="reasonOptions" :disabled="saving || unknownWrite" /></label>
             <label>{{ t('wms.inventory.freeze.note') }}<MomTextarea v-model="freezeNote" :maxlength="500" :disabled="saving || unknownWrite" /></label>
             <MomButton type="submit" :disabled="saving || unknownWrite">{{ t('wms.inventory.freeze.submit') }}</MomButton>
@@ -265,7 +284,9 @@ onScopeDispose(() => { ++sequence; controller?.abort(); });
             <p v-if="freeze.note">{{ freeze.note }}</p>
             <small>{{ freeze.operatorId }} · {{ freeze.frozenAt }}</small>
             <form v-if="canUnfreeze" class="inventory-freeze__form" @submit.prevent="submitUnfreeze(freeze)">
-              <label>{{ t('wms.inventory.freeze.quantity') }}<MomInput v-model="releaseQuantities[freeze.id]" :disabled="saving || unknownWrite" /></label>
+              <label>{{ t('wms.inventory.freeze.quantity') }}<MomQuantityInput v-model="releaseQuantities[freeze.id]"
+                :unit-value="freeze.uomCode" :units="[{ value: freeze.uomCode, label: freeze.uomCode }]"
+                :label="t('wms.inventory.freeze.quantity')" unit-disabled :disabled="saving || unknownWrite" /></label>
               <label>{{ t('wms.inventory.freeze.unfreezeNote') }}<MomInput v-model="releaseNotes[freeze.id]" required :maxlength="500" :disabled="saving || unknownWrite" /></label>
               <MomButton type="submit" variant="outline" :disabled="saving || unknownWrite">{{ t('wms.inventory.freeze.unfreeze') }}</MomButton>
             </form>

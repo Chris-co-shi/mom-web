@@ -2,20 +2,21 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { hasAuthority } from '../../auth/model/auth-permissions';
-import { searchCatalog, type MasterRow } from '../../mdm/api/catalog-api';
+import { catalogReference } from '../../mdm/api/reference-api';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
-import { MomButton, MomSelect } from '../../../shared/ui';
+import { MomButton, MomReferenceSelect } from '../../../shared/ui';
 import { isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
 import { createCount, listCounts, type CountSummary, type CountStatus } from '../api/inventory-count-api';
 import './inventory-pages.css';
 const router = useRouter(), { t, tForOwner } = useLocale();
-const rows=ref<CountSummary[]>([]), warehouses=ref<MasterRow[]>([]), warehouseId=ref('');
+const rows=ref<CountSummary[]>([]), warehouseId=ref('');
+const warehouseReference=catalogReference('warehouses',()=>({status:'ENABLED'}));
 const pageNo=ref(1), pageSize=ref(20), total=ref(0);
 const loading=ref(false), saving=ref(false), error=ref(''), unknown=ref(false);
 const requestKey=ref('');
@@ -32,10 +33,8 @@ function status(value:CountStatus):string { return t(`wms.inventory.count.${valu
 async function load(next=pageNo.value,size=pageSize.value):Promise<void> {
   loading.value=true; error.value=unknown.value?t('wms.inventory.count.unknown'):'';
   try {
-    const [page, refs]=await Promise.all([listCounts(next,size),canCreate.value
-      ? searchCatalog('warehouses',1,100,{status:'ENABLED'}) : Promise.resolve({records:[] as MasterRow[]})]);
+    const page=await listCounts(next,size);
     rows.value=page.records; pageNo.value=page.pageNo; pageSize.value=page.pageSize; total.value=page.total;
-    warehouses.value=refs.records;
   } catch(cause) { error.value=isApiError(cause)&&cause.kind==='forbidden'
     ? t('wms.inventory.forbidden') : t('wms.inventory.count.loadfailed'); }
   finally { loading.value=false; }
@@ -59,7 +58,9 @@ onMounted(()=>{void load();});
   <PageContainer><section class="inventory-page">
     <MomManagementHeader title-id="wms-count-title" :title="t('wms.inventory.count.title')" :description="t('wms.inventory.count.hint')">
       <template #actions>
-        <MomSelect v-if="canCreate" v-model="warehouseId" :options="warehouses.map(w=>({value:w.id,label:`${w.code} · ${w.name}`}))" :placeholder="t('wms.inventory.count.selectwarehouse')" :disabled="saving||loading" />
+        <MomReferenceSelect v-if="canCreate" v-model="warehouseId" class="inventory-page__header-reference"
+          :label="t('wms.inventory.count.selectwarehouse')" :search="warehouseReference.search"
+          :resolve="warehouseReference.resolve" :disabled="saving||loading" />
         <MomButton v-if="canCreate" :disabled="saving||loading||!warehouseId||unknown" @click="create">{{ t('wms.inventory.count.create') }}</MomButton>
         <MomButton variant="outline" :disabled="loading" @click="unknown=false;load()">{{ tForOwner('system','system.common.refresh') }}</MomButton>
       </template>

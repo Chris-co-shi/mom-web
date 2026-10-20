@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onScopeDispose, reactive, ref } from 'vue';
+import { computed, onScopeDispose, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
@@ -7,7 +7,8 @@ import MomDataTable, { type MomColumn } from '../../../shared/components/MomData
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
-import { MomButton, MomInput, MomSelect } from '../../../shared/ui';
+import { MomButton, MomInput, MomReferenceSelect, MomSelect } from '../../../shared/ui';
+import { catalogReference, materialReference } from '../../mdm/api/reference-api';
 import { isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
@@ -27,6 +28,9 @@ const filter = reactive({ materialId: queryValue('materialId'), materialKeyword:
   transactionType: queryValue('transactionType'), sourceType: queryValue('sourceType'),
   sourceId: queryValue('sourceId'), actor: queryValue('actor'),
   startDate: defaultStart, endDate: defaultEnd });
+const warehouseReference = catalogReference('warehouses', () => ({}));
+const locationReference = catalogReference('locations', () => ({ warehouseId: filter.warehouseId }));
+watch(() => filter.warehouseId, (value, previous) => { if (value !== previous) filter.locationId = ''; });
 const rows = ref<InventoryHistoryEntry[]>([]), pageNo = ref(1), pageSize = ref(20), total = ref(0);
 const searched = ref(false), loading = ref(false), error = ref('');
 const selected = ref<InventoryHistoryTransaction>(), detailLoading = ref(false), detailError = ref('');
@@ -94,7 +98,6 @@ function reset(): void {
   filter.startDate = defaultStart; filter.endDate = defaultEnd;
   rows.value = []; total.value = 0; pageNo.value = 1;
 }
-function clearTechnicalScope(key: 'materialId' | 'warehouseId' | 'locationId'): void { filter[key] = ''; }
 async function openTransaction(id: string): Promise<void> {
   const current = ++detailSequence;
   detailController?.abort(); detailController = new AbortController();
@@ -124,10 +127,12 @@ onScopeDispose(() => { ++sequence; ++detailSequence; controller?.abort(); detail
         <template #toolbar>
           <form class="inventory-history__filters" @submit.prevent="load(1)">
             <div class="inventory-history__primary">
-              <label>{{ t('wms.inventory.material') }}<MomInput v-model="filter.materialKeyword" type="search"
-                :placeholder="t('wms.inventory.materialSearch')" @update:model-value="clearTechnicalScope('materialId')" /></label>
-              <label>{{ t('wms.inventory.warehouse') }}<MomInput v-model="filter.warehouseCode" type="search"
-                :placeholder="t('wms.inventory.warehouseCodeSearch')" @update:model-value="clearTechnicalScope('warehouseId')" /></label>
+              <label>{{ t('wms.inventory.material') }}<MomReferenceSelect v-model="filter.materialId"
+                :label="t('wms.inventory.material')" :search="materialReference.search" :resolve="materialReference.resolve"
+                @update:model-value="filter.materialKeyword = ''" /></label>
+              <label>{{ t('wms.inventory.warehouse') }}<MomReferenceSelect v-model="filter.warehouseId"
+                :label="t('wms.inventory.warehouse')" :search="warehouseReference.search" :resolve="warehouseReference.resolve"
+                @update:model-value="filter.warehouseCode = ''" /></label>
               <label>{{ t('wms.inventory.batch') }}<MomInput v-model="filter.batchCode" /></label>
               <label>{{ t('wms.inventory.sn') }}<MomInput v-model="filter.snCode" /></label>
               <label>{{ t('wms.inventory.history.start') }}<MomInput v-model="filter.startDate" type="date" required /></label>
@@ -136,8 +141,10 @@ onScopeDispose(() => { ++sequence; ++detailSequence; controller?.abort(); detail
             <details class="inventory-history__advanced">
               <summary>{{ t('wms.inventory.history.morefilters') }}</summary>
               <div class="inventory-history__advanced-fields">
-                <label>{{ t('wms.inventory.location') }}<MomInput v-model="filter.locationCode" type="search"
-                  :placeholder="t('wms.inventory.locationCodeSearch')" @update:model-value="clearTechnicalScope('locationId')" /></label>
+                <label>{{ t('wms.inventory.location') }}<MomReferenceSelect v-model="filter.locationId"
+                  :label="t('wms.inventory.location')" :search="locationReference.search" :resolve="locationReference.resolve"
+                  :parent-key="filter.warehouseId" :disabled="!filter.warehouseId"
+                  @update:model-value="filter.locationCode = ''" /></label>
                 <label>{{ t('wms.inventory.history.type') }}<MomSelect v-model="filter.transactionType" :options="[
                   { value: '', label: t('wms.inventory.history.alltypes') },
                   ...['OPENING','FREEZE','UNFREEZE','LOCATION_TRANSFER','RECEIPT'].map(value => ({ value, label: value }))]" /></label>

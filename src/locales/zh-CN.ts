@@ -64,6 +64,7 @@ export type MessageKey =
   | 'wms.inventory.transfer.action'
   | 'wms.inventory.transfer.target'
   | 'wms.inventory.transfer.available'
+  | 'wms.inventory.transfer.moveQuantity'
   | 'wms.inventory.transfer.submit'
   | 'wms.inventory.transfer.success'
   | 'wms.inventory.transfer.failed'

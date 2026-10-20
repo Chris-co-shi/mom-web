@@ -26,7 +26,7 @@ it('创建结果未知时停止提交，手动刷新后复用原请求键安全�
     MomManagementHeader:{template:'<div><slot name="actions" /></div>'},
     MomListSurface:{template:'<div><slot /><slot name="footer" /></div>'},
     MomDataTable:{template:'<div />'},MomCrudPagination:{template:'<div />'},
-    MomSelect:{props:['options'],emits:['update:modelValue'],template:'<select @change="$emit(\'update:modelValue\', $event.target.value)"><option value="" /><option v-for="item in options" :value="item.value">{{ item.label }}</option></select>'},
+    MomReferenceSelect:{emits:['update:modelValue'],template:'<select @change="$emit(\'update:modelValue\', $event.target.value)"><option value="" /><option value="2001">主仓 · WH-1</option></select>'},
     MomButton:{props:['disabled'],template:'<button :disabled="disabled"><slot /></button>'},
   }}});
   await flushPromises();
@@ -54,7 +54,7 @@ it('仓库库存未启用时展示后端具体原因',async()=>{
     MomManagementHeader:{template:'<div><slot name="actions" /></div>'},
     MomListSurface:{template:'<div><slot /><slot name="footer" /></div>'},
     MomDataTable:{template:'<div />'},MomCrudPagination:{template:'<div />'},
-    MomSelect:{props:['options'],emits:['update:modelValue'],template:'<select @change="$emit(\'update:modelValue\', $event.target.value)"><option value="" /><option v-for="item in options" :value="item.value">{{ item.label }}</option></select>'},
+    MomReferenceSelect:{emits:['update:modelValue'],template:'<select @change="$emit(\'update:modelValue\', $event.target.value)"><option value="" /><option value="2001">主仓 · WH-1</option></select>'},
     MomButton:{props:['disabled'],template:'<button :disabled="disabled"><slot /></button>'},
   }}});
   await flushPromises();

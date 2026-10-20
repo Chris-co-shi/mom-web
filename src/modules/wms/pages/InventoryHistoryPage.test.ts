@@ -26,6 +26,8 @@ function mountPage() {
     MomModal: { props: ['open'], template: '<div v-if="open"><slot /><slot name="footer" /></div>' },
     MomButton: { template: '<button><slot /></button>' },
     MomInput: { props: ['modelValue', 'type'], emits: ['update:modelValue'], template: '<input :type="type" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' },
+    MomReferenceSelect: { props: ['modelValue'], emits: ['update:modelValue'],
+      template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option value=""></option><option value="2001">仓库</option><option value="3001">库位</option><option value="1002">物料</option></select>' },
     MomSelect: { props: ['modelValue', 'options'], emits: ['update:modelValue'], template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option></select>' },
   } } });
 }
@@ -58,17 +60,17 @@ it('翻页仍由服务端查询，重置清空条件及结果', async () => {
   expect(wrapper.text()).toContain('wms.inventory.history.queryfirst');
   expect((wrapper.findAll('input')[0]!.element as HTMLInputElement).value).toBe('');
 });
-it('可按物料名称或编码、仓库编码和库位编码查询，修改物料会解除深链接 ID 限定', async () => {
+it('业务参照选择按稳定 ID 查询，修改物料会解除深链接旧 ID 限定', async () => {
   const wrapper = mountPage();
   const inputs = wrapper.findAll('label');
-  await inputs.find(label => label.text() === 'wms.inventory.material')!.find('input').setValue('MAT-1');
-  await inputs.find(label => label.text() === 'wms.inventory.warehouse')!.find('input').setValue('WH-1');
-  await inputs.find(label => label.text() === 'wms.inventory.location')!.find('input').setValue('LOC-1');
+  await inputs.find(label => label.text().startsWith('wms.inventory.material'))!.find('select').setValue('1002');
+  await inputs.find(label => label.text().startsWith('wms.inventory.warehouse'))!.find('select').setValue('2001');
+  await inputs.find(label => label.text().startsWith('wms.inventory.location'))!.find('select').setValue('3001');
   await wrapper.get('form').trigger('submit'); await flushPromises();
   expect(searchInventoryHistory).toHaveBeenCalledWith(1, 20, expect.objectContaining({
-    materialKeyword: 'MAT-1', warehouseCode: 'WH-1', locationCode: 'LOC-1', batchCode: 'B1',
+    materialId: '1002', warehouseId: '2001', locationId: '3001', batchCode: 'B1',
   }), expect.any(AbortSignal));
-  expect(vi.mocked(searchInventoryHistory).mock.calls[0]![2]).not.toHaveProperty('materialId');
+  expect(vi.mocked(searchInventoryHistory).mock.calls[0]![2]).not.toHaveProperty('materialKeyword');
 });
 it('查询失败与权限不足提供不同反馈', async () => {
   vi.mocked(searchInventoryHistory).mockRejectedValueOnce(new ApiError('forbidden', { kind: 'forbidden', code: 'forbidden' }))

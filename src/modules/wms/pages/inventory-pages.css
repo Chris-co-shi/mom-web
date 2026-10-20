@@ -1,4 +1,9 @@
 .inventory-page { display: grid; gap: 1.25rem; }
+.inventory-page__header-reference { width: clamp(12rem, 20vw, 18rem); }
+.inventory-page__filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--mom-space-3) var(--mom-space-4); padding: var(--mom-space-4); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-surface); background: var(--mom-color-bg-surface); }
+.inventory-page__filters label { display: grid; min-width: 0; gap: var(--mom-space-2); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.inventory-page__filters label > * { min-width: 0; width: 100%; }
+.inventory-page__filter-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; align-items: center; gap: var(--mom-space-2); }
 .inventory-page__overview-filters { flex: 0 1 auto; }
 .inventory-page__error { display: flex; align-items: center; gap: 0.75rem; }
 .inventory-page--history .mom-list-surface__toolbar { display: grid; align-items: start; }
@@ -60,3 +65,16 @@
 .inventory-freeze__item { display: grid; gap: 0.5rem; padding: 0.85rem 0; border-top: 1px solid var(--border); }
 .inventory-freeze__item p { margin: 0; }
 .inventory-freeze__item small { color: var(--muted-foreground); }
+.inventory-count__summary { display: flex; flex-wrap: wrap; gap: var(--mom-space-4) var(--mom-space-6); margin: 0; padding: var(--mom-space-4); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-surface); background: var(--mom-color-bg-surface); }
+.inventory-count__summary > div { display: grid; gap: var(--mom-space-1); }
+.inventory-count__summary dt { color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-xs); }
+.inventory-count__summary dd { margin: 0; }
+.inventory-count__scope { display: grid; min-width: 0; gap: var(--mom-space-4); padding: var(--mom-space-5); border: 1px solid var(--mom-color-border); border-radius: var(--mom-radius-surface); background: var(--mom-color-bg-surface); }
+.inventory-count__scope h2, .inventory-count__scope p { margin: 0; }
+.inventory-count__scope-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--mom-space-5); }
+.inventory-count__scope-field { display: grid; align-content: start; gap: var(--mom-space-2); min-width: 0; }
+.inventory-count__scope-field label, .inventory-count__extra-grid label { display: grid; min-width: 0; gap: var(--mom-space-2); color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
+.inventory-count__scope-field > .mom-ui-button { justify-self: start; }
+.inventory-count__extra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: var(--mom-space-4); }
+.inventory-count__actions { display: flex; justify-content: flex-end; }
+@media (max-width: 720px) { .inventory-count__scope-grid { grid-template-columns: minmax(0, 1fr); } .inventory-count__scope { padding: var(--mom-space-4); } }

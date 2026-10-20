@@ -2,14 +2,14 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { hasAuthority } from '../../auth/model/auth-permissions';
-import { searchCatalog, type MasterRow } from '../../mdm/api/catalog-api';
+import { catalogReference } from '../../mdm/api/reference-api';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
 import MomDataTable, { type MomColumn } from '../../../shared/components/MomDataTable.vue';
 import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue';
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
-import { MomButton, MomSelect } from '../../../shared/ui';
+import { MomButton, MomReferenceSelect } from '../../../shared/ui';
 import { isApiError } from '../../../shared/api/errors';
 import { useLocale } from '../../../shared/i18n/locale';
 import { ROUTE_NAMES } from '../../../router/route-names';
@@ -17,7 +17,8 @@ import { createOpeningDocument, deleteOpeningDocument, listOpeningDocuments, typ
 import './inventory-pages.css';
 
 const router = useRouter(), { t, tForOwner } = useLocale();
-const rows = ref<OpeningDocument[]>([]), warehouses = ref<MasterRow[]>([]), warehouseId = ref('');
+const rows = ref<OpeningDocument[]>([]), warehouseId = ref('');
+const warehouseReference = catalogReference('warehouses', () => ({ status: 'ENABLED' }));
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
 const loading = ref(false), saving = ref(false), error = ref(''), success = ref('');
 const unknownWarehouseId = ref('');
@@ -34,11 +35,9 @@ const columns = computed<MomColumn[]>(() => [
 async function load(next = pageNo.value, size = pageSize.value): Promise<void> {
   loading.value = true; error.value = unknownWarehouseId.value ? t('wms.opening.createUnknown') : '';
   try {
-    const [documentPage, warehousePage] = await Promise.all([
-      listOpeningDocuments(next, size), canCreate.value ? searchCatalog('warehouses', 1, 100, { status: 'ENABLED' }) : Promise.resolve({ records: [] as MasterRow[] }),
-    ]);
+    const documentPage = await listOpeningDocuments(next, size);
     rows.value = documentPage.records; pageNo.value = documentPage.pageNo; pageSize.value = documentPage.pageSize;
-    total.value = documentPage.total; warehouses.value = warehousePage.records;
+    total.value = documentPage.total;
   } catch (cause) {
     error.value = isApiError(cause) && cause.kind === 'forbidden' ? t('wms.opening.forbidden') : t('wms.opening.loadFailed');
   } finally { loading.value = false; }
@@ -84,7 +83,9 @@ onMounted(() => { void load(); });
   <PageContainer><section class="inventory-page">
     <MomManagementHeader title-id="wms-opening-title" :title="t('wms.opening.title')" :description="t('wms.opening.hint')">
       <template #actions>
-        <MomSelect v-if="canCreate" v-model="warehouseId" :options="warehouses.map(w => ({ value: w.id, label: `${w.code} · ${w.name}` }))" :placeholder="t('wms.opening.selectWarehouse')" :disabled="saving || loading" />
+        <MomReferenceSelect v-if="canCreate" v-model="warehouseId" class="inventory-page__header-reference"
+          :label="t('wms.opening.selectWarehouse')" :search="warehouseReference.search"
+          :resolve="warehouseReference.resolve" :disabled="saving || loading" />
         <MomButton v-if="canCreate" :disabled="saving || loading || !warehouseId || !!unknownWarehouseId" @click="create">{{ t('wms.opening.create') }}</MomButton>
         <MomButton variant="outline" :disabled="loading" @click="load()">{{ tForOwner('system', 'system.common.refresh') }}</MomButton>
       </template>

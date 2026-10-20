@@ -8,6 +8,8 @@ export const ROUTE_NAMES = {
   wmsInventoryHistory: 'wms-inventory-history',
   wmsOpeningDocuments: 'wms-opening-documents',
   wmsOpeningDetail: 'wms-opening-detail',
+  wmsInventoryCounts: 'wms-inventory-counts',
+  wmsInventoryCountDetail: 'wms-inventory-count-detail',
   mdmPlants: 'mdm-plants',
   mdmUom: 'mdm-uom',
   mdmCategories: 'mdm-categories',

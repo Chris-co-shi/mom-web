@@ -4,6 +4,19 @@ import { ROUTE_NAMES } from '../../router/route-names';
 /** WMS Phase 1 只有实时库存读页面；详情通过总览进入，也支持深链接。 */
 export const wmsRoutes: RouteRecordRaw[] = [
   {
+    path: 'wms/inventory-counts', name: ROUTE_NAMES.wmsInventoryCounts,
+    component: () => import('./pages/InventoryCountListPage.vue'),
+    meta: { title: '库存盘点', titleKey: 'wms.inventory.count.title', module: 'wms',
+      requiresAuth: true, permissions: ['wms:inventory-count:read'], i18nOwners: ['wms'],
+      navigationGroup: 'wms', navigationOrder: 30 },
+  },
+  {
+    path: 'wms/inventory-counts/:id', name: ROUTE_NAMES.wmsInventoryCountDetail,
+    component: () => import('./pages/InventoryCountDetailPage.vue'),
+    meta: { title: '盘点详情', titleKey: 'wms.inventory.count.detail', module: 'wms',
+      requiresAuth: true, permissions: ['wms:inventory-count:read'], i18nOwners: ['wms'], hideInMenu: true },
+  },
+  {
     path: 'wms/opening-documents', name: ROUTE_NAMES.wmsOpeningDocuments,
     component: () => import('./pages/OpeningInventoryListPage.vue'),
     meta: { title: '期初库存建账', titleKey: 'wms.opening.title', module: 'wms',

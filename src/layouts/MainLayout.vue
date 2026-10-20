@@ -56,9 +56,9 @@ const expandedNavigationSection = ref<string | null>(null);
 const loggingOut = ref(false);
 const { t } = useLocale();
 const { user, authorities } = useAuthSession();
-// WMS 菜单只在有库存读权限时预取所属 Owner；服务离线不阻断其他导航。
+// 任一 WMS 读权限均预取所属 Owner 文案；服务离线不阻断其他导航。
 onMounted(() => {
-  if (hasAuthorities(['wms:inventory:read'], 'all')) void ensureOwners(['wms']).catch(() => {});
+  if (hasAuthorities(['wms:inventory:read', 'wms:inventory-count:read'], 'any')) void ensureOwners(['wms']).catch(() => {});
 });
 const accountName = computed(() => user.value?.displayName.trim() || user.value?.username || t('navigation.currentUser'));
 const navigationIcons = {

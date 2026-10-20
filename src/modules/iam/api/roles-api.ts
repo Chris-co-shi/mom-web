@@ -64,6 +64,6 @@ export function getRolePermissions(id: string, signal?: AbortSignal): Promise<Pe
 }
 
 /** 整体替换关系，空数组代表清空；不得改写为逐项增删或自动重试。 */
-export function replaceRolePermissions(id: string, permissionIds: string[]): Promise<PermissionResponse[]> {
-  return httpClient.result({ path: rolePath(id, '/permissions'), method: 'PUT', body: { permissionIds } });
+export function replaceRolePermissions(id: string, permissionIds: string[], version: number): Promise<PermissionResponse[]> {
+  return httpClient.result({ path: rolePath(id, '/permissions'), method: 'PUT', body: { permissionIds, version } });
 }

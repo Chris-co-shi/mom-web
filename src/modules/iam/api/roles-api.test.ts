@@ -42,10 +42,10 @@ describe('角色 API 契约', () => {
 
   it('角色赋权读取和整体替换使用 Gateway 契约与字符串 ID', async () => {
     await roles.getRolePermissions('123/a');
-    await roles.replaceRolePermissions('123/a', ['101', '202'], 5);
+    await roles.replaceRolePermissions('123/a', ['101', '202']);
     expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/auth/roles/123%2Fa/permissions', '/auth/roles/123%2Fa/permissions']);
     expect(fetchMock.mock.calls[0]![1].method).toBe('GET');
     expect(fetchMock.mock.calls[1]![1].method).toBe('PUT');
-    expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ permissionIds: ['101', '202'], version: 5 });
+    expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({ permissionIds: ['101', '202'] });
   });
 });

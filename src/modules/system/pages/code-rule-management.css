@@ -39,3 +39,18 @@
 .code-rule-management__metadata-readonly { display: grid; gap: var(--mom-space-3); margin-bottom: var(--mom-space-4); }
 .code-rule-management__metadata-readonly dt { color: var(--mom-color-text-secondary); font-size: var(--mom-font-size-sm); }
 .code-rule-management__metadata-readonly dd { margin: var(--mom-space-1) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.code-rule-management__generation {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--mom-color-border);
+  border-radius: var(--mom-radius-control);
+}
+.code-rule-management__generation-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.code-rule-management__generation-actions code { overflow-wrap: anywhere; }

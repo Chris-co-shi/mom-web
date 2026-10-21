@@ -10,7 +10,7 @@ vi.mock('vue-router', () => ({ onBeforeRouteLeave: vi.fn() }));
 vi.mock('../../auth', () => ({ hasAuthority: () => true, AuthorityGuard: { props: ['authorities'], template: '<slot />' } }));
 vi.mock('../api/code-rule-api', async importOriginal => {
   const original = await importOriginal<typeof import('../api/code-rule-api')>();
-  return { ...original, codeRuleApi: { catalog: vi.fn(), search: vi.fn(), detail: vi.fn(), create: vi.fn(), update: vi.fn(), revise: vi.fn(), enable: vi.fn(), disable: vi.fn() } };
+  return { ...original, codeRuleApi: { catalog: vi.fn(), generationFields: vi.fn().mockResolvedValue([]), generate: vi.fn(), search: vi.fn(), detail: vi.fn(), create: vi.fn(), update: vi.fn(), revise: vi.fn(), enable: vi.fn(), disable: vi.fn() } };
 });
 const catalog: CodeSegmentCatalogEntry[] = [
   { type: 'LITERAL', label: '后端固定字符', description: '后端目录', catalogVersion: 1, parameterSchema: { schemaVersion: 1, fields: [{ id: 'value', name: 'value', label: '固定字符', type: 'TEXT', defaultValue: 'M-' }] } },

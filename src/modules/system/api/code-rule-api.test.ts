@@ -9,6 +9,8 @@ describe('编码规则真实 API 契约', () => {
     const owner = codeRuleOwners[0];
     const definition = { schemaVersion: 1 as const, segments: [{ id: 'seg_1', type: 'LITERAL', params: { value: 'M-' } }] };
     await codeRuleApi.catalog(owner);
+    await codeRuleApi.generationFields(owner);
+    await codeRuleApi.generate(owner, { ruleCode: 'material', context: {}, requestKey: 'request-1' });
     await codeRuleApi.search(owner, { params: { ruleCode: 'material', status: 'DRAFT' }, pageNo: 2, pageSize: 10 });
     await codeRuleApi.detail(owner, 'revision-id');
     await codeRuleApi.create(owner, { ruleCode: 'material', usageScenario: '物料编码', description: '物料创建', definition });
@@ -18,6 +20,8 @@ describe('编码规则真实 API 契约', () => {
     await codeRuleApi.disable(owner, 'revision-id', 10);
     expect(vi.mocked(httpClient.result).mock.calls.map(([request]) => [request.path, request.method ?? 'GET', request.body])).toEqual([
       ['/mdm/code-rules/segments', 'GET', undefined],
+      ['/mdm/code-rules/generation-fields', 'GET', undefined],
+      ['/mdm/code-rules/generate', 'POST', { ruleCode: 'material', context: {}, requestKey: 'request-1' }],
       ['/mdm/code-rules/search', 'POST', { params: { ruleCode: 'material', status: 'DRAFT' }, pageNo: 2, pageSize: 10 }],
       ['/mdm/code-rules/revision-id', 'GET', undefined],
       ['/mdm/code-rules', 'POST', { ruleCode: 'material', usageScenario: '物料编码', description: '物料创建', definition }],

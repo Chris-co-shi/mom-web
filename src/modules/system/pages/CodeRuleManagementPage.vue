@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
 import { ArrowLeft, Plus, RefreshCw } from '@lucide/vue';
-import { AuthorityGuard } from '../../auth';
+import { AuthorityGuard, hasAuthority } from '../../auth';
 import { MomButton, MomInput, MomSelect, MomTextarea } from '../../../shared/ui';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
@@ -12,6 +12,7 @@ import MomCrudPagination from '../../../shared/components/MomCrudPagination.vue'
 import MomModal from '../../../shared/components/MomModal.vue';
 import PageContainer from '../../../shared/components/PageContainer.vue';
 import CodeRuleDefinitionView from './CodeRuleDefinitionView.vue';
+import CodeRuleGenerationPanel from './CodeRuleGenerationPanel.vue';
 import CodeRuleDesigner from '../../../shared/form-designer/CodeRuleDesigner.vue';
 import { useLocale } from '../../../shared/i18n/locale';
 import { formatInstant } from '../../../shared/formatters';
@@ -27,6 +28,7 @@ const { owner, canRead, canWrite, catalog, catalogLoading, catalogError, catalog
   pageNo, pageSize, total, totalPages, filters, historyCode, editorOpen, detailLoading, target, ruleCode, usageScenario, description, definition,
   dirty, saving, writeBlocked, feedback, notice, discardPending, unsupported, editable } = state;
 const confirmation = ref<CodeRuleAction | null>(null);
+const generating = ref(false);
 const statusKey: Record<CodeRuleStatus, MessageKey> = { DRAFT: 'system.coderules.draft', ENABLED: 'system.common.enabled', DISABLED: 'system.common.disabled' };
 const actionKey: Record<CodeRuleAction, MessageKey> = { revise: 'system.coderules.revise', enable: 'system.coderules.publish', disable: 'system.common.disable' };
 const columns = computed<MomColumn[]>(() => [
@@ -40,17 +42,17 @@ const columns = computed<MomColumn[]>(() => [
 const statusOptions = computed(() => [{ value: '', label: t('system.coderules.allstatuses') },
   ...(['DRAFT', 'ENABLED', 'DISABLED'] as const).map(value => ({ value, label: t(statusKey[value]) }))]);
 async function leaveHistory(): Promise<void> { historyCode.value = ''; pageNo.value = 1; await state.loadList(); }
-const busy = computed(() => saving.value || detailLoading.value);
+const busy = computed(() => saving.value || detailLoading.value || generating.value);
 async function confirmAction(): Promise<void> {
   const action = confirmation.value; if (!action) return;
   confirmation.value = null; await state.act(action);
 }
 function beforeUnload(event: BeforeUnloadEvent): void {
-  if (dirty.value || saving.value) { event.preventDefault(); event.returnValue = ''; }
+  if (dirty.value || busy.value) { event.preventDefault(); event.returnValue = ''; }
 }
 onMounted(() => { void state.reload(); window.addEventListener('beforeunload', beforeUnload); });
 onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
-onBeforeRouteLeave(() => state.confirmDiscard());
+onBeforeRouteLeave(() => generating.value ? false : state.confirmDiscard());
 </script>
 
 <template>
@@ -122,6 +124,8 @@ onBeforeRouteLeave(() => state.confirmDiscard());
           <h3>{{ t('system.coderules.composition') }}</h3><p class="system-page__hint">{{ t('system.coderules.compositionhint') }}</p>
           <CodeRuleDefinitionView :definition="definition" :catalog="catalog" />
         </section>
+        <CodeRuleGenerationPanel v-if="target?.status === 'ENABLED' && hasAuthority(owner.generateAuthority)"
+          :key="`${owner.id}:${target.id}`" :owner="owner" :rule="target" @busy="generating = $event" />
         <details class="code-rule-management__technical"><summary>{{ t('system.coderules.technical') }}</summary>
           <dl class="code-rule-management__technical-meta" v-if="target"><div><dt>{{ t('system.common.version') }}</dt><dd>{{ target.ruleVersion }}</dd></div><div><dt>ruleId</dt><dd>{{ target.ruleId }}</dd></div><div><dt>revisionId</dt><dd>{{ target.id }}</dd></div></dl>
           <pre class="code-rule-management__json">{{ JSON.stringify(definition, null, 2) }}</pre>

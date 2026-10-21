@@ -13,16 +13,26 @@ export interface CodeRuleView {
 export interface CodeRuleFilters { ruleCode?: string; status?: CodeRuleStatus | '' }
 /** 受控接入清单，API 路径与权限来自代码配置，页面选择值不能构造任意服务地址。 */
 export interface CodeRuleOwner {
-  id: string; label: string; basePath: string; readAuthority: string; writeAuthority: string;
+  id: string; label: string; basePath: string; readAuthority: string; writeAuthority: string; generateAuthority: string;
 }
 export const codeRuleOwners: readonly CodeRuleOwner[] = [
-  { id: 'mdm', label: 'MDM', basePath: '/mdm/code-rules', readAuthority: 'mdm:code-rule:read', writeAuthority: 'mdm:code-rule:write' },
-  { id: 'wms', label: 'WMS', basePath: '/wms/code-rules', readAuthority: 'wms:code-rule:read', writeAuthority: 'wms:code-rule:write' },
+  { id: 'mdm', label: 'MDM', basePath: '/mdm/code-rules', readAuthority: 'mdm:code-rule:read', writeAuthority: 'mdm:code-rule:write', generateAuthority: 'mdm:code-rule:generate' },
+  { id: 'wms', label: 'WMS', basePath: '/wms/code-rules', readAuthority: 'wms:code-rule:read', writeAuthority: 'wms:code-rule:write', generateAuthority: 'wms:code-rule:generate' },
 ];
+/** 业务字段目录供正式生成表单确定所需上下文键。 */
+export interface CodeGenerationField { fieldKey: string; label: string; description: string; requiredContextKeys: string[] }
+/** 正式发号结果携带实际发布修订。 */
+export interface CodeGenerationResult { ruleCode: string; revisionId: string; revisionNo: number; code: string }
 const revisionPath = (owner: CodeRuleOwner, revisionId: string) => `${owner.basePath}/${encodeURIComponent(revisionId)}`;
 
 /** 通过 Gateway 使用 Owner 自有 API；写入不重试，ruleId 从不作为修订操作的目标。 */
 export const codeRuleApi = {
+  /** 读取当前 Owner 可执行 Provider 的上下文要求。 */
+  generationFields: (owner: CodeRuleOwner, signal?: AbortSignal) =>
+    httpClient.result<CodeGenerationField[]>({ path: `${owner.basePath}/generation-fields`, signal }),
+  /** 正式发号；调用方须在未知结果重试时复用完全相同的 body。 */
+  generate: (owner: CodeRuleOwner, body: { ruleCode: string; context: Record<string, string>; requestKey: string }) =>
+    httpClient.result<CodeGenerationResult>({ path: `${owner.basePath}/generate`, method: 'POST', body }),
   /** 读取 Owner 声明的段目录，供设计器校验和展示。 */
   catalog: (owner: CodeRuleOwner, signal?: AbortSignal) =>
     httpClient.result<CodeSegmentCatalogEntry[]>({ path: `${owner.basePath}/segments`, signal }),

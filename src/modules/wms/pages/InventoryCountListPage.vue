@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { hasAuthority } from '../../auth/model/auth-permissions';
+import { useAuthSession } from '../../auth/model/auth-session';
 import { catalogReference } from '../../mdm/api/reference-api';
 import MomManagementHeader from '../../../shared/components/MomManagementHeader.vue';
 import MomListSurface from '../../../shared/components/MomListSurface.vue';
@@ -15,11 +16,39 @@ import { ROUTE_NAMES } from '../../../router/route-names';
 import { createCount, findCountByRequestKey, listCounts, type CountSummary, type CountStatus } from '../api/inventory-count-api';
 import './inventory-pages.css';
 const router = useRouter(), { t, tForOwner } = useLocale();
+const { userId } = useAuthSession();
 const rows=ref<CountSummary[]>([]), warehouseId=ref('');
 const warehouseReference=catalogReference('warehouses',()=>({status:'ENABLED'}));
 const pageNo=ref(1), pageSize=ref(20), total=ref(0);
 const loading=ref(false), saving=ref(false), error=ref(''), unknown=ref(false);
-const requestKey=ref('');
+const pendingStorageKey='mom.wms.inventory-count.pending-create';
+interface PendingCreate { userId:string; requestKey:string; warehouseId:string; locationIds:string[]; materialIds:string[] }
+const pending=ref<PendingCreate|null>(null);
+function clearPending():void {
+  pending.value=null;
+  try { window.sessionStorage.removeItem(pendingStorageKey); } catch { /* 存储不可用时仍清理内存。 */ }
+}
+function restorePending():void {
+  try {
+    const raw=window.sessionStorage.getItem(pendingStorageKey);
+    if(!raw)return;
+    const value:unknown=JSON.parse(raw);
+    if(!value || typeof value!=='object') { clearPending();return; }
+    const record=value as Record<string,unknown>;
+    if(typeof record.userId!=='string'||record.userId!==userId.value) { clearPending();return; }
+    if(typeof record.requestKey!=='string'||!record.requestKey||typeof record.warehouseId!=='string'||!record.warehouseId
+      ||!Array.isArray(record.locationIds)||!record.locationIds.every(id=>typeof id==='string')
+      ||!Array.isArray(record.materialIds)||!record.materialIds.every(id=>typeof id==='string')) { clearPending();return; }
+    pending.value=record as unknown as PendingCreate;
+    warehouseId.value=pending.value.warehouseId;
+    unknown.value=true;
+    error.value=t('wms.inventory.count.unknown');
+    void reconcile();
+  } catch { clearPending();error.value=t('wms.inventory.count.writefailed'); }
+}
+watch(userId,current=>{ if(pending.value && current!==pending.value.userId) {
+  clearPending();unknown.value=false;error.value='';
+} });
 const canCreate=computed(()=>hasAuthority('wms:inventory-count:create') && hasAuthority('mdm:warehouse:read'));
 const columns=computed<MomColumn[]>(()=>[
   { key:'taskNo',title:t('wms.inventory.count.number'),minWidth:160 },
@@ -39,32 +68,43 @@ async function load(next=pageNo.value,size=pageSize.value):Promise<void> {
   finally { loading.value=false; }
 }
 async function create():Promise<void> {
-  if(!canCreate.value||!warehouseId.value||saving.value||unknown.value)return;
-  saving.value=true; error.value='';
-  if(!requestKey.value)requestKey.value=crypto.randomUUID();
-  try { const detail=await createCount(requestKey.value,warehouseId.value,{locationIds:[],materialIds:[]});
-    requestKey.value='';
-    await router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:detail.task.id}}); }
-  catch(cause) { unknown.value=classifyWriteFailure(cause)==='unknown';
+  if(!canCreate.value||!warehouseId.value||!userId.value||saving.value||unknown.value||pending.value)return;
+  const request:PendingCreate={userId:userId.value,requestKey:crypto.randomUUID(),warehouseId:warehouseId.value,
+    locationIds:[],materialIds:[]};
+  try { window.sessionStorage.setItem(pendingStorageKey,JSON.stringify(request)); }
+  catch { error.value=t('wms.inventory.count.writefailed');return; }
+  pending.value=request;saving.value=true; error.value='';
+  let createdId:string|undefined;
+  try { const detail=await createCount(request.requestKey,request.warehouseId,
+    {locationIds:request.locationIds,materialIds:request.materialIds});
+    if(userId.value!==request.userId)return;
+    createdId=detail.task.id;clearPending(); }
+  catch(cause) { if(userId.value!==request.userId)return;
+    unknown.value=classifyWriteFailure(cause)==='unknown';
+    if(!unknown.value)clearPending();
     error.value=unknown.value?t('wms.inventory.count.unknown')
       :isApiError(cause)&&cause.message?cause.message:t('wms.inventory.count.writefailed'); }
   finally { saving.value=false; }
+  if(createdId)await router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:createdId}});
 }
 async function reconcile():Promise<void> {
-  if(!unknown.value||!requestKey.value||saving.value)return;
+  const request=pending.value;
+  if(!unknown.value||!request||saving.value||request.userId!==userId.value)return;
   saving.value=true;
+  let createdId:string|undefined;
   try {
-    const detail=await findCountByRequestKey(requestKey.value);
-    if(!detail || detail.task.requestKey!==requestKey.value || detail.task.warehouseId!==warehouseId.value) {
+    const detail=await findCountByRequestKey(request.requestKey);
+    if(request.userId!==userId.value)return;
+    if(!detail || detail.task.requestKey!==request.requestKey || detail.task.warehouseId!==request.warehouseId) {
       error.value=t('wms.inventory.count.unknown');return;
     }
-    unknown.value=false;requestKey.value='';error.value='';
-    await router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:detail.task.id}});
-  } catch {error.value=t('wms.inventory.count.unknown');}
+    createdId=detail.task.id;unknown.value=false;clearPending();error.value='';
+  } catch {if(request.userId===userId.value)error.value=t('wms.inventory.count.unknown');}
   finally {saving.value=false;}
+  if(createdId)await router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:createdId}});
 }
 function open(row:CountSummary):void { void router.push({name:ROUTE_NAMES.wmsInventoryCountDetail,params:{id:row.id}}); }
-onMounted(()=>{void load();});
+onMounted(()=>{restorePending();void load();});
 </script>
 <template>
   <PageContainer><section class="inventory-page">

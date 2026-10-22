@@ -10,7 +10,8 @@ export interface RoutingStepInput {
 /** 带持久化 ID 的工艺路线步骤。 */
 export interface RoutingStep extends RoutingStepInput { id: string }
 /** 工艺路线身份摘要。 */
-export interface RoutingIdentity { id: string; code: string; name: string; plantId: string; createdAt: string; updatedAt: string }
+export interface RoutingIdentity { id: string; code: string; name: string; plantId: string; createdAt: string; updatedAt: string;
+  releasedRevisions: { id: string; revisionNo: number }[] }
 /** 工艺路线修订及其乐观锁版本。 */
 export interface RoutingRevision {
   id: string; routingId: string; revisionNo: number; status: 'DRAFT' | 'RELEASED' | 'OBSOLETE';

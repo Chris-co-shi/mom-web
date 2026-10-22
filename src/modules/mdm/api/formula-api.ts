@@ -10,6 +10,7 @@ export interface FormulaItem extends FormulaItemInput { id: string }
 export interface FormulaIdentity {
   id: string; code: string; name: string; plantId: string; outputMaterialId: string;
   baseBatchQuantity: string; baseUomId: string; createdAt: string; updatedAt: string;
+  releasedRevisions: { id: string; revisionNo: number }[];
 }
 /** 配方修订及其发布生命周期。 */
 export interface FormulaRevision {

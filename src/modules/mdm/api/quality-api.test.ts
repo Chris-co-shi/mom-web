@@ -19,4 +19,10 @@ describe('MDM 质量定义 API 契约', () => {
     expect(fetchMock.mock.calls[1]![0]).toBe('/mdm/quality-specifications/revisions/release/6');
     expect(JSON.parse(fetchMock.mock.calls[1]![1].body)).toEqual({lockVersion:1});
   });
+  it('成品标准创建明确传 FINISHED_GOODS 用途',async()=>{
+    await createSpecification({code:'FG-1',name:'成品标准',plantId:'1',materialId:'2',
+      inspectionUsage:'FINISHED_GOODS',items:[{sequenceNo:10,characteristicId:'3',methodId:'4',
+        uomId:'5',lowerLimit:'99',targetValue:'99.5',upperLimit:'100',mandatory:true}]});
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body).inspectionUsage).toBe('FINISHED_GOODS');
+  });
 });

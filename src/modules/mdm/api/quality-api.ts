@@ -7,7 +7,8 @@ export interface InspectionCharacteristic { id:string; code:string; name:string;
 /** 检验方法主数据。 */
 export interface InspectionMethod { id:string; code:string; name:string; description:string|null; enabled:boolean; version:number }
 /** 质量标准聚合的当前修订摘要。 */
-export interface QualitySpecification { id:string; code:string; name:string; plantId:string; materialId:string; inspectionUsage:'INCOMING'; latestRevisionNo:number; latestStatus:RevisionStatus }
+export type InspectionUsage = 'INCOMING'|'FINISHED_GOODS';
+export interface QualitySpecification { id:string; code:string; name:string; plantId:string; materialId:string; inspectionUsage:InspectionUsage; latestRevisionNo:number; latestStatus:RevisionStatus }
 /** 质量标准修订状态。 */
 export type RevisionStatus = 'DRAFT'|'RELEASED'|'OBSOLETE';
 /** 创建或更新质量标准条目的输入；数量边界使用字符串保持精度。 */
@@ -16,7 +17,7 @@ export interface SpecificationItemInput { sequenceNo:number; characteristicId:st
 export interface SpecificationItem extends SpecificationItemInput { id:string; characteristicVersion:number; methodVersion:number; uomVersion:number }
 /** 质量标准修订详情及其条目。 */
 export interface SpecificationDetail extends Omit<QualitySpecification,'latestRevisionNo'|'latestStatus'> {
-  plantVersion:number; materialRevisionNo:number; materialVersion:number; revisionId:string; revisionNo:number;
+  plantVersion:number|null; materialRevisionNo:number|null; materialVersion:number|null; revisionId:string; revisionNo:number;
   status:RevisionStatus; lockVersion:number; releasedAt:string|null; obsoleteAt:string|null; items:SpecificationItem[];
 }
 const path = (root:string,suffix='') => apiPath('mdm',`/${root}${suffix}`);
@@ -45,7 +46,7 @@ export function searchSpecifications(pageNo:number,pageSize:number,params:{plant
 export function getSpecification(value:string,signal?:AbortSignal):Promise<SpecificationDetail> {
   return httpClient.result({path:path('quality-specifications',`/${id(value)}`),signal});
 }
-export function createSpecification(body:{code:string;name:string;plantId:string;materialId:string;items:SpecificationItemInput[]}):Promise<SpecificationDetail> {
+export function createSpecification(body:{code:string;name:string;plantId:string;materialId:string;inspectionUsage?:InspectionUsage;items:SpecificationItemInput[]}):Promise<SpecificationDetail> {
   return httpClient.result({path:path('quality-specifications'),method:'POST',body});
 }
 export function updateSpecificationDraft(revisionId:string,lockVersion:number,items:SpecificationItemInput[]):Promise<SpecificationDetail> {

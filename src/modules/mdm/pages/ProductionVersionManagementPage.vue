@@ -15,8 +15,8 @@ import PageContainer from '../../../shared/components/PageContainer.vue';
 import { useLocale } from '../../../shared/i18n/locale';
 import { searchPlants, type PlantView } from '../api/factory-api';
 import { searchMaterials, type Material } from '../api/material-api';
-import { searchFormulas, getFormula, type FormulaDetail } from '../api/formula-api';
-import { searchRoutings, getRouting, type RoutingDetail } from '../api/routing-api';
+import { searchFormulas, type FormulaIdentity } from '../api/formula-api';
+import { searchRoutings, type RoutingIdentity } from '../api/routing-api';
 import { searchProductionVersions, getProductionVersion, createProductionVersion,
   updateProductionVersion, releaseProductionVersion, obsoleteProductionVersion,
   type ProductionVersion, type ProductionVersionDraft } from '../api/production-version-api';
@@ -25,7 +25,7 @@ import './mdm-pages.css';
 const { t, tForOwner } = useLocale();
 const rows = ref<ProductionVersion[]>([]), target = ref<ProductionVersion>();
 const plants = ref<PlantView[]>([]), materials = ref<Material[]>([]);
-const formulas = ref<FormulaDetail[]>([]), routings = ref<RoutingDetail[]>([]);
+const formulas = ref<FormulaIdentity[]>([]), routings = ref<RoutingIdentity[]>([]);
 const referenceLoading = ref(false), referenceError = ref(false);
 const pageNo = ref(1), pageSize = ref(20), total = ref(0);
 const loading = ref(false), detailLoading = ref(false), saving = ref(false), blocked = ref(false);
@@ -55,12 +55,12 @@ const option = <T extends { id:string; code:string; name:string }>(values:T[], s
 const plantOptions = computed(() => option(plants.value.filter(row => row.status === 'ENABLED'), form.plantId));
 const materialOptions = computed(() => option(materials.value.filter(row => row.status === 'ENABLED'), form.outputMaterialId));
 const formulaOptions = computed(() => [{ value:'', label:t('mdm.struct.select') }, ...formulas.value
-  .filter(row => row.revision.status === 'RELEASED' && (!form.plantId || row.formula.plantId === form.plantId)
-    && (!form.outputMaterialId || row.formula.outputMaterialId === form.outputMaterialId))
-  .map(row => ({ value:row.revision.id, label:`${row.formula.name} · R${row.revision.revisionNo}` }))]);
+  .filter(row => (!form.plantId || row.plantId === form.plantId)
+    && (!form.outputMaterialId || row.outputMaterialId === form.outputMaterialId))
+  .flatMap(row => row.releasedRevisions.map(revision => ({ value:revision.id, label:`${row.name} · R${revision.revisionNo}` })))]);
 const routingOptions = computed(() => [{ value:'', label:t('mdm.struct.select') }, ...routings.value
-  .filter(row => row.revision.status === 'RELEASED' && (!form.plantId || row.routing.plantId === form.plantId))
-  .map(row => ({ value:row.revision.id, label:`${row.routing.name} · R${row.revision.revisionNo}` }))]);
+  .filter(row => !form.plantId || row.plantId === form.plantId)
+  .flatMap(row => row.releasedRevisions.map(revision => ({ value:revision.id, label:`${row.name} · R${revision.revisionNo}` })))]);
 const nameOf = <T extends { id:string; name:string }>(values:T[], id:string) => values.find(row => row.id === id)?.name ?? id;
 function feedback(error:unknown, writing=false):string {
   if (!isApiError(error)) return t(writing ? 'mdm.struct.unknownWrite' : 'mdm.struct.loadFailed');
@@ -89,13 +89,9 @@ async function loadReferences():Promise<void> {
       searchPlants(1,100), searchMaterials(1,100,{status:'ENABLED'}),
       searchFormulas(1,100), searchRoutings(1,100),
     ]);
-    const [formulaDetails,routingDetails] = await Promise.all([
-      Promise.all(formulaPage.records.map(row => getFormula(row.id))),
-      Promise.all(routingPage.records.map(row => getRouting(row.id))),
-    ]);
     if (disposed || current!==referenceNo) return;
     plants.value=plantPage.records; materials.value=materialPage.records;
-    formulas.value=formulaDetails; routings.value=routingDetails; referenceError.value=false;
+    formulas.value=formulaPage.records; routings.value=routingPage.records; referenceError.value=false;
   } catch { if (!disposed && current===referenceNo) referenceError.value=true; }
   finally { if (current===referenceNo) referenceLoading.value=false; }
 }

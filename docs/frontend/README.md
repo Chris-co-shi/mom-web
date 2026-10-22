@@ -8,8 +8,9 @@
 | 页面视觉、响应式、无障碍 | [B2 UI 契约](standards/b2-ui-contract.md) | [设计系统](design-system.md) |
 | 列表 CRUD、分页、失败状态 | [CRUD 管理页标准](standards/crud-management-page-standard.md) | 一个真实页面 |
 | 路由、请求和模块边界 | [前端架构](frontend-architecture.md) | 对应 ADR |
+| 共享请求与写入结果未知 | [HTTP Client 契约](http-client.md) | 对应模块 API 与恢复页面 |
 | 产品导航和用户任务 | [产品体验](product-experience.md) | 当前后端契约 |
-| 当前与下一阶段 | [实施路线](implementation-plan.md) | 后端路线图 |
+| 当前页面与后续方向 | [当前实现地图](当前实现地图.md) | 后端路线图与当前 Slice |
 
 ## 权威顺序
 

@@ -18,6 +18,7 @@
 | 列表 CRUD、分页、写入失败 | `docs/frontend/standards/crud-management-page-standard.md` |
 | 全局 Token 或主题 | `docs/frontend/design-system.md` |
 | 路由、请求、模块边界 | `docs/frontend/frontend-architecture.md` |
+| 共享 HTTP Client、写入失败与恢复 | `docs/frontend/http-client.md` |
 | 组件库或全局架构决策 | 对应 `docs/frontend/decisions/ADR-*` |
 
 普通任务不要批量读取全部 frontend 文档或历史 ADR。
